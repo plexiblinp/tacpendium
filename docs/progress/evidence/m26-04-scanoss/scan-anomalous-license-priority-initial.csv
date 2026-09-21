@@ -1,0 +1,3 @@
+"LocalFile","MatchPercent","LocalLines","Component","Version","Latest","ReleaseDate","OssFile","OssLines","SourceHash","FileHash","Url","Purl"
+"web/src/features/setup/hooks/useDeleteSetup.test.ts","83","4-65","GIRO","v2.0.2","v2.0.2","2026-01-26","apps/desktop/src/hooks/enterprise/__tests__/useActivities.test.ts","8-69","b300b7566d97f31865fff3983970a896","2bac91187a682d107ca2f65e173e8b99","https://github.com/jhonslife/GIRO","pkg:github/jhonslife/giro"
+"web/src/lib/api-client.test.ts","76","12-52","bastion","v0.2.2","v0.2.2","2026-02-24","ui/src/stores/jobs.spec.ts","213-253","693e0aa61a360f0875c779f00d5d95c0","89ec20271ed5dc568f06838064b57727","https://github.com/Syt100/bastion","pkg:github/syt100/bastion"

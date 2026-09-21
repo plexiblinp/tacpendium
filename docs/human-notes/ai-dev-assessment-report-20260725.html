@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tacpendium 規模分析・AI開発評価レポート(2026-07-25)</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #666;
+    --accent: #2563eb; --border: #e2e2e2; --card: #f7f7f8;
+    --good: #15803d; --warn: #b45309;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d; --fg: #e8e8ea; --muted: #9a9aa2;
+      --accent: #7aa2f7; --border: #33363e; --card: #1e2128;
+      --good: #4ade80; --warn: #fbbf24;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+    line-height: 1.75; font-size: 15px;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
+  h1 { font-size: 1.55rem; line-height: 1.4; border-bottom: 3px solid var(--accent); padding-bottom: .6rem; }
+  h2 { font-size: 1.25rem; margin-top: 2.8rem; border-left: 5px solid var(--accent); padding-left: .6rem; }
+  h3 { font-size: 1.05rem; margin-top: 1.8rem; }
+  .meta { color: var(--muted); font-size: .85rem; }
+  .lead { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .9rem; }
+  th, td { border: 1px solid var(--border); padding: .45rem .7rem; text-align: left; vertical-align: top; }
+  th { background: var(--card); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .tablewrap { overflow-x: auto; }
+  .good { color: var(--good); font-weight: 600; }
+  .warn { color: var(--warn); font-weight: 600; }
+  .note { font-size: .85rem; color: var(--muted); }
+  blockquote { margin: 1rem 0; padding: .6rem 1rem; border-left: 4px solid var(--border); color: var(--muted); }
+  code { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: .1em .35em; font-size: .85em; }
+  ol li, ul li { margin: .35rem 0; }
+  .verdict { font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>tacpendium 規模分析・AI開発評価レポート</h1>
+<p class="meta">作成: 2026-07-25 / 計測対象コミット: <code>e608022</code>(2026-07-24)/ 計測: Claude Code(cloc 1.98・gocyclo・git 履歴・独自集計)/ セッション: リポジトリ規模調査と AI 開発評価の対話まとめ</p>
+
+<div class="lead">
+<strong>要旨</strong>: tacpendium はプロダクションコード約 3.0 万行・テスト約 2.8 万行の「小〜中規模個人 OSS」。コード品質は健全(平均複雑度 4.41)で、機能に対する過剰・過小の兆候は薄い。ドキュメント総量は巨大(Markdown 約 12.6 万生行)だが、その約 9 割はマイルストーン指示書等の<em>プロセス排出物</em>であり、永続的な設計資料の中核は約 1.3 万行と引き締まっている。開発ペースは余暇約 400 時間で従来 20〜40 人月級の成果に相当し、約 10 倍のレバレッジ。AI 協働インフラの成熟度は開始 3 ヶ月時点として先行帯にある。
+</div>
+
+<h2>1. 規模計測(一次データ)</h2>
+
+<h3>1.1 言語別行数(cloc、空行・コメント除外)</h3>
+<div class="tablewrap">
+<table>
+<tr><th>言語</th><th class="num">ファイル数</th><th class="num">コード行数</th></tr>
+<tr><td>Markdown</td><td class="num">682</td><td class="num">105,942</td></tr>
+<tr><td>TypeScript</td><td class="num">344</td><td class="num">29,792</td></tr>
+<tr><td>Go</td><td class="num">189</td><td class="num">27,924</td></tr>
+<tr><td>HTML / SQL / YAML / Shell 他</td><td class="num">161</td><td class="num">19,680</td></tr>
+<tr><th>合計</th><th class="num">1,376</th><th class="num">183,338</th></tr>
+</table>
+</div>
+
+<h3>1.2 プロダクション/テスト分離(非空・非コメント概算)</h3>
+<div class="tablewrap">
+<table>
+<tr><th>区分</th><th class="num">Go</th><th class="num">TypeScript</th><th class="num">合計</th></tr>
+<tr><td>プロダクションコード</td><td class="num">約 12,300</td><td class="num">約 17,400</td><td class="num"><strong>約 29,700</strong></td></tr>
+<tr><td>テストコード(E2E 含む)</td><td class="num">約 15,600</td><td class="num">約 12,550</td><td class="num"><strong>約 28,200</strong></td></tr>
+</table>
+</div>
+<p>テスト:実装比は<strong>ほぼ 1:1</strong>。Go 単体ではテストが実装を上回る(商用プロダクト並み)。一般的な個人 OSS(0.3〜0.5 程度)を明確に超える手厚さで、AI に実装を委ねる体制のリグレッション防御として意図的な投資と評価。</p>
+
+<h3>1.3 構造・複雑度・履歴</h3>
+<div class="tablewrap">
+<table>
+<tr><th>指標</th><th>値</th></tr>
+<tr><td>Go パッケージ / API エンドポイント(Echo)</td><td>56 / 43</td></tr>
+<tr><td>DB テーブル / マイグレーション</td><td>19 / 39 本</td></tr>
+<tr><td>React コンポーネント(概算)</td><td>約 101</td></tr>
+<tr><td>循環的複雑度(gocyclo・関数 1,317 個)</td><td>平均 <span class="good">4.41</span>(健全)。15 超は 29 件、上位はマイグレーションテストと combo 更新系サービス</td></tr>
+<tr><td>Git 履歴(現リポジトリ)</td><td>114 コミット / 挿入 245,381 行(2026-07-17〜07-24)</td></tr>
+</table>
+</div>
+<p class="note">留意: <code>tacpendium_debug</code>(16.8MB の Go デバッグバイナリ)が Git 管理下にコミットされており、リポジトリ 52MB の最大要因。<code>.gitignore</code> は <code>/tacpendium</code> のみで別名のため除外漏れの疑い(対応は開発者判断)。</p>
+
+<h2>2. 永続資料のみの行数(instructions 等のプロセス資料を除外)</h2>
+<p class="note">※本節は生行数(<code>wc -l</code>、空行込み)。§1.1 の cloc 値(空行除外)とは基準が異なる。</p>
+
+<div class="tablewrap">
+<table>
+<tr><th>バケット</th><th class="num">行数</th><th class="num">ファイル数</th><th>備考</th></tr>
+<tr><td>docs/design(REQ・DES-001〜006・SUPP-001 等)</td><td class="num">4,836</td><td class="num">9</td><td>設計書本体。最大でも SUPP-001 の 1,178 行と引き締まっている</td></tr>
+<tr><td>docs/handover 直下(生きた引継資料)</td><td class="num">7,553</td><td class="num">20</td><td>code-facts / docs-map / playbook / backlog / retrospective 等。phase1・phase2・design-reports のアーカイブは除外</td></tr>
+<tr><td>docs/process</td><td class="num">398</td><td class="num">2</td><td>remote-ops 等の運用正本</td></tr>
+<tr><td>ルート(CLAUDE.md / README / AGENTS.md)</td><td class="num">492</td><td class="num">3</td><td></td></tr>
+<tr><th>永続資料コア 計</th><th class="num">13,279</th><th class="num">34</th><th></th></tr>
+<tr><td>(参考)docs/human-notes</td><td class="num">11,492</td><td class="num">65</td><td>開発者個人メモ・ガイド・起動キット。永続と一時の混在</td></tr>
+</table>
+</div>
+
+<div class="tablewrap">
+<table>
+<tr><th>除外したプロセス資料</th><th class="num">行数</th><th class="num">ファイル数</th></tr>
+<tr><td>docs/instructions(マイルストーン指示書)</td><td class="num">73,166</td><td class="num">236</td></tr>
+<tr><td>docs/progress(進捗ログ・レポート)</td><td class="num">25,771</td><td class="num">132</td></tr>
+<tr><td>docs/change-notes(設計変更通知)</td><td class="num">13,660</td><td class="num">151</td></tr>
+<tr><th>計</th><th class="num">112,597</th><th class="num">519</th></tr>
+</table>
+</div>
+
+<p><strong>解釈</strong>: ドキュメント総量のうち約 89% はプロセス排出物であり、永続的な設計知識の中核は約 1.3 万行 —— プロダクションコード(約 3.0 万行)の 45% 程度に収まる。<span class="good">「ドキュメントが巨大」という印象の実体は、設計の肥大ではなく開発プロセスの履歴</span>である。逆に言えば、アーカイブ運用(完了フェーズの instructions/progress の退避)でリポジトリの見かけの重さは大きく削減できる。</p>
+
+<h2>3. OSS としての規模ランクと過剰・過小判定</h2>
+<ul>
+<li><span class="verdict">ランク</span>: プロダクション約 3.0 万行は「小〜中規模 OSS(1〜4 万行帯)」の中央。想定ユーザー数百〜数千人という要件定義(REQ-001 §1.3.1)に対して相応の規模。</li>
+<li><span class="verdict">過小の疑い</span>: なし。テスト・E2E・i18n・マイグレーション整備は要件水準を満たす側に厚い。</li>
+<li><span class="verdict">過剰の疑い</span>: コードには薄い。API 43 本・テーブル 19 個は要件(仮想コントローラ 4 種・修飾情報・比較・仮/本登録・タグ/プリセット・4 形式エクスポート・LAN 共有)の広さと整合。<code>punish_curations</code> 等も DES-003 で正式定義済みで独断追加ではない。</li>
+<li><span class="verdict">オーバーエンジニアリングの所在</span>: アプリ設計ではなく<strong>開発プロセス側</strong>(指示書体系・多段レビュー・20 超のカスタム Skill)。ただし CLAUDE.md・playbook に明文化された自覚的トレードオフであり、無自覚な肥大とは性質が異なる。コストはドキュメント鮮度維持の負担。</li>
+</ul>
+
+<h2>4. 開発ペース評価</h2>
+<p>投入工数の申告: 仕事の余暇で 3 ヶ月。平日 2〜3h+業務の空き時間に軽い設計、土日 10h 以上 ≒ <strong>週約 32h、総計約 400 時間(フルタイム換算約 2.5 人月)</strong>。</p>
+<ul>
+<li>古典見積(COCOMO organic)を 3.0 万行に適用すると約 80 人月。現代環境向けに 2〜4 倍割り引いても<strong>従来 20〜40 人月級</strong>の成果物を 2.5 人月で達成 ≒ <span class="good">約 10 倍のレバレッジ</span>。</li>
+<li>MVP(フェーズ1)を着手約 6 週間で完了、3 週間後にフェーズ2 完了と、マイルストーン消化も安定。</li>
+<li>AI 駆動の「週末 MVP」勢と比べれば最速ではないが、その差分はテスト 1:1・独立レビュー・設計書整合という<strong>統制と品質への投資</strong>に充当されており、この規模まで破綻兆候なしに育てられていること自体が投資の回収。</li>
+</ul>
+
+<h2>5. AI 協働インフラの成熟度(開始 3 ヶ月時点)</h2>
+<p><span class="verdict">評価: 先行帯(遅くない、明確に)。</span> 3 ヶ月目の典型は「CLAUDE.md+数個のコマンド」程度のところ、本プロジェクトは以下を既に運用している。</p>
+<ul>
+<li>役割分離アーキテクチャ(Web 版=設計 / Claude Code=製造 / 独立サブエージェント=レビュー)</li>
+<li>機械強制ガードレール(settings.json の allow/deny、claude/ 名前空間のみ push 許可)</li>
+<li>決定論的な事実生成(code-facts / docs-map をスクリプト生成、手書きメモに依存しない)</li>
+<li>worktree 並列・リモート実行(Claude Code on the Web)・Codex への片方向同期</li>
+</ul>
+<p>これは AI ネイティブな成熟チームが半年〜1 年で収斂する構成。特に「派生資料は生成する」「ルールは機械強制に落とす」の 2 点を初期に掴んでいる点が大きい。<span class="warn">警告</span>: 一人プロジェクトで 20 超の Skill はシェルフウェア化しやすい。「同じ摩擦に 2〜3 回噛まれてから自動化する」の自己規律を推奨。</p>
+
+<h2>6. 次の一段への処方箋(Max 20x を使い切りながら品質を上げる)</h2>
+<p>現在のボトルネックはコーディングではなく<strong>開発者の注意(レビューと意思決定)とカレンダー時間</strong>。処方は「人間の 1 時間あたりに消化される AI 作業量」を上げること。</p>
+<ol>
+<li><strong>同期監督から非同期並列へ</strong> — 朝に指示書 2〜3 本をキュー(Web 実行)、昼に中間確認、夜はレビューとマージのみ。生成は 24 時間、人は判断だけ。</li>
+<li><strong>リスク階層でプロセスを差別化</strong> — 低リスク(リファクタ・テスト・docs)は全自動+事後確認、高リスク(マイグレーション・重複判定キー等)のみ現行の重いプロセス。</li>
+<li><strong>検証を CI に落とす</strong> — 定数同期 grep 等の規約チェックを指示書の注意書きから CI/フックへ。E2E を claude/ ブランチのゲートにし、人のレビューは設計判断に集中。</li>
+<li><strong>トークンは敵対的レビューに投資</strong> — 最もリスクの高い 2 割の変更に、観点別(正当性・回帰・データ破壊)の独立複数レビュアーを投入。</li>
+<li><strong>ドキュメント負債曲線を折る</strong> — 完了マイルストーンの指示書・進捗を四半期ごとに機械的アーカイブ。記憶は生成物とテストへ寄せ、手書きは生きた計画資料数本に絞る。</li>
+<li><strong>実ユーザーに当てる</strong> — フェーズ3 で数人でもフィードバックループを開通させる。プロセス改善の限界効用は逓減期に入っており、次の改善方向は市場データが決める。</li>
+</ol>
+
+<h2>7. 「上級者との差」についてのキャリブレーション</h2>
+<p>SNS で見える上級者との距離は「相手のハイライト vs 自分の全過程」の比較で過大評価されがち。軸を分解すると:</p>
+<ul>
+<li><strong>コンテスト・学歴の軸</strong>: 実在する差だが別競技。追う必要がない。</li>
+<li><strong>深い専門性の軸</strong>(コンパイラ・ML 研究・大規模インフラ): 数年単位の差で短期には埋まらないが、本プロジェクトの戦域には不要。</li>
+<li><strong>AI 協働開発の実践の軸</strong>: 競技自体が 2〜3 年、実効プラクティスは 1 年強の歴史しかなく「10 年選手」は存在しない。この軸ではリポジトリの監査結果(役割分離・機械強制・生成主義・10 倍レバレッジ・3 ヶ月無破綻)が示す通り<span class="good">既に前方集団</span>。</li>
+</ul>
+<p>企業勢との競争回避は諦めではなく正しい戦域選択(企業には小さすぎるニッチ・速度・当事者ドメイン知識・コミュニティ信頼の 4 点を確保済み)。「次の課題が見つかるか」への答え: 課題発見は出荷の副産物であり、①フェーズ3 の実ユーザー、②汎用資産化した開発プロセスそのもの、③完走経験による課題感度、の 3 供給源が既にある。</p>
+<blockquote>不安の処方箋は比較ではなく計測 —— マイルストーン消化速度・実ユーザー数・レビュー却下率を自分のログで追うこと。</blockquote>
+
+<hr>
+<p class="note">本レポートは Claude Code とのセッション(リポジトリ規模調査〜AI 開発評価の対話)の要約成果物。数値は 2026-07-25 時点・コミット <code>e608022</code> の計測値。基準の異なる行数(cloc=空行除外 / wc=生行数)が併記されているため比較時は注意。</p>
+
+</main>
+</body>
+</html>

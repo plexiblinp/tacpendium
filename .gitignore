@@ -1,0 +1,115 @@
+# Claude Code 個人ローカル設定
+.claude/settings.local.json
+
+# git worktree(リポジトリ直下配置・並列作業用。wt- 接頭辞の予約名前空間)
+/wt-*/
+
+# Go
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/tacpendium
+tacpendium.exe
+# デバッグビルド(go build -tags=debug の成果物。過去に誤コミットあり)
+/tacpendium_debug
+tacpendium_debug.exe
+# 旧名(M28-01 のリネーム前)のビルド成果物。M26-02 実査で 21MB の未 strip ELF が
+# untracked かつ un-ignored で残っているのを見つけたため追加(git add -A 1 回で入りうる)。
+/combomgr
+combomgr.exe
+/combomgr_debug
+combomgr_debug.exe
+/tmp/
+coverage.out
+coverage.html
+
+# データベースファイル(本番・開発兼用、誤コミット防止)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# ログ
+logs/
+*.log
+
+# Node.js (web/)
+web/node_modules/
+web/dist/
+web/.vite/
+
+# どの階層でも Node.js 生成物を除外（ルート直下での vitest/vite 誤起動対策）
+node_modules/
+.vite/
+
+# Codex ローカル状態（通常は named volume の CODEX_HOME に保存するが、
+# 誤って project .codex 配下へ生成した場合も認証・セッションを追跡しない）
+.codex/auth.json
+.codex/history.jsonl
+.codex/log/
+.codex/sessions/
+.codex/*.sqlite
+.codex/*.sqlite-*
+web/coverage/
+web/tsconfig.tsbuildinfo
+
+# Playwright E2E 成果物
+web/test-results/
+web/playwright-report/
+# E2E 使い捨て DB(playwright.config.ts が TACPENDIUM_DB_PATH で向ける)
+web/e2e/.tmp/
+
+# パッケージマネージャは pnpm を使う(npm の lock を誤って作らない)
+web/package-lock.json
+web/yarn.lock
+
+# 環境変数ファイル
+.env
+.env.*
+!.env.example
+
+# 機密情報ディレクトリ
+secrets/
+
+# 設定ファイル(配布物の競合回避)
+config.toml
+!config.toml.example
+!.codex/config.toml
+
+# IDE・エディタ
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# OS 固有
+Thumbs.db
+desktop.ini
+# Windows NTFS の代替データストリーム残骸(WSL 経由でファイルを持ち込むと生成される)
+*:Zone.Identifier
+
+# ビルド成果物・キャッシュ
+# ★配布アーカイブ(dist/release/ の zip / tar.gz / .sha256)もここに含まれる。
+#   scripts/build-release-archives.sh が都度生成する。★成果物はコミットしない(M36-01)。
+/dist/
+/build/
+/.cache/
+.pnpm-store/
+
+# html保存
+work_html/
+
+# 設計テンプレ集 zip(scripts/generate-template-zip.sh で都度生成。テンプレ本体のみ commit)
+docs/instructions/templates/design-templates.zip
+
+# 他プロジェクト
+combomgr-importer/
+automation-project/
+autopilot-workspace/
+autopilot-combomgr/

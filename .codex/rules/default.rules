@@ -1,0 +1,43 @@
+# These project rules guard escalation requests outside the workspace sandbox.
+# CLAUDE.md section 10 remains the broader policy, including operations that
+# cannot be expressed safely as command-prefix rules.
+
+prefix_rule(
+    pattern = ["git", [
+        "push", "merge", "rebase", "reset", "rm", "checkout", "switch",
+        "tag", "revert", "cherry-pick", "stash", "clean", "restore",
+        "clone", "pull", "fetch", "submodule", "config",
+    ]],
+    decision = "forbidden",
+    justification = "Repository policy reserves remote, branch-changing, destructive, and Git-configuration operations for the developer.",
+    match = ["git push origin main", "git reset --hard HEAD", "git config user.name bot"],
+    not_match = ["git status", "git diff --stat", "git add AGENTS.md", "git commit -m docs"],
+)
+
+prefix_rule(
+    pattern = ["sudo"],
+    decision = "forbidden",
+    justification = "Repository policy forbids agent-initiated sudo; ask the developer to perform the privileged operation.",
+    match = ["sudo apt-get update", "sudo sh script.sh"],
+)
+
+prefix_rule(
+    pattern = [["dd", "fdisk", "parted", "mkfs", "mkfs.ext2", "mkfs.ext3", "mkfs.ext4", "mkfs.xfs"]],
+    decision = "forbidden",
+    justification = "Device and filesystem mutation is forbidden by repository policy.",
+    match = ["dd if=/dev/zero of=/dev/sda", "mkfs.ext4 /dev/sda1", "parted /dev/sda print"],
+)
+
+prefix_rule(
+    pattern = ["chmod", "-R", "777"],
+    decision = "forbidden",
+    justification = "Recursive mode 777 is forbidden; use the least privilege required for an explicit target.",
+    match = ["chmod -R 777 directory"],
+)
+
+prefix_rule(
+    pattern = ["chmod", "777"],
+    decision = "prompt",
+    justification = "World-writable permissions require explicit developer review.",
+    match = ["chmod 777 file"],
+)

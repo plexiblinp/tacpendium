@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CombMgr — 相談全体の未決事項レポート</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #0c0b10;
+    --bg-raised: #16141d;
+    --bg-card: #1b1825;
+    --border: #2c2838;
+    --border-bright: #433c56;
+    --text: #ece8f3;
+    --text-dim: #9a92ab;
+    --text-faint: #5f5870;
+    --accent: #a78bfa;
+    --near: #5ab0ff;
+    --pre: #3fd1a8;
+    --later: #ffb454;
+    --done: #2ed573;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 88% 5%, rgba(167,139,250,0.07), transparent 40%),
+      radial-gradient(circle at 8% 92%, rgba(90,176,255,0.05), transparent 42%);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    line-height: 1.72; min-height: 100vh; padding-bottom: 80px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 22px; }
+
+  header { border-bottom: 1px solid var(--border); padding: 52px 0 30px; }
+  .kicker {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent);
+    margin-bottom: 15px; display: flex; align-items: center; gap: 10px;
+  }
+  .kicker::before { content: ''; width: 28px; height: 1px; background: var(--accent); }
+  h1 { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.16; margin-bottom: 13px; }
+  h1 .mono { font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+  .lead { color: var(--text-dim); font-size: 0.96rem; max-width: 700px; }
+  .lead strong { color: var(--text); }
+  .note { font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-top:15px; padding-left:13px; border-left:2px solid var(--border-bright); }
+
+  /* timeline legend */
+  .legend { display:flex; gap:18px; flex-wrap:wrap; margin:26px 0 6px; font-family:'JetBrains Mono',monospace; font-size:0.73rem; }
+  .lg { display:inline-flex; align-items:center; gap:7px; color:var(--text-dim); }
+  .lg::before { content:''; width:11px; height:11px; border-radius:3px; }
+  .lg.near::before { background: var(--near); }
+  .lg.pre::before { background: var(--pre); }
+  .lg.later::before { background: var(--later); }
+
+  section { margin-top: 44px; scroll-margin-top: 18px; }
+  .sec-head { display:flex; align-items:baseline; gap:12px; margin-bottom:5px; }
+  .sec-num { font-family:'JetBrains Mono',monospace; color:var(--accent); font-size:0.85rem; font-weight:700; }
+  .sec-head h2 { font-size:1.4rem; font-weight:900; letter-spacing:-0.01em; }
+  .sec-desc { color:var(--text-dim); font-size:0.88rem; margin-bottom:18px; padding-bottom:13px; border-bottom:1px dashed var(--border); }
+
+  .item {
+    background: var(--bg-card); border:1px solid var(--border);
+    border-radius:9px; padding:15px 18px; margin-bottom:10px;
+    border-left:3px solid var(--border-bright);
+    display:flex; gap:13px; align-items:flex-start;
+  }
+  .item.near { border-left-color: var(--near); }
+  .item.pre { border-left-color: var(--pre); }
+  .item.later { border-left-color: var(--later); }
+  .item.done { border-left-color: var(--done); opacity: 0.62; }
+  .item.done .item-title { text-decoration: line-through; }
+  .item-tl {
+    font-family:'JetBrains Mono',monospace; font-size:0.58rem; font-weight:700;
+    padding:3px 7px; border-radius:4px; white-space:nowrap; margin-top:2px; letter-spacing:0.04em;
+  }
+  .item-tl.near { background:rgba(90,176,255,0.15); color:var(--near); border:1px solid rgba(90,176,255,0.3); }
+  .item-tl.pre { background:rgba(63,209,168,0.15); color:var(--pre); border:1px solid rgba(63,209,168,0.3); }
+  .item-tl.later { background:rgba(255,180,84,0.15); color:var(--later); border:1px solid rgba(255,180,84,0.3); }
+  .item-tl.done { background:rgba(46,213,115,0.15); color:var(--done); border:1px solid rgba(46,213,115,0.35); }
+  .item-body { flex:1; }
+  .item-title { font-weight:700; font-size:0.96rem; margin-bottom:3px; }
+  .item-desc { color:var(--text-dim); font-size:0.85rem; }
+  .item-desc strong { color:var(--text); font-weight:500; }
+  .item-ref { font-family:'JetBrains Mono',monospace; font-size:0.64rem; color:var(--text-faint); margin-top:4px; }
+
+  .summary { background:var(--bg-raised); border:1px solid var(--border); border-radius:12px; padding:24px 28px; margin-top:14px; }
+  .summary h3 { font-size:1.05rem; font-weight:900; margin-bottom:14px; }
+  .srow { display:flex; gap:13px; padding:10px 0; border-top:1px dashed var(--border); }
+  .srow:first-of-type { border-top:none; }
+  .srow .sn { font-family:'JetBrains Mono',monospace; color:var(--accent); font-weight:700; flex-shrink:0; }
+  .srow .st { font-size:0.87rem; }
+  .srow .st strong { color:var(--text); } .srow .st span { color:var(--text-dim); }
+
+  footer { margin-top:48px; padding-top:24px; border-top:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--text-faint); text-align:center; line-height:2; }
+
+  @media (max-width:600px){ h1{font-size:1.6rem;} .item{flex-direction:column;gap:8px;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Open Issues · Whole Consultation</div>
+    <h1><span class="mono">CombMgr</span> 相談全体の未決事項レポート</h1>
+    <p class="lead">これまでの相談で<strong>保留・先送り・未着手</strong>となった課題の棚卸し。アップデート戦略単体ではなく、<strong>プロジェクト相談全体</strong>を対象とする。各項目に時間軸（直近=友人提供まで / 公開前 / 公開後以降）を付与。</p>
+    <p class="note">これは「決めたこと」の記録ではなく「まだ決めていないこと」の一覧。確定済み事項は各専用資料（チェックリスト/ロードマップ/AI設計/アップデート戦略）を参照。</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="legend">
+    <span class="lg near">直近（友人提供まで）</span>
+    <span class="lg pre">公開前</span>
+    <span class="lg later">公開後・将来</span>
+  </div>
+
+  <!-- A: 保留と明言したもの -->
+  <section id="a">
+    <div class="sec-head"><span class="sec-num">A</span><h2>明示的に「後で」と保留した課題</h2></div>
+    <p class="sec-desc">会話の中で、自分または相談役が「後で」「保留」と明言した項目。</p>
+
+    <div class="item later">
+      <span class="item-tl later">公開後</span>
+      <div class="item-body">
+        <div class="item-title">ユーザーによるデータメンテを楽にする施策</div>
+        <div class="item-desc">キャラデータ更新時に影響を受けるユーザーデータのハイライト、バックアップ/復元のワンクリック化、軽量スナップショット等。<strong>今の設計判断がこれらを阻害しないことだけ意識</strong>。</div>
+        <div class="item-ref">REF: バージョン方針の議論</div>
+      </div>
+    </div>
+
+    <div class="item later">
+      <span class="item-tl later">随時</span>
+      <div class="item-body">
+        <div class="item-title">個人ノートの追加機能候補の仕分け</div>
+        <div class="item-desc">序盤に「共有可能なら見る」と提案したが未実施。その後 AI機能・一人SNS方式で構想が大きく広がったため、<strong>改めて棚卸しする価値あり</strong>（M7取り込み / フェーズ2以降 の仕分け）。</div>
+        <div class="item-ref">REF: 序盤の機能追加議論</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B: 決めたが資料未反映 -->
+  <section id="b">
+    <div class="sec-head"><span class="sec-num">B</span><h2>議論で方向は出たが、資料に未反映の課題</h2></div>
+    <p class="sec-desc">結論や方針は出ているが、まだ専用資料に落とし込んでいないもの。次回の資料更新で反映予定。</p>
+
+    <div class="item near">
+      <span class="item-tl near">直近</span>
+      <div class="item-body">
+        <div class="item-title">ユーザーデータのバージョン対応（要確認マーク）</div>
+        <div class="item-desc">「バージョンが変わると全データが古くなる→一括マーク→フィルタ修正→マーク外し」運用。<strong>案1(タグそのまま)〜案4(ハイブリッド)を提示、未確定</strong>。製造工程で担当と詰める方向。</div>
+        <div class="item-ref">REF: 直近の議論 / アップデート戦略§07関連</div>
+      </div>
+    </div>
+
+    <div class="item near">
+      <span class="item-tl near">直近</span>
+      <div class="item-body">
+        <div class="item-title">初期データ投入方式（INSERT vs インポート統一）</div>
+        <div class="item-desc">案A(INSERT初期投入+インポート追加) と 案B(すべてインポート統一) の<strong>両案を残し、製造工程で決定</strong>と確定済み。パーサーは両形式 or CSV一本かもここで決まる。</div>
+        <div class="item-ref">REF: プロトタイプ提供の議論</div>
+      </div>
+    </div>
+
+    <div class="item done">
+      <span class="item-tl done">✓ 完了</span>
+      <div class="item-body">
+        <div class="item-title">パーサーのCSV出力 & インポート機能の前倒し</div>
+        <div class="item-desc"><strong>完了</strong>。インポート機能を友人提供前に実装済み（追加キャラ要望に対応）。手動入力UIはプロトタイプでは不要のまま。残るB1（要確認マーク）・B2（初期投入方式）は未決のまま。</div>
+        <div class="item-ref">REF: プロトタイプ提供の議論</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: 公開前に必要だが未着手 -->
+  <section id="c">
+    <div class="sec-head"><span class="sec-num">C</span><h2>公開前に必要だが、まだ着手していない課題</h2></div>
+    <p class="sec-desc">方針は決まったが具体的な成果物（文面等）が未作成。公開前までに用意する必要がある。</p>
+
+    <div class="item pre">
+      <span class="item-tl pre">公開前</span>
+      <div class="item-body">
+        <div class="item-title">ライセンス注意事項・免責の文面確定</div>
+        <div class="item-desc">MIT + README注意事項を書くと決定。著作物の所在、カプコン等の判断優先、商用利用の注意、免責、非公式表明に加え、<strong>「問題があれば即座に公開停止し修正する」旨を明記</strong>。事前のカプコン問い合わせは行わない方針に確定（黙認運用＋撤退ラインで備える）ため、問い合わせ関連の課題は本レポートから除去済み。<strong>実際の文面は未作成</strong>。重要部分は専門家確認推奨。</div>
+        <div class="item-ref">REF: ライセンス議論</div>
+      </div>
+    </div>
+
+    <div class="item pre">
+      <span class="item-tl pre">先行リリース前</span>
+      <div class="item-body">
+        <div class="item-title">先行リリースのフィードバック設計</div>
+        <div class="item-desc">Google Form推奨と方向は出たが、<strong>何を・どう聞くかの質問設計は未着手</strong>。使い勝手・つまずき箇所を取れる設計に。</div>
+        <div class="item-ref">REF: 先行リリース議論</div>
+      </div>
+    </div>
+
+    <div class="item pre">
+      <span class="item-tl pre">公開前</span>
+      <div class="item-body">
+        <div class="item-title">依存ライブラリのライセンス表記（クレジット）</div>
+        <div class="item-desc">多数のOSSを使うため、各ライブラリのライセンス表記・クレジットの集約が必要。<strong>未議論</strong>。</div>
+        <div class="item-ref">REF: 新規（本レポートで初出）</div>
+      </div>
+    </div>
+
+    <div class="item pre">
+      <span class="item-tl pre">AI機能実装時</span>
+      <div class="item-body">
+        <div class="item-title">プライバシー記述（AI機能でメモが外部送信される件）</div>
+        <div class="item-desc">「明示する」と方針は出たが<strong>文面化せず</strong>。ユーザーのメモが外部AIに送られる旨の告知・同意。ローカルLLM選択肢の案内も。</div>
+        <div class="item-ref">REF: AI設計§3-5</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: 凍結シナリオ -->
+  <section id="d">
+    <div class="sec-head"><span class="sec-num">D</span><h2>凍結シナリオ関連</h2></div>
+    <p class="sec-desc">公開を諦める場合の備え。発生確率は下がったが、選択肢として保持。</p>
+
+    <div class="item later">
+      <span class="item-tl later">条件次第</span>
+      <div class="item-body">
+        <div class="item-title">凍結時のアウトプット内容（ブログ・記事等）</div>
+        <div class="item-desc">「並行で考え始める」としたが具体化せず。個人開発×著作権の壁、AI駆動開発の知見、技術アーキテクチャ（データ非含有部分）。<strong>転職スキル証明の素材にもなる</strong>。</div>
+        <div class="item-ref">REF: 凍結シナリオ議論</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- E: まだ議論していない -->
+  <section id="e">
+    <div class="sec-head"><span class="sec-num">E</span><h2>まだ議論していない課題（将来必要）</h2></div>
+    <p class="sec-desc">一度も、または軽くしか触れていない領域。いずれ必要になる。</p>
+
+    <div class="item later">
+      <span class="item-tl later">公開後</span>
+      <div class="item-body">
+        <div class="item-title">ユーザーサポート・Issue対応の線引き</div>
+        <div class="item-desc">どこまで対応するか、何を「サポート外」とするか。OSS運営の負荷に直結。個人OSSとして持続可能な範囲を決める。<strong>未議論</strong>。</div>
+        <div class="item-ref">REF: 新規</div>
+      </div>
+    </div>
+
+    <div class="item pre">
+      <span class="item-tl pre">配布設計</span>
+      <div class="item-body">
+        <div class="item-title">アンインストール時のデータ扱い</div>
+        <div class="item-desc">ユーザーデータを残すか消すか。データ保管場所（%APPDATA%）の設計と関連。<strong>未議論</strong>。</div>
+        <div class="item-ref">REF: 新規（データ維持議論の隣接）</div>
+      </div>
+    </div>
+
+    <div class="item later">
+      <span class="item-tl later">設計詰め</span>
+      <div class="item-body">
+        <div class="item-title">ゲスト権限の細かい境界・アクセス制御の詰め</div>
+        <div class="item-desc">「LAN内ゲストは閲覧+自分のいいね/コメントのみ」の境界を、各API・各操作で厳密に。認可境界（セキュリティ議論）と連動。<strong>方針はあるが詳細未定</strong>。</div>
+        <div class="item-ref">REF: セキュリティ議論 / 画面設計</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- summary -->
+  <section id="summary">
+    <div class="sec-head"><span class="sec-num">★</span><h2>今すぐ着手すべき順</h2></div>
+    <div class="summary">
+      <div class="srow"><span class="sn">1</span><span class="st"><strong>直近（友人提供まで）</strong> <span>B1 要確認マーク方針 / B2 初期投入方式（いずれも未決・製造で確定）　｜　B3 パーサー・インポート前倒し = ✓完了</span></span></div>
+      <div class="srow"><span class="sn">2</span><span class="st"><strong>公開前</strong> <span>C1 ライセンス文面（即時公開停止の明記含む） / C2 フィードバック設計 / C3 依存ライセンス表記 / C4 プライバシー記述</span></span></div>
+      <div class="srow"><span class="sn">3</span><span class="st"><strong>公開後・将来</strong> <span>A1 メンテ支援 / D 凍結アウトプット / E1 サポート方針 / E3 ゲスト権限詰め</span></span></div>
+      <div class="srow"><span class="sn">◎</span><span class="st"><strong>随時</strong> <span>A2 個人ノートの追加機能候補の棚卸し（構想が広がったので再整理の価値あり）</span></span></div>
+    </div>
+  </section>
+
+  <footer>
+    CombMgr Open Issues Report — 相談全体の未決事項<br>
+    確定事項は各専用資料を参照 / これは「まだ決めていないこと」の棚卸し
+  </footer>
+
+</div>
+
+</body>
+</html>

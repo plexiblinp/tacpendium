@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ペルソナ／視点・体験分析フレームワーク — 検討用リサーチノート</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#fafaf8; --surface:#ffffff; --border:#e4e2dc; --border-strong:#d0cdc4;
+    --text:#2a2925; --text-dim:#6b6862; --text-faint:#9a968d;
+    --accent:#3d6b5e; --accent-soft:#eef3f1; --human:#b5763a; --human-soft:#f7efe5;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Zen Kaku Gothic New',sans-serif;line-height:1.85;font-size:15px;}
+  .wrap{max-width:780px;margin:0 auto;padding:0 24px;}
+  header{padding:64px 0 32px;border-bottom:1px solid var(--border);}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;}
+  h1{font-size:1.7rem;font-weight:700;line-height:1.4;margin-bottom:14px;letter-spacing:-0.01em;}
+  .meta{color:var(--text-faint);font-size:0.8rem;font-family:'JetBrains Mono',monospace;}
+  .summary{color:var(--text-dim);font-size:1rem;margin-top:14px;}
+  .summary strong{color:var(--text);font-weight:500;}
+  section{padding:36px 0;border-bottom:1px solid var(--border);}
+  h2{font-size:1.2rem;font-weight:700;margin-bottom:6px;letter-spacing:-0.01em;}
+  h2 .n{font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--accent);margin-right:10px;}
+  .sub{color:var(--text-faint);font-size:0.84rem;margin-bottom:20px;}
+  p{margin-bottom:13px;color:var(--text-dim);}
+  p strong,li strong{color:var(--text);font-weight:500;}
+  .definition{background:var(--accent-soft);border-left:3px solid var(--accent);padding:18px 22px;border-radius:0 6px 6px 0;margin:22px 0;font-size:1.0rem;color:var(--text);}
+  .definition .label{font-family:'JetBrains Mono',monospace;font-size:0.66rem;letter-spacing:0.1em;color:var(--accent);display:block;margin-bottom:6px;}
+  .item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:12px;}
+  .item-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+  .item-name{font-weight:700;font-size:1rem;}
+  .item-orig{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--text-faint);letter-spacing:0.03em;}
+  .item-desc{color:var(--text-dim);font-size:0.92rem;margin-bottom:6px;}
+  .item-use{font-size:0.88rem;color:var(--text);background:var(--accent-soft);border-radius:6px;padding:8px 12px;}
+  .item-use::before{content:'→ 活かし方  ';font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--accent);letter-spacing:0.04em;}
+  ol{margin:8px 0 8px 4px;list-style:none;counter-reset:r;}
+  ol li{padding:6px 0 6px 30px;position:relative;color:var(--text-dim);}
+  ol li::before{counter-increment:r;content:counter(r);position:absolute;left:0;top:6px;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#fff;background:var(--accent);width:20px;height:20px;border-radius:50%;text-align:center;line-height:20px;}
+  ol li strong{color:var(--text);}
+  .skip{background:var(--human-soft);border-left:3px solid var(--human);padding:14px 18px;border-radius:0 6px 6px 0;margin-top:14px;font-size:0.9rem;color:var(--text);}
+  .skip .label{font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;color:var(--human);display:block;margin-bottom:4px;}
+  footer{padding:30px 0 56px;color:var(--text-faint);font-size:0.8rem;font-family:'JetBrains Mono',monospace;text-align:center;}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Research Note · For Future Consideration</div>
+    <h1>ペルソナ／視点・体験分析<br>フレームワーク — 検討用リサーチノート</h1>
+    <div class="meta">Tacpendium ／ 種別: リサーチノート（検討材料・未決定）</div>
+    <p class="summary">本アプリの「ペルソナ」はマーケティングの顧客ペルソナというより、<strong>複数の視点・立場で考えるための仕組み</strong>（使う側／対策側・◯◯使い 等）。よって関連手法も「人物像を作る系」より「<strong>視点・体験・動機を構造化する系</strong>」が効く。本書は将来的な機能組込の<strong>検討材料</strong>として、確立されたフレームワークを性質別に整理した出発点であり、決定ではない。</p>
+  </div>
+</header>
+<div class="wrap">
+
+<section>
+  <h2><span class="n">01</span>人物像をつくる系（土台）</h2>
+  <div class="item">
+    <div class="item-head"><span class="item-name">ペルソナ</span><span class="item-orig">Alan Cooper</span></div>
+    <div class="item-desc">ゴール指向で代表的ユーザー像を作る元祖。属性の羅列より「何を達成したいか」を軸にするのが本来の趣旨。</div>
+    <div class="item-use">「立場」ごとに何を達成したいか（勝ちたい・覚えたい・整理したい）を言語化する土台に。</div>
+  </div>
+  <div class="item">
+    <div class="item-head"><span class="item-name">プロトペルソナ／Lean Persona</span></div>
+    <div class="item-desc">仮説ベースで素早く作り、データで直していく軽量版。重い調査を前提にしない。</div>
+    <div class="item-use">個人開発・先行リリースで、実ユーザーの声を聞きながら回す現実的な形。</div>
+  </div>
+  <div class="item">
+    <div class="item-head"><span class="item-name">エンパシーマップ</span><span class="item-orig">Dave Gray</span></div>
+    <div class="item-desc">ある視点が「言う／思う／する／感じる・痛み／得たいもの」を1枚に可視化する。</div>
+    <div class="item-use">「対◯◯戦」ごとに作り、その立場のペインと欲求を整理する使い方ができる。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>時間軸でみる系（＝「ジャーニー」）</h2>
+  <p class="sub">探していた「なんとかジャーニー」はこの系統。</p>
+  <div class="item">
+    <div class="item-head"><span class="item-name">カスタマー／ユーザージャーニーマップ</span></div>
+    <div class="item-desc">段階 ×（行動・思考・感情・接点）で並べ、詰まる箇所（ペイン）を見つける。</div>
+    <div class="item-use"><strong>上達ジャーニー</strong>（初心者→中級→上級）や、<strong>対戦カードを攻略していく過程</strong>として使える。スレッド構造と相性が良い。</div>
+  </div>
+  <div class="item">
+    <div class="item-head"><span class="item-name">エクスペリエンスマップ</span></div>
+    <div class="item-desc">特定製品に限らない、より広い体験全体の地図。</div>
+    <div class="item-use">「格ゲーで上達する体験」全体を俯瞰して、アプリが関わる範囲を位置づける。</div>
+  </div>
+  <div class="item">
+    <div class="item-head"><span class="item-name">サービスブループリント</span></div>
+    <div class="item-desc">ジャーニーに「裏側の処理（バックステージ）」を足したもの。組織・サービス設計向け。</div>
+    <div class="item-use">個人開発にはやや過剰。今は見送り候補。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>動機・ジョブでみる系</h2>
+  <div class="item">
+    <div class="item-head"><span class="item-name">ジョブ理論 / JTBD</span><span class="item-orig">Christensen · Ulwick · Moesta</span></div>
+    <div class="item-desc">「人は用事（ジョブ）を片付けるために製品を雇う」。人物属性より、片付けたい用事と成果を見る。属性ペルソナ批判の文脈で広がった考え方。</div>
+    <div class="item-use">機能を「どんな用事を片付けるか」で評価できる。投稿・まとめAIが片付ける用事を定義する。</div>
+  </div>
+  <div class="item">
+    <div class="item-head"><span class="item-name">ジョブストーリー</span><span class="item-orig">Alan Klement</span></div>
+    <div class="item-desc">「<strong>◯◯のとき、××したい、なぜなら△△だから</strong>」という型。ペルソナを薄くし、状況と動機で書く。</div>
+    <div class="item-use">投稿テンプレや「なぜ書いたか」の型に。例：「対戦直前のとき、削り殺せるか即判断したい、勝ち切るため」。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>複数視点で考える系（本アプリに最も近い）</h2>
+  <div class="item">
+    <div class="item-head"><span class="item-name">シックスハット法</span><span class="item-orig">Edward de Bono</span></div>
+    <div class="item-desc">同じ対象を、役割（帽子）を切り替えて多面的に検討する手法。</div>
+    <div class="item-use">「視点を切り替えて投稿する」「AIがもう一つの視点を足す」という本アプリの設計そのものに近い。</div>
+  </div>
+  <div class="item">
+    <div class="item-head"><span class="item-name">メンタルモデル・ダイアグラム</span><span class="item-orig">Indi Young</span></div>
+    <div class="item-desc">ユーザーの思考・行動を束ねて構造化し、機能と対応づける。属性でなく「行動・思考スタイル」で分けるのが特徴。</div>
+    <div class="item-use">蓄積した知見を整理する入れ物として相性が良い。行動で分ける発想は、本アプリの「視点＝立場」分類と同根。</div>
+  </div>
+  <div class="item">
+    <div class="item-head"><span class="item-name">レッドチーム／悪魔の代弁者／スティールマン</span></div>
+    <div class="item-desc">あえて反対視点から検証する型（最強の反論をこちらが作るのがスティールマン）。</div>
+    <div class="item-use">AIの「建設的批判の返信」や、対策側ペルソナの自動生成を設計するときの下敷き。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>本アプリに入れるなら（優先度つき・私見）</h2>
+  <ol>
+    <li><strong>ジョブストーリー</strong> — 投稿テンプレ／まとめAIへの入力骨子として軽くて効く。実装コスト最小。</li>
+    <li><strong>上達ジャーニー（簡易ジャーニーマップ）</strong> — 知見を時間軸で並べる見せ方。スレッド構造と相性が良い。</li>
+    <li><strong>シックスハット的な視点切替＋AI別視点</strong> — すでに設計に芽がある。ペルソナ重み付けの理屈づけにも使える。</li>
+  </ol>
+  <div class="skip">
+    <span class="label">今は見送り</span>
+    サービスブループリント・重厚な顧客ペルソナは、個人・非営利の規模に対して過剰。必要になってから。
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>位置づけ・注意</h2>
+  <p>本書は、自分で再調査するための<strong>出発点</strong>。各手法の現在のベストプラクティスや具体的な作り方は、一次情報で確認すること。組込はいずれも<strong>将来の検討事項であり確定ではない</strong>。</p>
+</section>
+
+</div>
+<footer>
+  <div class="wrap">Tacpendium — Persona / Viewpoint &amp; Experience Frameworks · Research Note</div>
+</footer>
+</body>
+</html>

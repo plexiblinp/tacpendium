@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tacpendium Manufacturing"
+  short_description: "Run shared implementation, test, and review workflows"
+  default_prompt: "Use $tacpendium-manufacturing-workflow to run the requested manufacturing workflow."

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tacpendium — 知人リリースまでのチェックリスト</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --bg-raised: #161b22;
+    --bg-card: #1a2029;
+    --border: #2a3038;
+    --border-bright: #3a424d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --text-faint: #565d68;
+    --accent: #ff5c38;
+    --accent-dim: #c2401f;
+    --p0: #ff4757;
+    --p1: #ffa502;
+    --p2: #2ed573;
+    --p3: #54a0ff;
+    --done: #2ea043;
+    --done-bg: #132d1c;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(255,92,56,0.06), transparent 35%),
+      radial-gradient(circle at 85% 90%, rgba(84,160,255,0.05), transparent 40%);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---- Header ---- */
+  header {
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(22,27,34,0.8), transparent);
+    padding: 48px 0 32px;
+    margin-bottom: 8px;
+  }
+  .kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .kicker::before {
+    content: '';
+    width: 28px; height: 1px;
+    background: var(--accent);
+  }
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  h1 .mono { font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+  .lead {
+    color: var(--text-dim);
+    font-size: 0.98rem;
+    max-width: 620px;
+  }
+  .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    margin-top: 18px;
+  }
+
+  /* ---- Progress ---- */
+  .progress-panel {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin: 28px 0;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .progress-ring { position: relative; width: 76px; height: 76px; flex-shrink: 0; }
+  .progress-ring svg { transform: rotate(-90deg); }
+  .progress-ring .pct {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 1.05rem;
+  }
+  .progress-info { flex: 1; min-width: 200px; }
+  .progress-info .count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem; font-weight: 700;
+  }
+  .progress-info .count span { color: var(--text-faint); font-size: 1.1rem; }
+  .progress-info .label { color: var(--text-dim); font-size: 0.85rem; }
+  .reset-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    background: transparent;
+    border: 1px solid var(--border-bright);
+    color: var(--text-dim);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---- Filters ---- */
+  .filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+    position: sticky;
+    top: 0;
+    background: rgba(13,17,23,0.92);
+    backdrop-filter: blur(8px);
+    padding: 14px 0;
+    z-index: 20;
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 7px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.18s;
+    letter-spacing: 0.03em;
+  }
+  .filter-btn:hover { border-color: var(--border-bright); color: var(--text); }
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 700;
+  }
+  .filter-btn.active.hide-done { background: var(--done); border-color: var(--done); }
+
+  /* ---- Phase / Section ---- */
+  .phase {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 40px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .phase .phase-num { color: var(--accent); font-weight: 700; }
+  .phase .phase-jp { font-family: 'Zen Kaku Gothic New', sans-serif; color: var(--text); font-size: 0.92rem; letter-spacing: 0.05em; }
+
+  /* ---- Task Card ---- */
+  .task {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border-bright);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 14px;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+  .task:hover { border-color: var(--border-bright); transform: translateX(2px); }
+  .task[data-prio="P0"] { border-left-color: var(--p0); }
+  .task[data-prio="P1"] { border-left-color: var(--p1); }
+  .task[data-prio="P2"] { border-left-color: var(--p2); }
+  .task[data-prio="P3"] { border-left-color: var(--p3); }
+
+  .task.done {
+    background: var(--done-bg);
+    border-color: rgba(46,160,67,0.3);
+    border-left-color: var(--done);
+    opacity: 0.6;
+  }
+  .task.done .task-title { text-decoration: line-through; color: var(--text-dim); }
+
+  .checkbox {
+    width: 22px; height: 22px;
+    border: 2px solid var(--border-bright);
+    border-radius: 6px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .task:hover .checkbox { border-color: var(--accent); }
+  .task.done .checkbox {
+    background: var(--done);
+    border-color: var(--done);
+  }
+  .checkbox svg { width: 14px; height: 14px; opacity: 0; transition: opacity 0.2s; }
+  .task.done .checkbox svg { opacity: 1; }
+
+  .task-body { flex: 1; }
+  .task-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .task-title { font-weight: 700; font-size: 0.98rem; }
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.08em;
+  }
+  .badge.P0 { background: rgba(255,71,87,0.15); color: var(--p0); border: 1px solid rgba(255,71,87,0.3); }
+  .badge.P1 { background: rgba(255,165,2,0.15); color: var(--p1); border: 1px solid rgba(255,165,2,0.3); }
+  .badge.P2 { background: rgba(46,213,115,0.15); color: var(--p2); border: 1px solid rgba(46,213,115,0.3); }
+  .badge.P3 { background: rgba(84,160,255,0.15); color: var(--p3); border: 1px solid rgba(84,160,255,0.3); }
+  .badge.cat {
+    background: transparent;
+    color: var(--text-faint);
+    border: 1px solid var(--border-bright);
+  }
+  .task-desc { color: var(--text-dim); font-size: 0.86rem; }
+  .task-desc strong { color: var(--text); font-weight: 500; }
+
+  /* ---- Note callout ---- */
+  .note {
+    background: rgba(255,92,56,0.06);
+    border: 1px solid rgba(255,92,56,0.2);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 16px 0 24px;
+    font-size: 0.86rem;
+    color: var(--text-dim);
+  }
+  .note strong { color: var(--accent); }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    text-align: center;
+    line-height: 2;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 1.8rem; }
+    .progress-panel { gap: 16px; }
+    .phase { flex-direction: column; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Release Readiness · Private Beta</div>
+    <h1><span class="mono">Tacpendium</span> 知人リリースまでに必要なこと</h1>
+    <p class="lead">M7 完成から知人・友人への先行リリース（α→β）までに対応すべき項目の一覧。チェックは自動保存され、優先度・カテゴリで絞り込めます。</p>
+    <div class="meta">SCOPE: requirements / tech-stack / screen-design 反映済 — 最終更新: 2026-05-29</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Progress -->
+  <div class="progress-panel">
+    <div class="progress-ring">
+      <svg width="76" height="76">
+        <circle cx="38" cy="38" r="32" fill="none" stroke="#2a3038" stroke-width="6"/>
+        <circle id="ring" cx="38" cy="38" r="32" fill="none" stroke="#ff5c38" stroke-width="6"
+                stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="201"/>
+      </svg>
+      <div class="pct" id="pct">0%</div>
+    </div>
+    <div class="progress-info">
+      <div class="count"><span id="doneCount">0</span><span> / <span id="totalCount">0</span> 完了</span></div>
+      <div class="label">完了するとカードが緑になり下部に沈みます</div>
+    </div>
+    <button class="reset-btn" id="resetBtn">RESET ALL</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="all">すべて</button>
+    <button class="filter-btn" data-filter="P0">P0 最優先</button>
+    <button class="filter-btn" data-filter="P1">P1 重要</button>
+    <button class="filter-btn" data-filter="P2">P2 推奨</button>
+    <button class="filter-btn" data-filter="P3">P3 任意</button>
+    <button class="filter-btn hide-done" data-filter="hide-done" id="hideDoneBtn">完了を隠す</button>
+  </div>
+
+  <div id="taskList"></div>
+
+  <div class="empty-state" id="emptyState">該当する項目はありません</div>
+
+  <footer>
+    Tacpendium Release Checklist — 状態はこのブラウザにローカル保存されます<br>
+    優先度: P0=リリース前必須 / P1=リリース前に強く推奨 / P2=あると望ましい / P3=余裕があれば
+  </footer>
+
+</div>
+
+<script>
+  const TASKS = [
+    // ===== PHASE: 法務・データ方針 =====
+    { phase: "法務・データ方針", prio: "P0", cat: "法務", title: "データソース方針の確定（同梱配布・グレーゾーン依拠）",
+      desc: "キャラクターデータは<strong>アプリが同梱配布する</strong>。CAPCOM著作物のグレーゾーンと認識した上で、個人非営利・小規模ゆえ大きな問題化はしないと判断。同種のフレームデータ利用アプリや、より問題含みの画像転用アプリも黙認されている前例に基づく。カプコン回答を待つ前提は撤回。" },
+    { phase: "法務・データ方針", prio: "P0", cat: "法務", title: "カプコンへの事前問い合わせは行わない（方針確定）",
+      desc: "藪蛇を避けるため<strong>事前の問い合わせはしない</strong>。旧『フェーズ1完成後に問い合わせ文面を送る』案は破棄。黙認運用＋下記の撤退ラインで備える。リスク認識は削除要請ベース（通達が来たら止める）で一貫させる。" },
+    { phase: "法務・データ方針", prio: "P0", cat: "法務", title: "README 注意書き・免責文面の作成（未着手）",
+      desc: "MIT + README注意事項。著作物の所在、カプコン等の判断優先、商用利用の注意、免責、非公式表明に加え、<strong>「問題があれば即座に公開停止し修正する」旨を明記</strong>。実際の文面は未作成。重要部分は専門家確認を推奨。" },
+    { phase: "法務・データ方針", prio: "P1", cat: "設計", title: "撤退ライン＝データ層と機能層の分離を維持",
+      desc: "CAPCOMから通達があれば<strong>即データ配信を停止し、ユーザー入力方式へ切り替える</strong>。これを可能にするため、DBスキーマレベルでデータと機能を疎結合に保ち、データ配布を止めてもアプリ本体は無傷で動く構造を維持する（切替コスト最小化）。" },
+    { phase: "法務・データ方針", prio: "P0", cat: "データ", title: "データ出所の二系統運用（公開版=手入力seed / 友人版=公式取込）",
+      desc: "<strong>公開版</strong>：開発者がインゲームで観測した<strong>手入力 seed を同梱</strong>。公式Webデータの直接利用・配布はしない。インポーターは公開版に同梱・宣伝しない。<strong>友人版（プライベート）</strong>：公式データ＋インポーターを使い、インポーターは私有に残す（出力は手入力版の数値クロスチェック用）。中核原則は<strong>「事実は入れ、表現は持ち込まない」</strong>（数値は可／公式の文章・画像・アイコン・公式名称文字列・配列は不可）。技識別子は表記ベース志向。詳細は決定記録 framedata-legal-decision。" },
+    { phase: "法務・データ方針", prio: "P1", cat: "データ", title: "手入力前提のスキーマ整理＋入力/共有ツール（設計担当と協議）",
+      desc: "公開版の手入力 seed 化に伴い、<strong>公式Web取得前提の列・未使用の投機列を整理</strong>（nullable化／削除。破壊的変更はデータ蓄積前に慎重に）。<strong>確反・ダメージ計算が要る列は残す</strong>。負担軽減のため主要キャラのみseed＋需要駆動入力＋高速入力ツール。仕様は設計担当と別途。" },
+
+    // ===== PHASE: MVP仕上げ (M7) =====
+    { phase: "MVP仕上げ (M7)", prio: "P0", cat: "実装", title: "M7 完成（レスポンシブ・i18n・UI統一）",
+      desc: "レスポンシブは<strong>LANスマホの実機検証が必須</strong>。デザイン不統一の改善もM7に統合。新機能（セットプレイ提案・確定反撃等）はフェーズ2へ送る。" },
+    { phase: "MVP仕上げ (M7)", prio: "P2", cat: "実装", title: "タスクトレイ常駐 + Web UIからの停止ボタン",
+      desc: "黒窓を出さず、簡単に停止できる構成。当面Windows中心。実装詳細は担当チャットへ。" },
+
+    // ===== PHASE: 品質向上フェーズ =====
+    { phase: "品質向上フェーズ", prio: "P0", cat: "品質", title: "全体コードの棚卸し",
+      desc: "把握できていない箇所をリスト化。<strong>認証周り・データ書き込み・外部入力を受ける箇所</strong>を最優先で読む。AIの説明を鵜呑みにせず自分で検証。" },
+    { phase: "品質向上フェーズ", prio: "P0", cat: "セキュリティ", title: "認可境界の網羅的確認（最重要）",
+      desc: "全APIで認証チェック。<strong>ID改変で他人のリソースに触れないか（IDOR）</strong>。「LAN内なら信頼」と「ゲストは閲覧専用」がコード上で両立しているか実リクエストで確認。" },
+    { phase: "品質向上フェーズ", prio: "P0", cat: "セキュリティ", title: "管理者認証の堅牢化",
+      desc: "初期パスワードのハードコードがないか。保存はハッシュ+salt（bcrypt等）。総当たり対策（試行回数上限）。" },
+    { phase: "品質向上フェーズ", prio: "P0", cat: "セキュリティ", title: "入力検証の網羅",
+      desc: "全フォームで最大長・許可文字・範囲チェック。特殊文字（HTMLタグ・改行・null・Unicode）。フレーム数のマイナス値等の異常値。" },
+    { phase: "品質向上フェーズ", prio: "P0", cat: "セキュリティ", title: "ファイル操作の安全性（パストラバーサル）",
+      desc: "CSVインポート時のパス検証、エクスポート先の制限、ファイルサイズ上限、拡張子だけでなく内容も検証。" },
+    { phase: "品質向上フェーズ", prio: "P0", cat: "セキュリティ", title: "秘密情報の混入チェック",
+      desc: "git全履歴をgrep。設定テンプレに本物が混ざっていないか。ビルド時の埋め込みでも残らないか。" },
+    { phase: "品質向上フェーズ", prio: "P1", cat: "セキュリティ", title: "静的解析ツールの導入（レベル1）",
+      desc: "<strong>Semgrep CE + gosec + govulncheck + Gitleaks + npm audit</strong>。AIが苦手なパターン系を確実にカバー。カスタムコマンド化して資産にする。" },
+    { phase: "品質向上フェーズ", prio: "P1", cat: "品質", title: "テスト品質の確認",
+      desc: "既存テストが実質何を検証しているかサンプリング確認。コンボCRUD・比較ロジック・永続化の網羅性。エッジケース追加。" },
+    { phase: "品質向上フェーズ", prio: "P1", cat: "セキュリティ", title: "エラーハンドリングと情報漏洩",
+      desc: "スタックトレースをユーザーに返さない。ログにパスワード・トークンが出ない。エラーメッセージでユーザー列挙を許さない。" },
+    { phase: "品質向上フェーズ", prio: "P1", cat: "セキュリティ", title: "CSRF対策の最低限",
+      desc: "「LAN内だから不要」は誤り。別タブの悪意あるサイトからlocalhostへPOSTが飛ぶ。SameSite Cookie等の最低限の対策を入れる。" },
+    { phase: "品質向上フェーズ", prio: "P2", cat: "品質", title: "リファクタリング（重複・命名・一貫性）",
+      desc: "似た処理の統合、命名規則の統一、マジックナンバーの定数化。AIに重複・不統一箇所を指摘させ、自分で判断。" },
+    { phase: "品質向上フェーズ", prio: "P2", cat: "品質", title: "パフォーマンス実測",
+      desc: "DBクエリ100ms以内（NFR001）、メモリ使用量（NFR002）を実測。modernc.org/sqliteの書き込み性能が実用範囲か確認。" },
+    { phase: "品質向上フェーズ", prio: "P2", cat: "セキュリティ", title: "データ破壊リスクの確認",
+      desc: "DBマイグレーションの安全性、強制終了時の整合性、バックアップ・リストア手段、データが消える経路の洗い出し。" },
+
+    // ===== PHASE: 配布準備 =====
+    { phase: "配布準備", prio: "P0", cat: "配布", title: "ウイルス誤検知対策",
+      desc: "バイナリにメタデータ埋め込み（goversioninfo）。<strong>UPX等の圧縮は使わない</strong>。versioned命名。書き込み先は%APPDATA%配下。" },
+    { phase: "配布準備", prio: "P0", cat: "配布", title: "GitHub Releaseからの配布 + 検証情報",
+      desc: "自前サーバーや怪しい共有を使わない。<strong>SHA256をReleaseノートに記載</strong>。VirusTotalで事前スキャンし結果リンクを貼る。" },
+    { phase: "配布準備", prio: "P0", cat: "セキュリティ", title: "GitHub 2FA + サプライチェーン対策",
+      desc: "GitHub 2FA+パスキー。Dependabot有効化。CIでgovulncheck/npm audit。Actionはcommit hash固定。<strong>ビルドはActionsで実施</strong>（手元PCからアップロードしない）。" },
+    { phase: "配布準備", prio: "P1", cat: "配布", title: "各OSでのインストール・起動・終了の検証",
+      desc: "当面Windows中心。主要AV（Defender/ESET/Norton）で実機確認。SmartScreen・ファイアウォール・Defenderの挙動を把握。" },
+    { phase: "配布準備", prio: "P1", cat: "実装", title: "起動失敗・ポート競合時の親切なエラー",
+      desc: "ポート衝突時は自動で別ポートor設定変更可能に。ブラウザ自動起動失敗時はアクセス先URLを明示。エラーは日本語でわかりやすく。" },
+    { phase: "配布準備", prio: "P2", cat: "セキュリティ", title: "LAN内IP範囲のみ受け付ける安全網",
+      desc: "ユーザーが誤ってポート開放した場合の防御線。ローカルIP範囲外を弾く設定。0.0.0.0リッスン時に起動アドレスを表示。" },
+
+    // ===== PHASE: ドキュメント・受け入れ体制 =====
+    { phase: "ドキュメント・受け入れ体制", prio: "P0", cat: "ドキュメント", title: "README トラブルシューティング章",
+      desc: "SmartScreen・ファイアウォール・Defenderの対処を<strong>スクリーンショット付き</strong>で。非エンジニアが自力で越えられるように。" },
+    { phase: "ドキュメント・受け入れ体制", prio: "P1", cat: "ドキュメント", title: "利用環境の前提を明記",
+      desc: "「家庭内LAN・個人利用前提」「通信は暗号化されていない(HTTP)」「ルーター等の安全確保はユーザー責任」「インターネット公開は想定外」を明示。" },
+    { phase: "ドキュメント・受け入れ体制", prio: "P1", cat: "ドキュメント", title: "5分で試せるチュートリアル",
+      desc: "最初に試してほしい操作を書いた触り方ガイド。既知の制約・未実装機能リストも添えて期待値を調整。" },
+    { phase: "ドキュメント・受け入れ体制", prio: "P1", cat: "運用", title: "フィードバック収集チャネルの準備",
+      desc: "非エンジニア相手なら<strong>Google Form推奨</strong>。何を聞きたいか（使い勝手・つまずき箇所）を設計しておく。" },
+    { phase: "ドキュメント・受け入れ体制", prio: "P2", cat: "運用", title: "友人への事前説明",
+      desc: "「将来公開する可能性／その時データが抜ける可能性」を先に伝える。フィードバックを公開版に使う許可も得ておく。" },
+
+    // ===== PHASE: 先行リリース実施 =====
+    { phase: "先行リリース実施", prio: "P0", cat: "運用", title: "段階的配布: α（IT知人 1〜2名）",
+      desc: "配布・インストール手順の検証、明らかなバグ潰し。<strong>ここで配布周りの事故を潰してからβへ</strong>。" },
+    { phase: "先行リリース実施", prio: "P1", cat: "運用", title: "段階的配布: β1（PC操作慣れた友人 2〜3名）",
+      desc: "コア機能の使い勝手、コンボ登録ワークフローのフィードバック。" },
+    { phase: "先行リリース実施", prio: "P1", cat: "運用", title: "段階的配布: β2（カジュアル含む友人）",
+      desc: "LANスマホ閲覧、初回ウィザード、設定画面の分かりやすさを観察。指示なしで使えるかを見る。" },
+    { phase: "先行リリース実施", prio: "P2", cat: "運用", title: "友人のメインキャラを事前ヒアリング",
+      desc: "友人が使うキャラを事前に聞き、<strong>初期データ（INSERT）として同梱して渡す</strong>（データ同梱方針に準拠）。テストの価値が上がる。追加キャラ要望にはインポート機能で対応。" },
+    { phase: "先行リリース実施", prio: "P3", cat: "運用", title: "完成後の休息期間を確保",
+      desc: "体調を崩した経緯あり。完成≠ゴール。1週間程度コードから離れ、その後は持続可能なペースへ。燃え尽き防止。" },
+  ];
+
+  const STORAGE_KEY = 'combmgr-release-checklist-v1';
+  let state = {};
+  try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { state = {}; }
+
+  let activeFilter = 'all';
+  let hideDone = false;
+
+  const listEl = document.getElementById('taskList');
+  const emptyEl = document.getElementById('emptyState');
+
+  function taskId(t, i) { return 'task-' + i; }
+
+  function render() {
+    listEl.innerHTML = '';
+    let currentPhase = null;
+    let visibleCount = 0;
+
+    TASKS.forEach((t, i) => {
+      const id = taskId(t, i);
+      const done = !!state[id];
+
+      // filter logic
+      if (activeFilter !== 'all' && t.prio !== activeFilter) return;
+      if (hideDone && done) return;
+
+      visibleCount++;
+
+      if (t.phase !== currentPhase) {
+        currentPhase = t.phase;
+        const ph = document.createElement('div');
+        ph.className = 'phase';
+        const phaseIndex = [...new Set(TASKS.map(x => x.phase))].indexOf(t.phase) + 1;
+        ph.innerHTML = '<span class="phase-num">' + String(phaseIndex).padStart(2,'0') + '</span><span class="phase-jp">' + t.phase + '</span>';
+        listEl.appendChild(ph);
+      }
+
+      const card = document.createElement('div');
+      card.className = 'task' + (done ? ' done' : '');
+      card.dataset.prio = t.prio;
+      card.innerHTML =
+        '<div class="checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+        '<div class="task-body">' +
+          '<div class="task-head">' +
+            '<span class="task-title">' + t.title + '</span>' +
+            '<span class="badge ' + t.prio + '">' + t.prio + '</span>' +
+            '<span class="badge cat">' + t.cat + '</span>' +
+          '</div>' +
+          '<div class="task-desc">' + t.desc + '</div>' +
+        '</div>';
+      card.addEventListener('click', () => {
+        state[id] = !state[id];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        render();
+      });
+      listEl.appendChild(card);
+    });
+
+    emptyEl.style.display = visibleCount === 0 ? 'block' : 'none';
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const total = TASKS.length;
+    let done = 0;
+    TASKS.forEach((t, i) => { if (state[taskId(t,i)]) done++; });
+    const pct = total ? Math.round(done / total * 100) : 0;
+    document.getElementById('doneCount').textContent = done;
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('pct').textContent = pct + '%';
+    const circ = 201;
+    document.getElementById('ring').style.strokeDashoffset = circ - (circ * pct / 100);
+  }
+
+  // filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = btn.dataset.filter;
+      if (f === 'hide-done') {
+        hideDone = !hideDone;
+        btn.classList.toggle('active', hideDone);
+      } else {
+        activeFilter = f;
+        document.querySelectorAll('.filter-btn').forEach(b => {
+          if (b.dataset.filter !== 'hide-done') b.classList.remove('active');
+        });
+        btn.classList.add('active');
+      }
+      render();
+    });
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (confirm('すべてのチェックをリセットしますか？')) {
+      state = {};
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      render();
+    }
+  });
+
+  render();
+</script>
+
+</body>
+</html>

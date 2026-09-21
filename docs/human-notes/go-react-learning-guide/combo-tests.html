@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>コンボのテスト + E2E — Tacpendium で学ぶ Go / React</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; background:#f8fafc; color:#1e293b; font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; line-height:1.9; }
+.topnav { background:#0f172a; color:#cbd5e1; padding:10px 20px; font-size:13px; }
+.topnav a { color:#93c5fd; text-decoration:none; margin-right:14px; }
+.topnav a:hover { text-decoration:underline; }
+.wrap { max-width:920px; margin:0 auto; padding:28px 20px 90px; }
+h1 { font-size:26px; border-left:6px solid #0f766e; padding-left:12px; line-height:1.5; }
+h2 { font-size:21px; margin-top:48px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+h3 { font-size:17px; margin-top:32px; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; font-size:.9em; font-family:Consolas,"SF Mono",Menlo,monospace; }
+.codebox { margin:16px 0; border-radius:8px; overflow:hidden; border:1px solid #334155; }
+.codebox .path { background:#1e293b; color:#93c5fd; font:12px Consolas,Menlo,monospace; padding:6px 12px; border-bottom:1px solid #334155; }
+.codebox pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow-x:auto; font:13px/1.7 Consolas,Menlo,monospace; }
+.codebox pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+.codebox b { color:#fbbf24; font-weight:600; }
+.codebox .cm { color:#7dd3fc; opacity:.65; }
+.note,.compare,.warn { border-radius:8px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+.note { background:#eff6ff; border:1px solid #bfdbfe; }
+.compare { background:#fffbeb; border:1px solid #fde68a; }
+.warn { background:#fef2f2; border:1px solid #fecaca; }
+.boxtitle { display:block; font-weight:700; font-size:12px; letter-spacing:.08em; margin-bottom:6px; color:#475569; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#fff; }
+th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; white-space:nowrap; }
+footer { margin-top:64px; padding-top:16px; border-top:1px solid #cbd5e1; font-size:13.5px; color:#64748b; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+footer a { color:#2563eb; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">目次</a>
+  <a href="go-lang-primer.html">Go 言語プライマー</a>
+  <a href="react-ts-primer.html">React/TS プライマー</a>
+  <a href="tag-walkthrough.html">タグ管理ウォークスルー</a>
+  <a href="tag-tests.html">タグのテスト</a>
+  <a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+  <a href="combo-tests.html">コンボのテスト + E2E</a>
+  <a href="playwright-guide.html">Playwright ガイド</a>
+  <a href="shadcn-tailwind-guide.html">shadcn/Tailwind</a>
+  <a href="game-update-walkthrough.html">ゲーム更新影響判定</a>
+  <a href="shell-guardrails-guide.html">シェル検査とフック</a>
+</nav>
+<div class="wrap">
+
+<h1>コンボのテスト + E2E<br>— モック・サブテスト・Playwright まで</h1>
+
+<p>コンボドメインには<a href="tag-tests.html">タグのテスト</a>で見た型に加えて、タグには無かった 3 種類のテストがあります: <strong>モックを使うハンドラテスト</strong>、<strong>サブテストによるテーブル駆動</strong>、そして<strong>本物のブラウザで動かす E2E(Playwright)</strong>です。この 3 つを重点的に読みます。</p>
+
+<div class="tablewrap">
+<table>
+<tr><th>ファイル</th><th>規模</th><th>種類</th></tr>
+<tr><td><code>internal/service/combo/service_test.go</code></td><td>2,368 行</td><td>サービステスト(実 DB)。ほかにマイルストーン別の <code>m23_*_test.go</code> / <code>m28_*_test.go</code> 等が同じパッケージに約 20 ファイル同居</td></tr>
+<tr><td><code>internal/api/combo/handler_test.go</code></td><td>1,911 行</td><td>ハンドラテスト(サービスをモック + httptest)</td></tr>
+<tr><td><code>web/src/pages/ComboDetailPage.test.tsx</code> ほか</td><td>各 100〜300 行</td><td>ページ/フックテスト(Vitest、API モック)</td></tr>
+<tr><td><code>web/e2e/combo-crud.spec.ts</code>(全 65 spec ファイル・252 テスト中の代表)</td><td>126 行</td><td>E2E(Playwright、実ブラウザ + 実バックエンド + 実 DB)</td></tr>
+</table>
+</div>
+
+<h2>1. サービステスト — フィクスチャとサブテスト</h2>
+
+<h3>1.1 テスト側の DI 配線とフィクスチャ</h3>
+
+<p>コンボのサービスは依存が多い(repo・バリデーション依存束・notation・setup)ので、テストヘルパが main.go と同じ配線を組みます(service_test.go:25-39 の <code>newSvc</code>)。もう 1 つの定番がフィクスチャ関数です:</p>
+
+<div class="codebox">
+<div class="path">internal/service/combo/service_test.go:99-125</div>
+<pre><code>func <b>validRyuInput</b>(t *testing.T, db *sql.DB) combosvc.CreateInput {
+    t.Helper()
+    move1 := lookupMoveID(t, db, 1, "standing_light_punch")  <span class="cm">// seed 済みの技マスタから ID を引く</span>
+    move2 := lookupMoveID(t, db, 1, "hadoken_light")
+    return combosvc.CreateInput{
+        UserID:         1,                    <span class="cm">// M22-02 のマルチユーザー化で追加</span>
+        CharacterID:    1,                    <span class="cm">// リュウ</span>
+        IsDraft:        false,
+        StarterMoveID:  &amp;move1,
+        Position:       ptr("mid_screen"),    <span class="cm">// ptr[T any] ヘルパでリテラル→ポインタ</span>
+        OpponentStance: ptr("standing"),
+        HitType:        ptr("normal"),
+        OpponentSize:   ptr("standard"),
+        <span class="cm">// M27-02b(VAL-C15): 本登録の必須 4 欄。欠けると Create が検証エラーで nil を返し、</span>
+        <span class="cm">// 以降が nil 参照で落ちる。仮登録(IsDraft: true)の fixture には要らない。</span>
+        Damage:             ptr(1000),
+        KnockdownAdvantage: ptr(30),
+        DriveGaugeConsumed: ptr(1.0),
+        SAGaugeConsumed:    ptr(0),
+        Steps: []model.ComboStep{
+            {StepOrder: 1, MoveID: &amp;move1},
+            {StepOrder: 2, MoveID: &amp;move2},
+        },
+    }
+}</code></pre>
+</div>
+
+<p>「バリデーションを通る正しい入力」を 1 か所に定義し、各テストは <code>input := validRyuInput(t, db)</code> から <strong>1 点だけ変えて</strong>使います。技 ID をハードコードせず code から引いているのは、seed データの ID 変動にテストが壊されないための防御です。このパターンの利得は M27-02b で実証されました — 本登録に必須 4 欄(ダメージ・起き攻め有利フレーム・消費ゲージ 2 種)が加わったとき、fixture へ 4 行足すだけで既存テスト群がまとめて追随できています。</p>
+
+<h3>1.2 サブテスト(t.Run)によるテーブル駆動 + round-trip 検証</h3>
+
+<div class="codebox">
+<div class="path">internal/service/combo/service_test.go:156-195(短縮)</div>
+<pre><code>func TestService_Create_DriveDamage_FloatRoundTrip(t *testing.T) {
+    cases := []struct {          <span class="cm">// ① テストケースの「表」を struct スライスで定義</span>
+        name string
+        val  float64
+    }{
+        {"negative_decimal", -2.5},
+        {"positive_decimal", 3.5},
+        {"integer_value", 2},
+        {"max", 6},
+        {"min", -6},
+    }
+    for _, tc := range cases {
+        <b>t.Run(tc.name, func(t *testing.T) {</b>   <span class="cm">// ② 1 ケース = 1 サブテスト(個別に成否が出る)</span>
+            db, svc := newSvc(t)
+            input := validRyuInput(t, db)
+            dd := tc.val
+            input.DriveDamage = &amp;dd
+
+            got, result, err := svc.Create(context.Background(), input)
+            ...
+            fetched, err := svc.Get(context.Background(), got.ID, 1)   <span class="cm">// ③ 保存後に読み直す(第 3 引数は M22-02 で増えた userID)</span>
+            ...
+            if fetched.DriveDamage == nil || *fetched.DriveDamage != tc.val {
+                t.Errorf("<b>round-trip</b> DriveDamage=%v, want %g", fetched.DriveDamage, tc.val)
+            }
+        })
+    }
+}</code></pre>
+</div>
+
+<p>これが Go の<strong>テーブル駆動テスト</strong>の完全形です(タグでは簡易ループ版でした)。<code>t.Run</code> を使うと失敗時に <code>TestService_Create_DriveDamage_FloatRoundTrip/negative_decimal</code> のようにどのケースが落ちたか個別に報告され、<code>-run 'RoundTrip/max'</code> で 1 ケースだけ再実行もできます。JUnit の <code>@ParameterizedTest</code> 相当を言語機能だけで実現する、Go コミュニティの最重要イディオムです。</p>
+
+<p>③ の <strong>round-trip(書いて→読み直して→一致確認)</strong>も重要な検証思想です。Create の戻り値だけ見ると「メモリ上は正しいが DB 保存で壊れる」バグ(型変換・NULL 化け)を見逃します。実 DB テストだからこそできる検証です。</p>
+
+<h2>2. ハンドラテスト — モックと httptest</h2>
+
+<p>サービステストが「業務ロジック + SQL」を実 DB で検証済みなので、ハンドラテストの関心は<strong>「HTTP の入出力変換だけ」</strong>です。そこでサービスをモックに差し替えます。</p>
+
+<h3>2.1 インターフェースを満たすモックを自作する</h3>
+
+<div class="codebox">
+<div class="path">internal/api/combo/handler_test.go:79-111(抜粋)</div>
+<pre><code>type <b>mockService</b> struct {
+    createFn func(ctx context.Context, input combosvc.CreateInput) (*model.Combo, validation.ValidationResult, error)
+    getFn    func(ctx context.Context, id int64) (*model.Combo, error)
+    ...                                       <span class="cm">// メソッドごとに差し替え可能な関数フィールド(現在 14 個)</span>
+}
+
+func (m *mockService) Create(ctx context.Context, input combosvc.CreateInput) (*model.Combo, validation.ValidationResult, error) {
+    return m.<b>createFn</b>(ctx, input)             <span class="cm">// フィールドの関数へ委譲するだけ</span>
+}
+func (m *mockService) Get(ctx context.Context, id, <b>userID</b> int64) (*model.Combo, error) {
+    return m.getFn(ctx, id)                   <span class="cm">// インターフェース変更(M22-02 で userID 追加)をモック側で吸収</span>
+}
+
+<span class="cm">// GetDeleted は M23-07 の読み取り専用取得。未設定なら getFn へ落とさず</span>
+<span class="cm">// 明示的に失敗させる(Get と取り違えたテストが黙って通るのを防ぐ)。</span>
+func (m *mockService) GetDeleted(ctx context.Context, id, userID int64) (*model.Combo, error) {
+    if m.getDeletedFn == nil {
+        return nil, errors.New("getDeletedFn not set")
+    }
+    return m.getDeletedFn(ctx, id)
+}
+...</code></pre>
+</div>
+
+<p>Go には Mockito のようなモック生成の標準はなく、<strong>「インターフェースを満たす struct を手書きし、挙動は関数フィールドで注入する」</strong>のが定番です(<a href="go-lang-primer.html">プライマー §5</a> の暗黙実装が効いています)。テストごとに <code>createFn</code> だけ書き換えれば、成功・検証 NG・エラーの各シナリオを自由に演出できます。</p>
+
+<p>読みどころが 1 つ増えています: <strong>後からインターフェースに生えたメソッドの既定挙動の使い分け</strong>です。<code>AcknowledgeGameVersion</code> や <code>PermanentDelete</code> のような追加メソッドは「フィールド未設定なら無害な既定値を返す」nil ガード付きで実装され、既存テストを 1 行も書き換えずに済ませています。一方 <code>GetDeleted</code> は上の引用のとおり<strong>未設定なら明示的にエラー</strong> — 「<code>Get</code> と取り違えたテストが黙って緑になる」ことを防ぐためで、既定値を用意するか失敗させるかを「取り違えの危険があるか」で選び分けています。</p>
+
+<h3>2.2 httptest — サーバーを立てずに HTTP を通す</h3>
+
+<div class="codebox">
+<div class="path">internal/api/combo/handler_test.go:297-322(TestHandler_Create_201、短縮)</div>
+<pre><code>svc := &amp;mockService{
+    createFn: func(ctx context.Context, input combosvc.CreateInput) (*model.Combo, validation.ValidationResult, error) {
+        return &amp;model.Combo{ID: 1, CharacterID: 1, Version: 1}, validation.ValidationResult{}, nil
+    },
+}
+e := newTestServer(t, svc)                   <span class="cm">// Echo にモック入りハンドラとルートを登録したもの</span>
+
+body := `{"characterId":1,"isDraft":false,"steps":[]}`
+req := <b>httptest.NewRequest</b>(http.MethodPost, "/api/combos", strings.NewReader(body))
+req.Header.Set("Content-Type", "application/json")
+rec := <b>httptest.NewRecorder</b>()                <span class="cm">// レスポンスを録画するダミーの応答先</span>
+<b>e.ServeHTTP(rec, req)</b>                        <span class="cm">// ネットワークを使わず Echo に直接処理させる</span>
+
+if rec.Code != http.StatusCreated {
+    t.Errorf("status = %d, want 201; body=%s", rec.Code, rec.Body.String())
+}
+var resp combohandler.ComboResponse
+if err := json.Unmarshal(rec.Body.Bytes(), &amp;resp); err != nil { t.Fatalf("unmarshal: %v", err) }
+if resp.ID != 1 { t.Errorf("ID = %d, want 1", resp.ID) }</code></pre>
+</div>
+
+<p><code>httptest</code> は標準ライブラリで、リクエストを偽造して <code>ServeHTTP</code> に直接渡し、録画されたレスポンス(ステータス・ボディ)を検査します。Spring の <code>MockMvc</code>、Flask の <code>test_client()</code> と同じ位置付けです。続くテスト(handler_test.go:324-357)は createFn が <code>r.AddError("VAL-C09", "steps", "レシピが空です")</code> したバリデーション NG を返すシナリオで、<strong>400 + <code>"validation_failed"</code> + details.validations が返ること</strong> — つまり<a href="combo-walkthrough.html">ウォークスルー §3.2</a>で見た「検証 NG はエラーでなく結果」設計の HTTP 側の出口 — を検証しています。</p>
+
+<h2>3. フロントのページテスト — vi.mock で世界を小さくする</h2>
+
+<p><code>ComboDetailPage</code> は多数の子コンポーネント・フックに依存しますが、テストしたいのはこのページ自身の分岐 — 候補セクションの出し分けと、M27-03 で加わった「戻る」リンクの行き先 — だけ。そこで依存を <code>vi.mock</code> でモジュールごと差し替えます:</p>
+
+<div class="codebox">
+<div class="path">web/src/pages/ComboDetailPage.test.tsx:16-93(抜粋)</div>
+<pre><code>const mockUseCombo = vi.fn();
+const mockUseSetupCandidates = vi.fn();
+
+<b>vi.mock("@/features/combo/api"</b>, () =&gt; ({          <span class="cm">// import されるモジュール自体を偽物に</span>
+  useCombo: (...args: unknown[]) =&gt; mockUseCombo(...args),
+  useDeleteCombo: vi.fn(() =&gt; ({ mutate: vi.fn(), isPending: false })),
+}));
+vi.mock("@/features/combo/components/ComboDetailHeader", () =&gt; ({
+  default: () =&gt; React.createElement("div", null, "Header"),   <span class="cm">// 子コンポーネントはただの箱に</span>
+}));
+vi.mock("react-i18next", () =&gt; ({
+  useTranslation: () =&gt; ({ t: (key: string) =&gt; key }),          <span class="cm">// t() はキーをそのまま返す</span>
+}));
+
+function renderPage(state?: Record&lt;string, unknown&gt;) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    React.createElement(QueryClientProvider, { client: qc },
+      React.createElement(<b>MemoryRouter</b>,
+        { initialEntries: [{ pathname: "/combos/1", state: state ?? null }] },  <span class="cm">// URL + location.state を偽装</span>
+        <span class="cm">// M27-03: 「戻る」が離脱ガードを通るため、Provider の内側で描く。</span>
+        React.createElement(NavigationGuardProvider, null,
+          React.createElement(Routes, null,
+            React.createElement(Route, { path: "/combos/:id", element: React.createElement(ComboDetailPage) }),
+            <span class="cm">// 着地先の目印ルート。ヘッダのナビにも「コンボ一覧」の文言が在るため、</span>
+            <span class="cm">// 文言ではなく testid で見る(文言で見ると常に一致して空振りする)。</span>
+            React.createElement(Route, { path: "/combos",
+              element: React.createElement("div", { "data-testid": "<b>combo-list-route</b>" }) }),
+          )))));
+}</code></pre>
+</div>
+
+<p>読みどころ:</p>
+<ul>
+<li><code>vi.mock(モジュールパス, factory)</code> — そのモジュールを import する全箇所が偽物を掴む。フックの戻り値をテストごとに <code>mockUseCombo.mockReturnValue({data: ..., isLoading: false})</code> と切り替えることで、<strong>ローディング中・エラー・データありの三態を API 通信なしで再現</strong>できる</li>
+<li><code>MemoryRouter</code> — 本物のブラウザ URL の代わりにメモリ上の履歴を使うルータ。<code>useParams()</code> が <code>id=1</code> を返すよう「/combos/1 にいる」状況を作る。<code>initialEntries</code> にはパス文字列だけでなく <code>{ pathname, state }</code> のオブジェクトも渡せ、「保存直後に遷移してきた」(<code>location.state.fromSave</code>)のような<strong>来歴つきの状況</strong>も偽装できる</li>
+<li>本物のアプリが <code>main.tsx</code> で被せていた Provider(QueryClientProvider / Router / NavigationGuardProvider)を、テストでも自前で被せる必要がある — <strong>テストの render は「ミニチュアの main.tsx」</strong>と考えると構造が腑に落ちる</li>
+</ul>
+
+<div class="note">
+<span class="boxtitle">「〜しない」だけの検証は弱い(M27-03 レビューの教訓)</span>
+「戻る」テスト群(同ファイル :150-211)には検証の書き方の教訓が 2 つ記録されています。1 つ目: 「一覧へ飛ばない」だけを主張すると、戻る処理を丸ごと消して <code>e.preventDefault()</code> だけ残した壊れた実装でも緑になる。そこで <code>vi.mock</code> のファクトリに <code>async (orig)</code> で<strong>元モジュールを取り込みつつ 1 関数だけ差し替え</strong>、その <code>mockLeaveBack</code> が<strong>実際に呼ばれたこと</strong>まで主張しています(<code>expect(mockLeaveBack).toHaveBeenCalledTimes(1)</code>)。2 つ目: 挙動の反転はテストで固定する — M24-05 で候補 0 件でもセクションを出す仕様に反転した際、「出さない」を固定していた旧テストを書き換えるだけでなく、撤去した「既存から紐付け」ボタンが<strong>存在しないこと</strong>のテスト(<code>queryByText(...).toBeNull()</code>)も追加されました。復活しても誰も気づけない、を防ぐためです。
+</div>
+
+<h2>4. E2E テスト — Playwright で「本物」を動かす</h2>
+
+<p>ここまでのテストは全部「部品」の検証でした。E2E は本物のブラウザ(Chromium)が本物のバックエンド + 本物の DB に対して、ユーザーと同じ操作をします。実行は <code>make e2e</code>(Makefile:147-149)、1 本だけ回すなら <code>make e2e-only P=combo-crud</code>(M24-09d で新設。<code>pnpm exec playwright test</code> を直接叩くと <code>PW_EXECUTABLE_PATH</code> が渡らず、UI を使う spec が「Executable doesn't exist」で全滅する — Makefile の e2e-only 注記参照)。本章は代表 spec を 1 本読む入門編です — E2E 基盤の仕組み・セレクタ規約・シナリオ設計パターン・新規 spec の書き方は、続編の<a href="playwright-guide.html">Playwright E2E シナリオガイド</a>で体系的に扱います。</p>
+
+<h3>4.1 独立スタック — dev 環境を汚さない仕掛け</h3>
+
+<p><code>web/playwright.config.ts</code> の冒頭コメント(:5-23)に設計がすべて書いてあります:</p>
+
+<ul>
+<li><strong>使い捨て DB</strong>: バックエンドを環境変数 <code>TACPENDIUM_DB_PATH</code> で <code>web/e2e/.tmp/</code> 配下の専用 DB に向ける。起動時にマイグレーション + seed が自動適用されるので、毎回クリーンな状態から始まる(開発用 DB にゴミが溜まらない)</li>
+<li><strong>専用ポート</strong>: バックエンド 47390 / Vite 5273(基準値)を使い、通常の開発サーバーとポートを取り合わない。さらに複数 worktree での同時実行にも耐えるよう、dev ポートからのオフセットで決定的に導出する(config.ts:25-53)</li>
+<li><strong>専用の設定ファイルまで使い捨てる</strong>(M24-09c 追補): E2E バックエンドは dev の <code>config.toml</code> ではなく、起動のたびに <code>config.toml.example</code> から複製する <code>web/e2e/.tmp/tacpendium-e2e.toml</code> を読む(config.ts:55-64)。これが無かった時期、開発者が設定画面で既定キャラを変えた瞬間に「リュウが出ること」前提の spec が 35 件まとめて落ちた</li>
+<li><strong><code>workers: 1</code> に固定</strong>(M24-09c): <code>fullyParallel: false</code> が直列化するのは 1 ファイル内だけで、spec ファイル同士は worker 数だけ並列に走る。しかしバックエンド 1 本・DB 1 個は共有資源で、プリセット総数上限(8 件)や重複判定キーの奪い合いが実測されている。外すと必ず赤くなる決定論的な監視 spec(<code>aa-interference-probe-{a,b}.spec.ts</code>)まで置いてある(config.ts:69-99)</li>
+<li><strong><code>go run -tags=debug</code> で起動</strong>(M28-02c): debug ビルド限定の書き込み口(§4.4)を E2E から叩くため(config.ts:128-145)</li>
+<li>フロントは dev サーバではなく <strong><code>pnpm build</code> + <code>vite preview</code></strong> で配信(M24-09c 追補)。dev サーバは ESM を 1 モジュールずつ配るため、テストごとに新規コンテキストを作る Playwright では毎回数百リクエストの固定費を払い直す — 実測で 402 秒 → 223〜253 秒に短縮(config.ts:160-174)</li>
+<li>Playwright の <code>webServer</code> 機能がテスト前にこの 2 プロセスを起動し、終了後に落とす</li>
+</ul>
+
+<div class="note">
+<span class="boxtitle">「テストが環境を壊さない」はインフラで保証する</span>
+タグ/コンボの Go テストは t.TempDir の使い捨て DB、E2E は専用ポート + 使い捨て DB。<strong>どのレベルのテストも「実行前に作り、実行後に消える」環境で走る</strong>のがこのリポジトリの一貫方針です。テストが flaky(たまに落ちる)になる最大要因は環境の共有なので、ここに投資する価値があります。config のコメントには「モジュールスコープで DB を破棄してはならない(ワーカープロセスが再ロードして稼働中 DB を消す)」という実際に踏んだ罠まで記録されています。
+</div>
+
+<h3>4.2 combo-crud.spec.ts を読む</h3>
+
+<div class="codebox">
+<div class="path">web/e2e/combo-crud.spec.ts:15-71(登録→詳細→編集→削除、短縮)</div>
+<pre><code>test("コンボ登録 → 詳細確認 → 編集 → 削除", async ({ <b>page</b> }) =&gt; {
+  const memo = `e2e-smoke-<b>${Date.now()}</b>`;          <span class="cm">// ユニーク値で「自分が作った行」を同定</span>
+  const memoEdited = `${memo}-edited`;
+
+  <span class="cm">// ── 登録 ──</span>
+  await page.<b>goto</b>("/combos/new");
+  await page.<b>getByTestId</b>("combo-editor-draft-checkbox").click();   <span class="cm">// 仮登録モード ON</span>
+  await <b>addMinimalRecipeStep</b>(page);   <span class="cm">// M24-13: 仮登録でもレシピ 1 ステップ必須(VAL-C09)→ §4.3</span>
+  await page.<b>getByPlaceholder</b>("このコンボに関するメモ(任意)").fill(memo);
+
+  <span class="cm">// M24-01: 保存後は詳細でなく一覧へ戻る。POST 応答から id を取り、詳細を開き直す(support/new-combo.ts)</span>
+  await <b>saveNewComboAndOpenDetail</b>(page, () =&gt;
+    page.getByRole("button", { name: "保存" }).click(),
+  );
+
+  <span class="cm">// ── 詳細確認 ──</span>
+  <span class="cm">// M24-03: メモの 1 行目はレシピの上にも出る(✎ 付き)。exact 一致で「メモ欄そのもの」を指す</span>
+  await expect(page.getByText(memo, { <b>exact: true</b> })).<b>toBeVisible()</b>;
+
+  <span class="cm">// ── 編集 ──</span>
+  await page.getByRole("link", { name: "編集", <b>exact: true</b> }).click();  <span class="cm">// 「技編集」ナビとの部分一致衝突を回避</span>
+  await expect(page).toHaveURL(/\/combos\/\d+\/edit$/);
+  const memoArea = page.getByPlaceholder("このコンボに関するメモ(任意)");
+  await memoArea.clear();
+  await memoArea.fill(memoEdited);
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page).toHaveURL(/\/combos\/\d+$/);
+  await expect(page.getByText(memoEdited, { exact: true })).toBeVisible();
+
+  <span class="cm">// ── 削除(ダイアログ確認まで)──</span>
+  await page.getByRole("button", { name: "削除" }).click();
+  const dialog = page.getByRole("<b>alertdialog</b>");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "削除" }).click();
+  await expect(page).toHaveURL(/\/combos(\?character_id=\d+)?$/);   <span class="cm">// 削除後は一覧へ戻る</span>
+});</code></pre>
+</div>
+
+<p>読みどころ:</p>
+<ul>
+<li><strong>セレクタ戦略はコンポーネントテストと同じ</strong>: <code>getByRole</code> / <code>getByPlaceholder</code> を優先し、testid は最後の手段。Testing Library と Playwright で同じ思想が通っているので、学習が二度おいしい</li>
+<li><strong>await と自動待機</strong>: Playwright の <code>expect(...).toBeVisible()</code> は「今見えているか」ではなく「見えるまで待つ(タイムアウト付き)」。画面遷移や再取得の完了を sleep で待つコードが無いのはこのため</li>
+<li><strong>テストの自己完結</strong>: <code>Date.now()</code> 入りのメモで自分のデータを同定し、最後に自分で削除して<strong>後始末まで含めて 1 本のシナリオ</strong>。既存データ件数に依存しない(spec 冒頭コメント :7-12)</li>
+<li><strong>画面仕様の変更は support/ ヘルパが吸収</strong>: 保存後の遷移先が詳細 → 一覧へ変わったとき(M24-01)、「一覧の一番新しい行を掴む」のではなく <code>saveNewComboAndOpenDetail</code>(support/new-combo.ts)が <strong>POST /api/combos の応答そのものから id を取る</strong>形にした。並行実行や他 spec の残したデータに影響されない同定方法である</li>
+<li>2 本目の spec(:77-125)は「メモだけ編集しても custom_states が誤クリアされない」という<strong>過去の不具合の非回帰テスト</strong>。E2E の重要な使い道は「ユニットの隙間で起きた統合バグを、再発しない形で釘付けにする」ことだと分かる</li>
+</ul>
+
+<h3>4.3 仕様変更を吸収する「下ごしらえヘルパ」(2026-07 以降の新パターン)</h3>
+
+<p>このガイドの初版以降、<strong>既存 spec の保存が軒並み通らなくなる類の仕様変更</strong>が 2 回ありました: M24-13「仮登録でもレシピ 1 ステップ必須(VAL-C09)」と M27-02b「本登録は 4 欄が必須(VAL-C15)」です。対応は、各 spec が<strong>見ているものを 1 文字も変えず</strong>、下ごしらえだけを <code>web/e2e/support/editor-input.ts</code> の共通ヘルパへ寄せる形で行われました:</p>
+
+<div class="codebox">
+<div class="path">web/e2e/support/editor-input.ts:50-57(fillRequiredComboFields)</div>
+<pre><code><span class="cm">// M27-02b: 本登録に必須の欄を埋める。必須は 4 欄だが、ここで埋めるのは 2 欄だけでよい</span>
+<span class="cm">// ——消費ゲージ 2 欄は新規登録の既定値 "0" が入っているため。</span>
+<span class="cm">// 仮登録で保存する spec には要らない(VAL-C15 は仮登録をスキップする)。</span>
+export async function <b>fillRequiredComboFields</b>(page: Page): Promise&lt;void&gt; {
+  const damage = page.getByTestId("combo-editor-damage");
+  if (!(await damage.isVisible())) {
+    await switchEditorTab(page, "basic");   <span class="cm">// 欄が隠れていれば先にタブを切り替える</span>
+  }
+  await page.getByTestId("combo-editor-damage").fill("1500");
+  await page.getByTestId("combo-editor-knockdown-advantage").fill("30");
+}</code></pre>
+</div>
+
+<p>§4.2 で見た <code>addMinimalRecipeStep</code> も同族です。面白いのは足すステップの選び方 — <strong>技ではなく「パリィドライブラッシュ」(非技ステップ)を選ぶ</strong>ことで、技 ID の解決が不要になり、始動技も決まらないので VAL-C03(始動技と 1 ステップ目の食い違い)の警告も出ません。§1.1 の <code>validRyuInput</code>(fixture 1 か所に集約 → 必須化は 4 行の追加で全テストが追随)とまったく同じ思想の E2E 版で、<strong>仕様変更のコストは「下ごしらえの共通化率」で決まる</strong>ことを両側から示しています。なお必須化そのものの回帰は <code>m27-02b-required-and-oki-states.spec.ts</code> が固定しており、「必須 4 欄が空だと保存が止まり理由が画面に届く」「<strong>仮登録では止まらない</strong>(止まると仮登録の存在意義が消える)」「起き攻め 3 状態(必須・任意・未検証)が DB を往復して戻る」の 3 点を主張しています — 3 点目は DTO の <code>*bool</code>・リポジトリの列・zod の 3 つを跨ぐため、経路全体を通す E2E でしか確かめられません。</p>
+
+<h3>4.4 debug ビルド限定の「書き込み口」で、本番では作れない状態を作る(M28-02c)</h3>
+
+<p>ゲーム更新の影響コンボ機能(FR702)の E2E には固有の難題がありました: 判定の起点となるマーカー(<code>moves.last_changed_game_version</code>)を立てる経路が、本番では配信者の DML マイグレしか無い。しかも初回は必ず影響 0 件なので、<strong>「画面を開いても何も出ない」ことは正しさの証拠にならない</strong>。そこで採られたのが、debug ビルドにしか存在しない書き込み API を E2E から叩く方法です:</p>
+
+<div class="codebox">
+<div class="path">web/e2e/support/game-update.ts:21-34(抜粋)</div>
+<pre><code><span class="cm">// 技にマーカーを立てる(配信者の DML マイグレを模す)。</span>
+<span class="cm">// 叩く先は debug ビルドにしか存在しない経路(internal/api/debug/game_version.go。</span>
+<span class="cm">// 本番バイナリには 1 バイトも出ない)。</span>
+export async function <b>setMoveGameVersion</b>(
+  request: APIRequestContext, moveId: number, version: string | null,
+): Promise&lt;void&gt; {
+  const res = await request.post(<b>`/api/debug/moves/${moveId}/game-version`</b>, {
+    data: { lastChangedGameVersion: version ?? "" },
+  });
+  expect(res.ok(), `マーカーの設定に失敗: ...` +
+    "(★E2E バックエンドが -tags=debug で起動しているか確かめること)").toBeTruthy();
+}</code></pre>
+</div>
+
+<p>このために E2E バックエンドは <code>go run -tags=debug</code> で起動します(§4.1)。JUnit で言えばテスト用フィクスチャのバックドアを、Go では<strong>ビルドタグで本番バイナリから物理的に切り離す</strong>のが特徴です。代償は「E2E が本番ビルドではなく debug ビルドを検査する」ことですが、差分は debug ルート 5 本の登録だけで本番コードの経路は同一 — と config のコメントに費用対効果まで記録されています。この口を使った往復シナリオ(バナー →「問題なし」→ 件数が減る)は <code>m28-02c-game-update.spec.ts</code> にあり、機能自体の解説は別資料「ゲーム更新影響判定ウォークスルー」(game-update-walkthrough.html)が扱います。</p>
+
+<h3>4.5 共有 DB を前提にした「状態非依存」の書き方</h3>
+
+<p>E2E スタックはバックエンド 1 本・DB 1 個を全 65 spec が共有します(§4.1 の <code>workers: 1</code> で直列化しても、先に走った spec の残したデータは後続から見える)。初版以降に定着した規律が 3 つあります:</p>
+
+<ul>
+<li><strong>既定キャラを仮定しない</strong>: 素の <code>goto("/combos/new")</code> は環境の既定キャラで開く。「初期表示はリュウ」を仮定した spec は、既定キャラを変えた環境でだけ落ちる(2026-08-26 に実際に 35 テストが落ちた)。⇒ キャラが要る spec は <code>gotoNewComboFor(page, "ryu")</code>(support/character.ts)で URL クエリから明示的に選ぶ</li>
+<li><strong>重複判定キーを spec 固有にずらす</strong>: コンボの重複判定キーは(キャラ / 始動技 / 始動位置 / 相手の状態 / ヒット種別 / 相手の大きさ)の 6 項目。他 spec と同じ組を作ると VAL-C02 で作成自体が落ちる — しかも<strong>単独実行では緑・全数実行だけ赤</strong>という最悪の落ち方をする。m28-02c は「他 spec は技一覧の先頭を使う」ことを実測した上で<strong>末尾から始動技を取る</strong>(<code>tailNormalMoves</code>)ことでキーを分離している</li>
+<li><strong>全体へ及ぶ状態は「過去の値」で作る</strong>: マーカーは技に立つので同じ技を使う全コンボへ及ぶ。現在版より新しいマーカーを立てると<strong>他 spec が作ったコンボまで一斉に影響あり</strong>になるため、m28-02c は基準もマーカーも現在版より古い値(<code>OLD_BASELINE</code> / <code>MARKER</code>)で組み、自分の 1 件だけが検出される形にしている(spec :26-37)</li>
+</ul>
+
+<div class="note">
+<span class="boxtitle">「後片付けを足す」では直らない</span>
+並行実行下の干渉は、後片付けを徹底しても防げません — 並行中は「まだ消していない時間」が必ず在るからです(playwright.config.ts の workers 注記)。だからこの節の規律はすべて「消す」ではなく<strong>「最初から被らない」</strong>方向を向いています: ユニーク値(<code>Date.now()</code>)、キーの分離、既定への非依存。共有 DB のテストを書くときの一般則として持ち帰れる形です。
+</div>
+
+<h2>5. まとめ — テストピラミッドの全体像</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>層</th><th>何を信じるためのテストか</th><th>速度/本数</th><th>偽物にするもの</th></tr>
+<tr><td>サービス(実 DB)</td><td>業務ロジックと SQL が正しい</td><td>速い・多い</td><td>なし(DB も本物の使い捨て)</td></tr>
+<tr><td>ハンドラ(httptest)</td><td>HTTP ⇔ Go の変換とステータスコードが正しい</td><td>速い・中</td><td>サービス(モック)</td></tr>
+<tr><td>フロントのフック/スキーマ</td><td>フォーム検証・正規化・キャッシュ操作が正しい</td><td>速い・多い</td><td>API 呼び出し(vi.fn)</td></tr>
+<tr><td>フロントのページ</td><td>状態→表示の分岐が正しい</td><td>中</td><td>子コンポーネント・フック(vi.mock)</td></tr>
+<tr><td>E2E(Playwright)</td><td>全部つないだとき本当に使えるか</td><td>遅い・少数精鋭</td><td>なし(全部本物、環境だけ使い捨て)</td></tr>
+</table>
+</div>
+
+<p>各層が「下の層で保証済みのことは繰り返さない」よう関心を絞っているのがポイントです。E2E は現在 65 spec ファイル・252 テストまで育ちましたが、大半は各マイルストーンが 1〜2 ファイルずつ残した非回帰シナリオで、下の層で網羅済みのロジックを E2E でやり直してはいません。しかも <code>workers: 1</code> の直列実行(§4.1)のため 1 テストの追加コストは高く、「何を E2E に残すか」の判断は今も少数精鋭の思想のままです — その判断基準と新規 spec の書き方は続編の <a href="playwright-guide.html">Playwright E2E シナリオガイド</a>が扱います。</p>
+
+<div class="note">
+<span class="boxtitle">課題</span>
+<ol>
+<li><code>go test ./internal/api/combo/ -run TestHandler_Create -v</code> を実行し、モックだけで動くテストの速さを体感する</li>
+<li><code>handler_test.go</code> から「409 Conflict(楽観的排他)」を検証しているテストを探し、mockService のどのフィールドに何を仕込んでいるか読む</li>
+<li><code>make e2e</code> を実行し、実行中に <code>web/e2e/.tmp/</code> に DB ファイルができること、終了後もそれが dev 用 DB と別物であることを確認する</li>
+<li>combo-crud.spec.ts の「編集」リンク特定が <code>exact: true</code> なしだと何と衝突するか、コメント(:44)とヘッダーのナビゲーションを見て説明する — E2E が UI 文言の変更に弱い理由と、その緩和策(role ベース選択・testid 規約)を考える</li>
+<li><code>web/e2e/support/editor-input.ts</code> の <code>addNonMoveRecipeStep</code> のコメントを読み、「保存の成功で dirty が落ちたか」を画面から観測できる<strong>唯一の経路</strong>がなぜ VAL-C03 の警告経由なのか説明する</li>
+</ol>
+</div>
+
+<footer>
+<span><a href="combo-walkthrough.html">← コンボ CRUD ウォークスルー</a></span>
+<span>生成日 2026-07-22 / 更新日 2026-09-08(M27〜M29 時点のコードへ追随)</span>
+<span><a href="playwright-guide.html">次: Playwright E2E シナリオガイド →</a></span>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tacpendium — 将来導入したい機能ロードマップ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #0a0e14;
+    --bg-raised: #131922;
+    --bg-card: #171e29;
+    --border: #232c39;
+    --border-bright: #36424f;
+    --text: #e8eef5;
+    --text-dim: #8b97a7;
+    --text-faint: #525d6c;
+    --accent: #36d399;
+    --accent2: #54a0ff;
+    --phase2: #54a0ff;
+    --phase3: #36d399;
+    --phase4: #ffa502;
+    --phase5: #c77dff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 80% 5%, rgba(54,211,153,0.06), transparent 40%),
+      radial-gradient(circle at 10% 80%, rgba(84,160,255,0.05), transparent 40%);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 22px; }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 52px 0 34px;
+  }
+  .kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .kicker::before { content: ''; width: 28px; height: 1px; background: var(--accent); }
+  h1 {
+    font-size: 2.4rem; font-weight: 900;
+    letter-spacing: -0.02em; line-height: 1.12; margin-bottom: 14px;
+  }
+  h1 .mono { font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+  .lead { color: var(--text-dim); font-size: 0.98rem; max-width: 660px; }
+  .disclaimer {
+    font-size: 0.82rem; color: var(--text-faint);
+    margin-top: 16px; padding-left: 14px; border-left: 2px solid var(--border-bright);
+  }
+
+  /* Legend */
+  .legend {
+    display: flex; gap: 28px; flex-wrap: wrap;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 30px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+  }
+  .legend-group { display: flex; flex-direction: column; gap: 6px; }
+  .legend-group .lg-title { color: var(--text-faint); letter-spacing: 0.1em; margin-bottom: 2px; }
+  .legend-items { display: flex; gap: 14px; flex-wrap: wrap; }
+  .dot { display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim); }
+  .dot::before { content: ''; width: 10px; height: 10px; border-radius: 50%; }
+  .dot.low::before { background: var(--accent); }
+  .dot.mid::before { background: var(--phase4); }
+  .dot.high::before { background: #ff6b6b; }
+
+  /* Phase block */
+  .phase-block { margin-top: 44px; }
+  .phase-header {
+    display: flex; align-items: baseline; gap: 14px;
+    margin-bottom: 6px;
+  }
+  .phase-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; font-weight: 700;
+    padding: 4px 10px; border-radius: 5px; letter-spacing: 0.1em;
+  }
+  .p2 .phase-tag { background: rgba(84,160,255,0.15); color: var(--phase2); border: 1px solid rgba(84,160,255,0.3); }
+  .p3 .phase-tag { background: rgba(54,211,153,0.15); color: var(--phase3); border: 1px solid rgba(54,211,153,0.3); }
+  .p4 .phase-tag { background: rgba(255,165,2,0.15); color: var(--phase4); border: 1px solid rgba(255,165,2,0.3); }
+  .p5 .phase-tag { background: rgba(199,125,255,0.15); color: var(--phase5); border: 1px solid rgba(199,125,255,0.3); }
+  .phase-header h2 { font-size: 1.4rem; font-weight: 900; letter-spacing: -0.01em; }
+  .phase-sub {
+    color: var(--text-dim); font-size: 0.88rem;
+    margin-bottom: 20px; padding-left: 2px;
+  }
+  .phase-line { height: 2px; border-radius: 2px; margin-bottom: 22px; }
+  .p2 .phase-line { background: linear-gradient(90deg, var(--phase2), transparent); }
+  .p3 .phase-line { background: linear-gradient(90deg, var(--phase3), transparent); }
+  .p4 .phase-line { background: linear-gradient(90deg, var(--phase4), transparent); }
+  .p5 .phase-line { background: linear-gradient(90deg, var(--phase5), transparent); }
+
+  /* Feature card */
+  .feat {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    transition: all 0.2s;
+  }
+  .feat:hover { border-color: var(--border-bright); transform: translateY(-2px); }
+  .feat-top {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 16px; margin-bottom: 10px; flex-wrap: wrap;
+  }
+  .feat-title { font-size: 1.12rem; font-weight: 700; flex: 1; min-width: 200px; }
+  .feat-title .num {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-faint); font-size: 0.85rem; margin-right: 10px;
+  }
+  .metrics { display: flex; gap: 8px; flex-wrap: wrap; }
+  .metric {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.64rem; padding: 3px 9px; border-radius: 5px;
+    border: 1px solid var(--border-bright); white-space: nowrap;
+  }
+  .metric .m-label { color: var(--text-faint); }
+  .metric .m-low { color: var(--accent); }
+  .metric .m-mid { color: var(--phase4); }
+  .metric .m-high { color: #ff6b6b; }
+  .metric .m-star { color: #ffd93d; }
+  .feat-desc { color: var(--text-dim); font-size: 0.9rem; }
+  .feat-desc strong { color: var(--text); font-weight: 500; }
+  .feat-note {
+    margin-top: 12px; padding: 11px 14px;
+    background: rgba(255,255,255,0.02);
+    border-left: 2px solid var(--border-bright);
+    border-radius: 0 6px 6px 0;
+    font-size: 0.82rem; color: var(--text-dim);
+  }
+  .feat-note .nlabel { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color: var(--text-faint); letter-spacing:0.08em; display:block; margin-bottom:3px;}
+
+  .highlight {
+    border-color: rgba(54,211,153,0.4);
+    box-shadow: 0 0 0 1px rgba(54,211,153,0.15), 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .highlight .feat-title::after {
+    content: '★ 差別化の核';
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem; color: #ffd93d;
+    margin-left: 10px; vertical-align: middle;
+  }
+
+  /* Principles */
+  .principles {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 30px;
+    margin-top: 48px;
+  }
+  .principles h3 {
+    font-size: 1.1rem; font-weight: 900; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .principles h3::before { content: '!'; font-family:'JetBrains Mono',monospace; color: var(--bg); background: var(--accent); width: 22px; height: 22px; border-radius: 50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem;}
+  .principles .psub { color: var(--text-dim); font-size: 0.86rem; margin-bottom: 18px; }
+  .principle {
+    display: flex; gap: 14px; padding: 12px 0;
+    border-top: 1px dashed var(--border);
+  }
+  .principle:first-of-type { border-top: none; }
+  .principle .pnum { font-family:'JetBrains Mono',monospace; color: var(--accent); font-weight:700; flex-shrink:0; }
+  .principle .ptext { font-size: 0.88rem; }
+  .principle .ptext strong { color: var(--text); }
+  .principle .ptext span { color: var(--text-dim); }
+
+  footer {
+    margin-top: 50px; padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: var(--text-faint);
+    text-align: center; line-height: 2;
+  }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 1.75rem; }
+    .feat-top { flex-direction: column; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Future Roadmap · Post-MVP</div>
+    <h1><span class="mono">Tacpendium</span> 将来導入したい機能</h1>
+    <p class="lead">MVP 完成後に検討する拡張機能を、拡張ステージ・難易度・価値で整理したロードマップ。「コンボ管理ツール」から「練習・研究プラットフォーム」への進化を見据える。</p>
+    <p class="disclaimer"><strong>注意：本ページの「拡張①〜④」は REQ-001（設計書）のフェーズ番号とは別系統の“願望リスト”です。</strong>設計フェーズ（Phase1〜4）を作り切った後に乗せていく拡張で、ここの区分番号は設計の Phase 番号と一致しません。なお「確定反撃の記録」は設計上は正式に REQ-001 Phase4（NFR406）に含まれます。順序は暫定で、実際の優先順位は先行リリースの実ユーザーの声を聞いてから確定する。一歩ずつ。</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="legend">
+    <div class="legend-group">
+      <span class="lg-title">DIFFICULTY 難易度</span>
+      <div class="legend-items">
+        <span class="dot low">低</span>
+        <span class="dot mid">中</span>
+        <span class="dot high">高</span>
+      </div>
+    </div>
+    <div class="legend-group">
+      <span class="lg-title">凡例</span>
+      <div class="legend-items" style="font-size:0.72rem;color:var(--text-dim)">
+        各カードに 難易度 / リスク / 価値 を併記
+      </div>
+    </div>
+  </div>
+
+  <!-- 拡張① -->
+  <div class="phase-block p2">
+    <div class="phase-header">
+      <span class="phase-tag">拡張①</span>
+      <h2>コンボ管理の完成度向上</h2>
+    </div>
+    <p class="phase-sub">既存データモデルの自然な拡張。「あって当然」の機能を揃え、コンボ管理ツールとして隙をなくす。</p>
+    <div class="phase-line"></div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">①-1</span>確定反撃の記録</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-star">高</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">「相手の技 → 確反コンボ」という関連を持たせる。コンボ記録の自然な延長で、データモデルの追加は小さい。コンボ管理ツールとしての完成度を大きく上げる。<strong>（設計上は REQ-001 Phase4 / NFR406 の項目）</strong></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">①-2</span>連携技の記録</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-mid">中〜高</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">技同士の連携関係を記録。確定反撃と同じく、技・コンボエンティティへの関連付けで実現できる。</div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">①-3</span>コンボに紐付く動画・画像の保存</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-mid">中</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-mid">中〜高</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">既存のコンボに動画・画像を添付。技術的には素直だが、<strong>ローカルファイル管理・ファイルサイズ・起動速度への影響</strong>に注意。軽量DNAを損なわない設計が必要。</div>
+    </div>
+  </div>
+
+  <!-- 拡張② -->
+  <div class="phase-block p3">
+    <div class="phase-header">
+      <span class="phase-tag">拡張②</span>
+      <h2>練習パートナーへの進化</h2>
+    </div>
+    <p class="phase-sub">「記録する」から「上達を支援する」へ。アプリの位置づけを変える分水嶺。競合が少なく、プレイヤーの本質的ニーズ（上達したい）に直結する。</p>
+    <div class="phase-line"></div>
+
+    <div class="feat highlight">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">②-1</span>上達に向けた課題管理</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-mid">中</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-star">非常に高</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">「この連携を練習中」「この確反を安定させたい」等の練習タスク管理。コンボ・セットプレイと紐付ける。<strong>記録ツールを練習パートナーに変える機能</strong>で、ユーザー定着率を大きく上げる可能性。</div>
+      <div class="feat-note"><span class="nlabel">設計が肝</span>「どういう課題管理が上達に効くか」が成否を分ける。練習チェックリスト・達成記録・振り返りメモなど、UX設計が重要。</div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">②-2</span>メモ機能の基盤（AIなし）</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-mid">中</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">攻略知見を書き留めるメモ機能。まずは<strong>AIなしの普通のメモ</strong>として実装し、土台を作る。後のAI連携（拡張③）の前提となる。これ単体でも価値がある。</div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">②-3</span>セットプレイの簡易提案</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-mid">中</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-mid">中〜高</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">蓄積したセットプレイから「この技を当てたい時の選択肢」を検索・一覧化。まずは検索ベースの簡易版から始め、拡張③で賢くする。</div>
+    </div>
+
+    <div class="feat highlight">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">②-4</span>バトルスナップショット（戦績記録 × 勝率分析）</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-mid">中</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-star">非常に高</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">SF6ゲーム内の統計（過去100戦程度）を<strong>時々記録し、勝率との相関を可視化</strong>する。「調子が良い日は行動○○が多い/少ない」といった<strong>気づき</strong>を提供。ゲーム内統計は数字を見せるだけで勝率に繋がりにくい、という実需起点の機能。</div>
+      <div class="feat-note"><span class="nlabel">なぜ強いか</span>実需（困りごと）起点で自己満足になりにくい／既存ツールにない分析軸／コンボ管理→分析→練習→記録のループを生み、Tacpendiumを「上達のための総合環境」へ引き上げる柱になりうる。</div>
+      <div class="feat-note"><span class="nlabel">注意点</span>①<strong>相関≠因果</strong>: 断定（「Xすれば勝てる」）でなく気づきの提示（「Xが多い傾向」）に留める。誤った練習を助長しない／②<strong>入力の手間</strong>が実現性の鍵: 全項目でなく主要数値だけ、ざっくり記録でも価値が出る設計に／③継続記録しないと相関が見えない（記録のモチベーション設計）。</div>
+      <div class="feat-note"><span class="nlabel">入力方式の方針（AIなし・ローカルOCR）</span>本機能は基本機能に近いため<strong>AIなし・外部送信なし・オフラインで動かす</strong>方針。スクリーンショットからの取り込みは、ゲーム内統計画面の<strong>ラベル（項目名）の右隣に対応する数値がある</strong>という不変の構造を利用する。<br>・環境（解像度・言語）でレイアウトがずれ、縦スクロール位置も一致しないため、<strong>座標決め打ちは破綻する</strong>。代わりに「ラベルを探し、同じ行の右側の数値を読む」相対位置方式を採る（スクロール・解像度が変わっても不変）<br>・実装: ローカルOCR（Tesseract等）で全文字を座標付きで抽出 → アプリが持つ<strong>既知のラベルリスト</strong>から項目を探す → その右隣の数値を取得 → ラベルと紐づけて記録<br>・残る課題: ラベルの多言語対応（言語ごとにリスト）／OCR誤認への曖昧一致マッチング／スクロールで写らない項目（複数スクショ対応は段階的に）／<strong>読み取り結果はユーザーが確認・修正して確定</strong>（誤認の最終防波堤。手入力より遥かに楽）</div>
+      <div class="feat-note"><span class="nlabel">軽量DNAとの両立</span>OCRを同梱しても、<strong>「動作の軽快さ」は保てる</strong>。コードが同梱されていても、使わなければ実行されない（コンボ管理中はOCRは眠っている）。重くなるのは<strong>OCR実行時だけ</strong>で、これは許容範囲。<br>・必須の設計: <strong>遅延読み込み（使う時に初めてロード）</strong>。起動時に全部読むと起動が遅くなるため。常駐させずメモリも使う時だけ確保<br>・純粋に増えるのは<strong>ディスク使用量とダウンロードサイズ</strong>（動作速度とは別問題）。実害は小さいが「軽量アプリ」の印象には影響しうる<br>・サイズも抑えるなら「読み取り対象を絞った軽量実装」（汎用OCRを避け数字認識特化）が、動作・サイズ両方に優しくDNA最優先。次点でOS標準OCR（同梱不要）。<strong>外部エンジンの別途インストールはDNA違反で却下</strong></div>
+      <div class="feat-note"><span class="nlabel">実装順序</span>まず<strong>手入力でMVP</strong>を出し、機能の価値（統計×勝率の相関）を検証 → 価値が確認できたら入力を楽にするためOCR取り込みを追加。技術方針（AIなし・ローカルOCR・ラベルベース）は確定、着手時に詳細調査。</div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">②-5</span>キャラ対策のツリー／チャート整理</div>
+      </div>
+      <div class="feat-desc">特定の相手キャラの対策を<strong>ツリー／チャート</strong>で整理する。一部のキャラには「ある行動の後に、<strong>明確な NG 行動と OK 行動</strong>がある」ものがあり、それを分岐として整理したい需要がある。連携技のツリー表示を検討する過程で出た着想。</div>
+      <div class="feat-note"><span class="nlabel">着想メモ（要件未確定）</span>記載のみ。要件・データモデル・表示形式は未検討。連携技のツリー（始動 → 分岐）と表示の発想が近く、流用できる可能性がある。</div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">②-6</span>技相性・差し返しの記録</div>
+      </div>
+      <div class="feat-desc">差し合い（横軸移動ゆえほぼ同時に技を振る瞬間がある／リーチ差を<strong>置き技</strong>で潰す）や、<strong>差し返し</strong>（相手の空振りの硬直に差し込む。空振った後の残り判定次第で、返せる技が変わる／そもそも返せない）を記録したい。<strong>感覚的でユーザーごとに調べて貯める</strong>性質の知見。</div>
+      <div class="feat-note"><span class="nlabel">着想メモ（要件未確定・位置づけ整理のみ）</span>独立機能化はしない方針。<strong>差し合い・置き技の相性（感覚知）＝メモ（一人SNS）の用途</strong>として扱う（タグ／ハッシュタグで「差し合い」「対○○」を束ねる）。<strong>差し返し（技間の関係＋残り判定で変化）＝確定反撃・連携技のデータモデルの親戚</strong>で、それらが固まった後に乗るかを検討する候補。需要駆動・概念の重複回避の方針に沿う。</div>
+    </div>
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">②-7</span>観察ベースの行動分析（応用行動分析的）</div>
+      </div>
+      <div class="feat-desc">公式統計には<strong>出ない部分を、人間が観察して補完</strong>する記録機能。特定の行動（例：相手がハイリスクな無敵技を使った瞬間）を事細かに記録し続け、一定数の観察文が集まったら <strong>AI が登場頻度の高いパターンを「仮説」として集約</strong>する。「相手が何を心がけているか（例：波動拳を多めに撃つ）」のような、<strong>データだけでは見えない意図・癖</strong>を拾うのが狙い。</div>
+      <div class="feat-note"><span class="nlabel">着想メモ（要件未確定・位置づけ整理）</span>バトルスナップショット（公式統計・粒度が粗い）ともメモ／一人SNS（気楽な起票）とも<strong>別物の独立機能</strong>。ターゲットは<strong>攻略相手の対戦動画を何十・何百と見る執拗な分析者</strong>。<br>・<strong>人間が記録に寄与、AI は集約のみ</strong>＝「AI は文章処理エンジン（攻略を生成しない）」原則の内側。<br>・<strong>AI 出力は「仮説」</strong>。偶然の偏り・確証バイアス・サンプル不足で<strong>誤ったパターンを拾う可能性があり、鵜呑みにしない</strong>旨を強く明示（バトルスナップショットの「相関≠因果」をより強く効かせる）。<br>・対象は<strong>カスタム設定</strong>（特定キャラの使い手／特定個人の両方）。個人の癖データは<strong>ローカル・自分用前提</strong>で共有機能に乗せない（第三者データの問題回避）。</div>
+    </div>
+  </div>
+
+  <!-- 拡張③ -->
+  <div class="phase-block p4">
+    <div class="phase-header">
+      <span class="phase-tag">拡張③</span>
+      <h2>差別化機能の深化</h2>
+    </div>
+    <p class="phase-sub">蓄積データを賢く使う付加価値機能と、AIによるメモ変形。Tacpendium ならではの独自性を決める領域。</p>
+    <div class="phase-line"></div>
+
+    <div class="feat highlight">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">③-1</span>メモのAI変形（整形・分類・再構成・詳細度生成）</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-mid">中</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-low">低〜中</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-star">非常に高</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">ユーザーのAPIキーで、<strong>AIを「知識源」ではなく「文章処理エンジン」</strong>として使う。文書化されていない暗黙知をユーザーが書き、AIが使える形に変形する。</div>
+      <div class="feat-note"><span class="nlabel">4つの使い方</span>
+        ① メモの整形（読みやすく）／② 状態分類（解決済み・未解決・仮説）／③ メモの結合で新記事生成／④ <strong>詳細度レベル指定の文書生成（長文〜チェックリスト）= 他ツールにない最大の差別化要素</strong>
+      </div>
+      <div class="feat-note"><span class="nlabel">設計原則</span>
+        AIの役割を「変形」に限定し知識を追加させない／AI下書き→人間確定のワークフロー／生成物と元メモの紐付けを保持／APIキーはローカル暗号化・送信を明示／<strong>AIなしでもメモ機能は動く（オプション扱い）</strong>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">③-2</span>削りきり計算（何手で倒せるか）</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-mid">中〜高</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-mid">中〜高</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">特定の技・コンボを当てた後、何を当てれば体力を削り切れるかを表示。コンボのダメージから逆算し、記録機能と連携。</div>
+      <div class="feat-note"><span class="nlabel">難所</span>ダメージスケーリング・補正・状況依存（画面端等）を考慮すると複雑化。<strong>簡易版から始め、徐々に精度を上げる</strong>のが現実的。</div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">③-3</span>セットプレイの高度な自動提案</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-mid">中〜高</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-low">低</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-mid">高</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">拡張②の簡易提案を発展させ、状況・相手・狙いに応じた提案ロジックへ。「何を以て"提案"とするか」のロジック設計が肝。</div>
+    </div>
+  </div>
+
+  <!-- 拡張④ -->
+  <div class="phase-block p5">
+    <div class="phase-header">
+      <span class="phase-tag">拡張④</span>
+      <h2>長期構想・要検討</h2>
+    </div>
+    <p class="phase-sub">技術的には可能だが、持続可能性・法務・運用負荷とのバランスを慎重に判断する領域。「できる」と「やるべき」「続けられる」は別。</p>
+    <div class="phase-line"></div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-title"><span class="num">④-1</span>知見の共有機能（コミュニティ）</div>
+        <div class="metrics">
+          <span class="metric"><span class="m-label">難易度</span> <span class="m-high">高</span></span>
+          <span class="metric"><span class="m-label">リスク</span> <span class="m-mid">中〜高</span></span>
+          <span class="metric"><span class="m-label">価値</span> <span class="m-mid">高</span></span>
+        </div>
+      </div>
+      <div class="feat-desc">生成した記事・メモをユーザー間で共有。価値は高いが、<strong>個人利用に留めれば不要なリスクを避けられる</strong>。共有機能を付ける場合のみ、著作物の二次利用・サーバー運用負荷・データ正確性の責任問題が発生する。慎重に。</div>
+    </div>
+  </div>
+
+  <!-- Principles -->
+  <div class="principles">
+    <h3>拡張全体を貫く原則</h3>
+    <p class="psub">機能を増やすたびに立ち返るべき判断基準。</p>
+
+    <div class="principle">
+      <span class="pnum">01</span>
+      <span class="ptext"><strong>軽量・即応答のDNAを守る。</strong> <span>Tacpendiumの根本価値は「ゲーム同時起動下で軽量・即応答（100ms以内）」。機能追加のたびに「これは軽量・即応答を損なわないか」を問う。</span></span>
+    </div>
+    <div class="principle">
+      <span class="pnum">02</span>
+      <span class="ptext"><strong>データモデルの拡張性を最初から意識する。</strong> <span>確反・連携・課題・メモは全てコンボ/技/セットプレイと関連を持つ。最初のスキーマ設計が後の拡張の容易さを決める。</span></span>
+    </div>
+    <div class="principle">
+      <span class="pnum">03</span>
+      <span class="ptext"><strong>機能を深めるほど汎用ツール化は難しくなる。</strong> <span>削りきり計算・提案・AI対策はSF6システムに密結合。拡張の野心と公開時の法務リスクはトレードオフ。</span></span>
+    </div>
+    <div class="principle">
+      <span class="pnum">04</span>
+      <span class="ptext"><strong>持続可能性が最大の論点。</strong> <span>全部実装できるとしても全部やるべきとは限らない。「どこまでやるか」は技術ではなく、自分がどこまで続けたいかで決める。燃え尽き防止。</span></span>
+    </div>
+    <div class="principle">
+      <span class="pnum">05</span>
+      <span class="ptext"><strong>実ユーザーの声を聞いてから優先順位を決める。</strong> <span>まずMVPを完成させ先行リリース。ユーザーが本当に何を求めるか確認してから拡張順を確定するのが、遠回りに見えて最短。</span></span>
+    </div>
+  </div>
+
+  <!-- 横断的な設計課題 -->
+  <div class="principles">
+    <h3>横断的な設計課題（必要になったら着手）</h3>
+    <p class="psub">機能そのものではないが、機能増加に伴い見直しが要るもの。要件は未確定。</p>
+
+    <div class="principle">
+      <span class="pnum">◆</span>
+      <span class="ptext"><strong>ナビゲーション（ヘッダ）の再設計。</strong> <span>現在のヘッダ遷移はコンボ・セットプレイ前提（2〜3個）。構想どおり機能が増えると横並びヘッダは破綻する。<strong>オールインワンで提供しつつ「目的の機能まで迷わせない」両立</strong>が必要（軽快でも迷わせたら無意味）。方向性メモ: 機能を3〜5個の「目的グループ」に畳む／「入口は増やさない」を原則化／サイドバー or 二段ヘッダ＋コマンドパレット併設が候補／AI横断分析のハブ画面を入口にする案。<strong>要件は必要になった時点で新担当と詰める。</strong></span></span>
+    </div>
+  </div>
+
+  <footer>
+    Tacpendium Future Roadmap（願望リスト・REQ-001のPhase番号とは別系統）— 区分・順序は暫定。実ユーザーの声で更新する<br>
+    到達点: ①コンボ管理の決定版 → ②練習プラットフォーム → ③総合研究環境
+  </footer>
+
+</div>
+
+</body>
+</html>

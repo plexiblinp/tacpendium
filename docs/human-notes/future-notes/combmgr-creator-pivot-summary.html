@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>発信者中心への戦略転換 — 現時点まとめ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #fafaf8;
+    --surface: #ffffff;
+    --border: #e4e2dc;
+    --border-strong: #d0cdc4;
+    --text: #2a2925;
+    --text-dim: #6b6862;
+    --text-faint: #9a968d;
+    --accent: #3d6b5e;
+    --accent-soft: #eef3f1;
+    --human: #b5763a;
+    --human-soft: #f7efe5;
+    --warn: #b5613a;
+    --warn-soft: #faf3f0;
+    --ok: #3d6b5e;
+    --ok-soft: #eef3f1;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    line-height: 1.85; font-size: 15px;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 24px; }
+
+  header { padding: 64px 0 32px; border-bottom: 1px solid var(--border); }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px;
+  }
+  h1 { font-size: 1.7rem; font-weight: 700; line-height: 1.4; margin-bottom: 14px; letter-spacing: -0.01em; }
+  .meta { color: var(--text-faint); font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; }
+  .summary { color: var(--text-dim); font-size: 1rem; margin-top: 14px; }
+  .summary strong { color: var(--text); font-weight: 500; }
+
+  section { padding: 36px 0; border-bottom: 1px solid var(--border); }
+  h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em; }
+  h2 .n { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--accent); margin-right: 10px; }
+  .sub { color: var(--text-faint); font-size: 0.84rem; margin-bottom: 20px; }
+  h3 { font-size: 1rem; font-weight: 700; margin: 22px 0 8px; }
+  p { margin-bottom: 13px; color: var(--text-dim); }
+  p strong, li strong { color: var(--text); font-weight: 500; }
+  ul { list-style: none; margin: 6px 0 14px; }
+  li { padding: 3px 0 3px 18px; position: relative; color: var(--text-dim); font-size: 0.94rem; }
+  li::before { content: '–'; position: absolute; left: 0; color: var(--text-faint); }
+
+  .definition {
+    background: var(--accent-soft); border-left: 3px solid var(--accent);
+    padding: 18px 22px; border-radius: 0 6px 6px 0; margin: 22px 0; font-size: 1.02rem; color: var(--text);
+  }
+  .definition .label {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; letter-spacing: 0.1em;
+    color: var(--accent); display: block; margin-bottom: 6px;
+  }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px 20px; margin-bottom: 14px;
+  }
+  .card-tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.05em;
+    padding: 3px 9px; border-radius: 4px; display: inline-block; margin-bottom: 10px;
+  }
+  .card-tag.done { background: var(--ok-soft); color: var(--ok); border: 1px solid #cfe0d9; }
+  .card-tag.open { background: var(--human-soft); color: var(--human); border: 1px solid #e8d5bf; }
+  .card-tag.gate { background: var(--warn-soft); color: var(--warn); border: 1px solid #e8d0c6; }
+  .card-tag.idea { background: #f0eee9; color: var(--text-faint); border: 1px solid var(--border-strong); }
+  .card h3 { margin-top: 0; }
+  .card .note { font-size: 0.85rem; color: var(--text-faint); margin-top: 8px; }
+
+  .contrast { display: flex; gap: 14px; margin: 18px 0; flex-wrap: wrap; }
+  .ci { flex: 1; min-width: 240px; border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; }
+  .ci.ok { background: var(--ok-soft); border-color: #cfe0d9; }
+  .ci.no { background: var(--warn-soft); border-color: #e8d0c6; }
+  .ci-label { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .ci.ok .ci-label { color: var(--accent); }
+  .ci.no .ci-label { color: var(--warn); }
+  .ci ul { margin: 0; }
+  .ci li { font-size: 0.88rem; }
+
+  .caution {
+    background: var(--warn-soft); border-left: 3px solid var(--warn);
+    padding: 16px 20px; border-radius: 0 6px 6px 0; margin: 18px 0; font-size: 0.94rem; color: var(--text);
+  }
+  .caution .label {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; letter-spacing: 0.1em;
+    color: var(--warn); display: block; margin-bottom: 6px;
+  }
+
+  .steps { counter-reset: s; margin: 16px 0; }
+  .steps li {
+    counter-increment: s; padding: 8px 0 8px 34px; font-size: 0.94rem;
+    border-bottom: 1px dashed var(--border); 
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--surface);
+    background: var(--accent); width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  footer { padding: 30px 0 56px; color: var(--text-faint); font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; text-align: center; }
+
+  @media (max-width: 560px) {
+    h1 { font-size: 1.4rem; }
+    .contrast { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Strategy Summary · Creator-Centric Pivot</div>
+    <h1>発信者中心への戦略転換<br>現時点まとめ</h1>
+    <div class="meta">Tacpendium ／ ステータス: 検討中（一部決定・記録） ／ 種別: 戦略メモ</div>
+    <p class="summary">本アプリの利用者は<strong>少数の発信者（生産者）と多数の閲覧者（消費者）</strong>に分かれる、という市場構造の発見を受けた戦略整理。普及の鍵は<strong>代表的なコンボ発信者の移行</strong>、継続価値の北極星は<strong>主要発信者がアップデートごとに本アプリ用 CSV を出し続けているか</strong>。機能は需要駆動の規律で濃淡をつけ、メディア保持・取り込み変換・GitHub 集約の各論点を記録する。</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <h2><span class="n">01</span>結論（一言で）</h2>
+  <div class="definition">
+    <span class="label">CONCLUSION</span>
+    コンボ/セットプレイを能動的に探す人は多数派でない。本アプリは<strong>「発見者が記録・発信しやすくするツール」</strong>と捉え直す。大多数は<strong>発信者の CSV をインポートして閲覧</strong>する側で、自力探索は新キャラ登場直後など例外。よって<strong>生産者を獲れば消費者は付いてくる（逆は成立しない）</strong>。次の一手は機能追加でも体系研究でもなく、<strong>発信者便益仮説の言語化と少数検証</strong>。
+  </div>
+  <p>本書は決定記録ではなく<strong>検討中のスナップショット</strong>。確定済みはメディア保持方式（§06）と差し返しの後回し、事実はセットプレイ自動提案の自律作成済み（§05）。</p>
+</section>
+
+<section>
+  <h2><span class="n">02</span>市場構造の発見 — 生産者と消費者</h2>
+  <p class="sub">「ユーザー像」でなく「市場構造」の発見である点が重要。</p>
+  <p>これは CGM（消費者生成メディア）の普通の形。これまで設計してきた「分析者が自分のために記録する」像は、実は<strong>生産者像</strong>だった。消費者が欲しいのは記録ツールでなく<strong>「信頼できる最新コンボを速く引ける」閲覧体験</strong>。</p>
+  <div class="definition">
+    <span class="label">NORTH STAR</span>
+    継続価値の測り方＝<strong>主要発信者がアップデートごとに本アプリの CSV を出し続けているか</strong>。少数の生産者の継続を見れば全体が分かる。「蓄積閾値」より市場構造に合った指標。
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>訂正 — 「生産者/消費者は真逆」は撤回</h2>
+  <p>当初「必要な品質が真逆」と述べたが、行き過ぎ。<strong>共通基盤は大きく、phase3 の入力 UX 修正はそのまま消費者にも効く</strong>。正確には「真逆」ではなく——</p>
+  <div class="definition">
+    <span class="label">正確な言い方</span>
+    共通基盤（速い入力・正確な表記・信頼できる参照）の上に、<strong>消費者固有の追加面（閲覧・検索・フィルタ・インポート体験）が乗る</strong>。別アプリを作る話ではない。ただしその追加面は現状ほぼ未着手で、<strong>普及の本体はそこ</strong>になる、という意識は要る。
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>規律 — 「乗り換えは自動では起きない」</h2>
+  <div class="caution">
+    <span class="label">危険な仮定</span>
+    「より優れていれば乗り換えるはず」は最も危険な仮定。発信者は既に YouTube・X・Discord・Sheets で完結し、視聴者もそこにいる。本アプリは<strong>二重投稿（既存発信＋CSV 書き出し）を強いる</strong>。必要なのは「優れていること」でなく<strong>追加の手間を上回る固有便益</strong>。
+  </div>
+  <p>固有便益の候補（テキスト/動画にできないこと）＝<strong>視聴者が検索・フィルタ・自分のと比較できる／パッチ差分を構造化して出せる</strong>。これを言語化できないとコンタクトは空振る。ゆえに順序を固定する。</p>
+  <ul class="steps">
+    <li><strong>発信者便益仮説を言語化</strong>（CSV を出す手間を上回る便益は何か）。</li>
+    <li><strong>代表的発信者 2〜3 人に当てて検証</strong>（使う気になるか）。</li>
+    <li>反応を見てから<strong>既存発信フォーマットの体系研究・広いコンタクト</strong>。重い研究を先にしない。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">05</span>機能スコープの濃淡（需要駆動の規律）</h2>
+  <p class="sub">判断軸：(a) 純ロジックで隔離実装できるか (b) 自分で品質検証できるか (c) スキーマの根を動かさないか。一律に止めず濃淡をつける。</p>
+
+  <div class="card">
+    <span class="card-tag open">初期候補・最有力</span>
+    <h3>確定反撃</h3>
+    <ul>
+      <li>純ロジック・<strong>あなた自身がドメイン検証者</strong>・公開が少なく自力探索需要が高い、の三拍子。</li>
+      <li><code>punish-finder</code>（汎用計算モジュール）が既にある。</li>
+      <li>初期スコープへの引き上げを前向きに検討する価値が最も高い。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="card-tag done">自律作成済み（事実）</span>
+    <h3>セットプレイ自動提案 — 目玉機能</h3>
+    <ul>
+      <li><strong>過去担当と自律作成済み</strong>。「作る」作業は終わっている。前例を聞かない差別化。</li>
+      <li>テコの鋭さ：<strong>コンボは探すがセットプレイは面倒で皆サボる</strong>（最も退屈な工程の自動化）。アレンジ版コンボを見つけた人が<strong>走査だけしたい</strong>需要は確実。<strong>機能が入口になり</strong>「これを動かしたくてコンボを探し始める人」も生む。</li>
+    </ul>
+    <div class="caution">
+      <span class="label">残る関門</span>
+      目玉だけに<strong>提案精度が生命線</strong>。外れると逆に信頼を毀損する。残作業は「作る」でなく<strong>精度ゲート（デモで実用域か）＋初期採用判断</strong>。品質検証はあなた（ドメイン）が机で。
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="card-tag gate">設計先行（スキーマに触る）</span>
+    <h3>メディア添付・SNS リンク</h3>
+    <p class="note">「無いと論外」に同意。ただしロジックでなく<strong>データモデル＋ストレージ</strong>の話で、要望駆動で後付けすると破壊的移行になる＝「継ぎ目を最初に残す」案件。方式は §06 で決定済み。</p>
+  </div>
+
+  <div class="card">
+    <span class="card-tag idea">後回し（合意）</span>
+    <h3>差し返し</h3>
+    <ul><li>需要はあるが優先度を下げ、後続フェーズへ。</li></ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>メディア保持方式（決定）</h2>
+  <div class="definition">
+    <span class="label">DECIDED — 保持する2フィールド</span>
+    コンボ/セットプレイに、<strong>①インターネットリンク1つ（YouTube・X 等）</strong>と、<strong>②<code>tacpendium.exe</code> のカレントからの相対パスで <code>video/</code> 配下のファイルを指すパス1つ</strong>を持たせる。
+  </div>
+  <ul>
+    <li><strong>CSV 同梱：可</strong>。リンク切れ・ファイル不在は<strong>「ただ閲覧できないだけ」で許容</strong>するため、往復 CSV にそのまま含めてよい。</li>
+    <li><strong>初手はリンク先行</strong>が安全。URL とパスは軽量・即値で、スキーマの継ぎ目（リンク列）を最初から持たせる。</li>
+    <li>「自分の動画が回ってほしい」という発信者動機を、リンク保持が同時に満たす。</li>
+  </ul>
+  <div class="caution">
+    <span class="label">分離する論点</span>
+    <strong>動画ファイル実体の配布方法（サイズ問題）は別途検討</strong>。本決定は「参照（リンク／相対パス）を持つ」までで、実体の同梱・配布・容量設計は切り離す。スキーマは参照を持てば足り、配布は後で詰める。
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">07</span>取り込みプロンプトと最大の鬼門 — 技コード変換</h2>
+  <p class="sub">発信者の既存成果物（動画・Sheets・テキスト）を AI 整形で取り込むヘルパー。移行障壁を直接下げる隠れた獲得テコ。</p>
+  <div class="caution">
+    <span class="label">鬼門</span>
+    表記揺れより<strong>内部 <code>move_code</code> への変換が本丸</strong>。「立ち弱P」「2LP」「c.LP」等<strong>無限の表記 → 一意のコード</strong>の多対一マッピングで、AI は<strong>もっともらしく誤る</strong>（存在しないコードを自信満々に生成）。ここで誤ると「信頼できる参照」という価値の根が腐る。
+  </div>
+  <div class="contrast">
+    <div class="ci ok">
+      <div class="ci-label">AI にやらせる（曖昧でよい所）</div>
+      <ul>
+        <li>自由表記の<strong>正規化・候補トークン列への分割</strong></li>
+        <li>「要約・候補提示」止まり</li>
+      </ul>
+    </div>
+    <div class="ci no">
+      <div class="ci-label">AI にやらせない（確定が要る所）</div>
+      <ul>
+        <li><strong>技コードの生成・確定</strong>（生成させた瞬間に負ける）</li>
+        <li>断定。事実 in／表現 out の原則を厳格適用</li>
+      </ul>
+    </div>
+  </div>
+  <p><strong>二段変換</strong>：①AI が表記を正規化し候補に割る（曖昧）→ ②アプリが <strong>move マスタ（キャラ別・エイリアス込み）への厳密照合</strong>で確定し、未解決は人に出す（確実・コード側）。副次の鬼門＝キャラ固有表記・ラッシュ版・システム技（ドライブ系）・modifier（ジャスト/ディレイ）の混入。<strong>テコ</strong>：未解決を人に出す UI は <code>moves-input-tool</code>／CSV import の人レビュー動線にそのまま乗る（新規でなく既存突合動線の拡張）。</p>
+</section>
+
+<section>
+  <h2><span class="n">08</span>GitHub コンボリポジトリ構想（記録）</h2>
+  <p class="sub">QMK 型の集約。アイデアとして記録、需要が見えてから器を作る位置づけ。</p>
+  <div class="card">
+    <span class="card-tag idea">構想・時期尚早</span>
+    <h3>方向性は良いが、器は需要の後</h3>
+    <ul>
+      <li>QMK が機能したのは<strong>設定共有に強い既存需要</strong>があったから。リポジトリは需要を作らず<strong>既存需要を増幅する器</strong>。CSV を出す習慣がまだゼロの今は空のままになる。</li>
+      <li><strong>アカウント不要案</strong>：プッシュ＝コミット＝アカウントが GitHub の前提。代替は (a) PR でなく<strong>フォーム/Gist/ファイル受け → 開発者が束ねてリポジトリ化</strong>（投稿者は GitHub 不要・Awesome リスト型）、(b) アプリ内「共有用 CSV 書き出し」を磨き、流通は既存 SNS に委ね<strong>リポジトリは集約に徹する</strong>。</li>
+      <li><strong>初手は (b)</strong>。分散プッシュの器は需要が見えてから。</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">09</span>次の一手・オープン論点</h2>
+  <div class="definition">
+    <span class="label">NEXT</span>
+    機能追加でも体系研究でもなく、<strong>発信者便益仮説の言語化と 2〜3 人での検証</strong>。通ってから研究・器・機能を需要駆動で足す。
+  </div>
+  <p>外出レーン §1 へ追加で記録する調査・設計テーマ：</p>
+  <ul>
+    <li><strong>取り込みプロンプトの二段変換設計</strong>（AI は表記を均すだけ・コードはアプリ照合）。</li>
+    <li><strong>セットプレイ自動提案の精度ゲート設計</strong>（作成済みゆえ、検証プロトコルが残作業）。</li>
+    <li><strong>確定反撃の初期スコープ引き上げ検討</strong>（純ロジック・自分が検証者・需要高）。</li>
+    <li><strong>メディア参照のスキーマ継ぎ目設計</strong>（リンク列・相対パス列・CSV 往復への載せ方。実体配布は分離）。</li>
+    <li><strong>GitHub 集約構想</strong>（Awesome 型・アカウント不要受け口・初手は共有 CSV 書き出し）。</li>
+  </ul>
+</section>
+
+</div>
+
+<footer>
+  Tacpendium · Creator-Centric Pivot Summary · 2026-06-26 · 検討中スナップショット
+</footer>
+
+</body>
+</html>

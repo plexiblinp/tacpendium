@@ -1,0 +1,151 @@
+Tacpendium — NOTICE
+===================
+
+本ファイルは Tacpendium の配布物に付随する告知である。ライセンス本文は `LICENSE`
+（アプリ本体＝AGPL-3.0-or-later）と `LICENSES/` 配下、パス単位の割当は `REUSE.toml`
+を参照すること。データ層の説明は `DATA-LICENSE.md` にある。
+
+
+1. 非公式であること
+-------------------
+
+Tacpendium は個人が開発する非公式のツールであり、いかなるゲーム会社とも提携・承認・
+後援の関係を持たない。ゲームタイトル名・キャラクター名・技名は各権利者の商標または
+それに準ずるものである。
+
+**本ソフトウェアはゲームのロゴ・画像・音声・その他のゲームアセットを一切含まない。**
+
+
+2. 同梱するゲームデータについて
+-------------------------------
+
+同梱するフレームデータ・技データは、**開発者およびコミュニティによる手入力と観測に
+基づく事実情報**であり、公式配布物の複製ではない。データとしての正本は
+`character_data/` 配下の CSV および測定記録である（`DATA-LICENSE.md` §4）。
+
+技名・キャラクター名・状態名の日本語表記（データ上の `name_ja`）も、同じ原則による。
+**インゲームで表示される公然の事実を開発者が観測して手入力したもの**であり、公式サイト
+の技表からの転記ではない。分かれ目は表記が独自か公式かではなく、**どこから取得したか**
+である。
+
+これらは `CC-BY-SA-4.0` で提供する（`REUSE.toml` の層 B）。
+
+
+3. 撤退ポリシー
+---------------
+
+**権利者から申し出があった場合、該当するデータを速やかに取り下げる。**
+
+**★お申し出の内容を確かめるため、いただいた連絡先へ折り返し照会することがある。⇒ これは取り下げの条件ではない。**
+
+連絡先は次の窓口である。同梱するゲームデータの出所についての一般の問い合わせも、
+同じ窓口で受ける。
+
+    権利者・一般問い合わせ: plexiblinp.contact@gmail.com
+
+**★個人が開発する OSS であり、返答の期限は約束しない**（`SUPPORT.md`）。
+**脆弱性の報告は本窓口ではなく `SECURITY.md` の経路を用いること**（窓口が違う）。
+
+
+4. バイナリに対応するソースコード
+---------------------------------
+
+配布バイナリに対応するソースコードは、公開リポジトリの同じタグにある。
+
+    リポジトリ: https://github.com/plexiblinp/tacpendium
+    タグ:       リリース成果物のファイル名およびアプリの起動ログに表示される版
+
+公開リポジトリは**リリース毎のスナップショットとして生成される**。開発リポジトリの
+コミット履歴は公開されない。
+
+
+5. 第三者ライブラリ
+-------------------
+
+直接依存の全数と、その版・ライセンスの実測は
+`docs/progress/M26-01-report.md` §1（2026-09 時点）にある。同報告の実測を要約すると：
+
+  Go の直接依存 7 件
+    github.com/BurntSushi/toml              MIT
+    github.com/golang-migrate/migrate/v4    MIT
+    github.com/labstack/echo/v4             MIT
+    github.com/pkg/browser                  BSD-2-Clause
+    golang.org/x/text                       BSD-3-Clause
+    gopkg.in/natefinch/lumberjack.v2        MIT
+    modernc.org/sqlite                      BSD-3-Clause
+
+  フロントエンドの直接依存 45 件
+    MIT 40 / Apache-2.0 3 / ISC 2
+
+推移依存を含む全数は `go.mod` / `go.sum` および `web/package.json` /
+`web/pnpm-lock.yaml` が正本である。
+
+**★機械生成の third-party notices はまだ用意できていない。**
+`go-licenses` による生成は 2026-09 時点で失敗している（顛末は `M26-01` 報告 §1.1）。
+上記は人手による実測であり、網羅性の保証は `go.mod` / `pnpm-lock.yaml` 側にある。
+
+
+6. 同梱する第三者ソース（コピーして持ち込んだもの）
+---------------------------------------------------
+
+前節（§5）は `go.mod` / `web/package.json` が宣言する**依存ライブラリ**の一覧である。
+**コピーしてソースを持ち込んだものは、依存として宣言されていないため §5 には現れない。**
+本節がそれを扱う。
+
+### 6.1 shadcn/ui
+
+    Copyright (c) 2023 shadcn
+    License: MIT
+
+  対象: `web/src/components/ui/` 配下の 21 ファイル と `web/src/lib/utils.ts`
+  上流: https://github.com/shadcn-ui/ui
+        https://github.com/shadcn-ui/ui/blob/main/LICENSE.md （2026-09-20 参照）
+
+shadcn/ui はパッケージとして参照する方式ではなく、コンポーネントのソースを利用者の
+プロジェクトへ直接追加する設計である。本プロジェクトは M7 で shadcn/ui の CLI を用いて
+導入した（根拠: `web/components.json` の `"$schema": "https://ui.shadcn.com/schema.json"`）。
+
+**うち 4 ファイルは本プロジェクト側で改変している**（`dialog.tsx` / `alert-dialog.tsx` /
+`sheet.tsx` がモーダル在否マーカーを組み込み、`sonner.tsx` がアイコンとテーマを差し替え）。
+パス単位の割当は `REUSE.toml` の (6-T1) が正本である。
+
+上記コードに適用される MIT License の全文は次のとおりである。
+
+    MIT License
+
+    Copyright (c) 2023 shadcn
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this
+    software and associated documentation files (the "Software"), to deal in the Software
+    without restriction, including without limitation the rights to use, copy, modify, merge,
+    publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons
+    to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or
+    substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+    INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+    PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+    FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+    OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+
+★`LICENSES/MIT.txt` は**著作権表示を含まない MIT の本文テンプレート**である。MIT や BSD 系の
+ライセンスは本文中に著作権表示を差し込める形をしており、**複数の権利者の MIT が同居すると
+どの表示を置くか決まらなくなる**。そのため本プロジェクトは、本文はテンプレートのまま置き、
+**著作権表示は `REUSE.toml` の `SPDX-FileCopyrightText`（機械可読）と本ファイル（人が読む）
+の側に持つ**。上に MIT の条項を直接掲げているのはこのためである。
+
+### 6.2 Radix UI 等の依存ライブラリについて
+
+上記のコンポーネントは Radix UI 等を `web/package.json` の依存として利用する。**依存として
+利用することと、コピーして持ち込んだソースの帰属表示は別の話である。** 依存ライブラリは
+§5 の母集団に含まれ、配布アーカイブにはその本文を同梱している。
+
+### 6.3 本節に載っていない持ち込みソース
+
+`web/src/features/combo-io/export-image/` 配下には、本プロジェクトの先行内製成果物
+（`autopilot-combomgr`）からコピーしたソースがある。**第三者の著作物ではないため本節の
+対象ではない。** 同ファイルが利用する `html-to-image` / `pdf-lib` は依存ライブラリであり
+§5 の母集団に含まれる。

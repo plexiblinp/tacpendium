@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tacpendium 操作説明書</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#fafaf8;--surface:#ffffff;--border:#e4e2dc;--border-strong:#d0cdc4;
+    --text:#2a2925;--text-dim:#6b6862;--text-faint:#9a968d;
+    --accent:#3d6b5e;--accent-soft:#eef3f1;--human:#b5763a;--human-soft:#f7efe5;
+    --warn:#b5613a;--warn-soft:#faf3f0;--crit:#a8443a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Zen Kaku Gothic New',sans-serif;line-height:1.85;font-size:15px;counter-reset:ch;}
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px;}
+
+  header{padding:48px 0 28px;border-bottom:1px solid var(--border);}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;}
+  h1{font-size:1.8rem;font-weight:700;line-height:1.35;margin-bottom:14px;letter-spacing:-0.01em;}
+  .meta{color:var(--text-faint);font-size:0.8rem;font-family:'JetBrains Mono',monospace;}
+  .lead{color:var(--text-dim);font-size:1.02rem;margin-top:16px;}
+  .lead strong{color:var(--text);font-weight:500;}
+
+  section{padding:28px 0;border-bottom:1px solid var(--border);}
+  h2{font-size:1.16rem;font-weight:700;margin-bottom:10px;letter-spacing:-0.01em;display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;}
+  /* ★章番号は CSS カウンタで振る。手書きにすると章を 1 本挿すたびに以降が全部ずれる。 */
+  section.chapter h2::before{counter-increment:ch;content:counter(ch,decimal-leading-zero);font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--accent);min-width:1.4em;}
+  /* ★.src / .toc-src は DES-005 の節番号であり、執筆時の対応付けのために出していた。
+       ★★M32-02 で「隠す」に決めた(開発者裁定・2026-09-12)。⇒ 読み手は
+       「SF6 は遊ぶが本アプリは初めて」の利用者であり、内部の設計書番号はその人の
+       文脈に無い。★要素は残してあるので、章 ⇄ DES-005 の対応は HTML を読めば追える
+       (対応表は docs/progress/M32-02-completion-report.md にもある)。
+       ★出し直すときは下の display:none の 1 行を消すだけでよい。 */
+  .src, .toc-src{display:none;}
+  h2 .src{font-family:'JetBrains Mono',monospace;font-size:0.66rem;color:var(--text-faint);font-weight:400;letter-spacing:0.04em;}
+  h3{font-size:0.95rem;font-weight:700;color:var(--text);margin:18px 0 4px;}
+  h3:first-of-type{margin-top:8px;}
+  .body{color:var(--text-dim);font-size:0.96rem;}
+  .body p{margin:8px 0;}
+  .body p .t{color:var(--text);font-weight:500;}
+
+  /* 部の見出し（章番号のカウンタには参加しない） */
+  .part-head{padding:34px 0 0;}
+  .part-label{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:5px 12px;}
+
+  /* 目次 */
+  nav.toc{padding:28px 0;border-bottom:1px solid var(--border);}
+  nav.toc h2{font-size:1.16rem;}
+  ol.toc-list{list-style:none;counter-reset:tc;margin-top:10px;}
+  li.toc-part{margin:16px 0 4px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.12em;color:var(--accent);}
+  li.toc-part:first-child{margin-top:0;}
+  li.toc-ch{counter-increment:tc;position:relative;padding:6px 0 6px 34px;border-top:1px solid var(--border);display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  li.toc-ch::before{content:counter(tc,decimal-leading-zero);position:absolute;left:0;font-family:'JetBrains Mono',monospace;font-size:0.74rem;color:var(--accent);}
+  li.toc-ch a{color:var(--text);font-weight:500;text-decoration:none;border-bottom:1px solid var(--border-strong);}
+  li.toc-ch a:hover{border-bottom-color:var(--accent);}
+  .toc-src{font-family:'JetBrains Mono',monospace;font-size:0.66rem;color:var(--text-faint);}
+  .backlink{margin-top:16px;font-size:0.78rem;}
+  .backlink a{color:var(--text-faint);font-family:'JetBrains Mono',monospace;text-decoration:none;border-bottom:1px solid var(--border);}
+  .backlink a:hover{color:var(--accent);}
+
+  /* ★M32-02 が本文で使う部品。使い道を書いておかないと、知らないまま使われずに終わる。
+       .key      = 押さえておくべき一点(「大事」)。ラベルは <span class="label">
+       .caution  = 気をつけること(失敗するとデータや接続が壊れる類)
+       .note     = 補足。読み飛ばしてよいもの
+       ul.plain  = 並列の箇条書き
+       code.path = ファイルパス・コマンド・画面上の固有名
+       .table-scroll = 表を包むラッパ。★狭い画面で表がはみ出すのを防ぐ。
+                       表を置くときは必ず <div class="table-scroll"> で包むこと */
+  .key{background:var(--accent-soft);border-left:3px solid var(--accent);padding:14px 20px;border-radius:0 6px 6px 0;margin:14px 0 6px;color:var(--text);font-size:0.96rem;}
+  .key .label{font-family:'JetBrains Mono',monospace;font-size:0.64rem;letter-spacing:0.1em;color:var(--accent);display:block;margin-bottom:6px;text-transform:uppercase;}
+
+  .caution{background:var(--warn-soft);border-left:3px solid var(--warn);padding:14px 20px;border-radius:0 6px 6px 0;margin:14px 0 6px;color:var(--text);font-size:0.94rem;}
+  .caution .label{font-family:'JetBrains Mono',monospace;font-size:0.64rem;letter-spacing:0.08em;color:var(--warn);display:block;margin-bottom:6px;text-transform:uppercase;}
+
+  .note{background:var(--accent-soft);border-radius:6px;padding:10px 14px;font-size:0.86rem;color:var(--text);margin-top:12px;}
+  .note b{font-weight:700;}
+  .note a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--border-strong);}
+  .note a:hover{border-bottom-color:var(--accent);}
+
+  ul.plain{list-style:none;margin-top:8px;}
+  ul.plain li{position:relative;padding:7px 0 7px 22px;border-top:1px solid var(--border);color:var(--text-dim);font-size:0.94rem;}
+  ul.plain li:first-child{border-top:none;}
+  ul.plain li::before{content:'—';position:absolute;left:0;color:var(--accent);}
+  ul.plain li .t{color:var(--text);font-weight:500;}
+
+  /* 表（旧版には定義が無かった。章の中で手順や値域を出すのに要る） */
+  .body table{border-collapse:collapse;width:100%;margin:12px 0;font-size:0.9rem;}
+  .body th,.body td{border:1px solid var(--border-strong);padding:7px 10px;text-align:left;vertical-align:top;}
+  .body th{background:var(--accent-soft);color:var(--text);font-weight:700;}
+  .table-scroll{overflow-x:auto;}
+
+  /* 画像（旧版には定義が無かった） */
+  figure{margin:16px 0;}
+  figure img{max-width:100%;height:auto;display:block;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);}
+  figcaption{margin-top:6px;font-size:0.8rem;color:var(--text-faint);}
+  /* ★ch21 はスマホ専用の画面であり、撮影元が縦長(390x740 程度)である。
+       ★他と同じ 712px 幅で出すと 1.8 倍に引き伸ばされ、縦が 1350px を超えて
+         1 章ぶんより背の高い図になる。⇒ この章の図だけ実寸に近い幅へ抑える。
+       ★クラスではなくファイル名で狙うのは、ch21 本文に手を入れないためである
+         (ファイル名の正本は各 <figure> の img src。images/SCREENSHOT-RULES.md 参照)。 */
+  figure img[src*="ch21-"]{max-width:340px;}
+
+  code.path{background:var(--surface);border:1px solid var(--border-strong);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;font-size:0.82em;color:var(--text);white-space:nowrap;}
+
+  /* ★未記入であることを、読めば分かる形で出す。図を足すときは撮影が済むまで .todo を付け、撮り終えたら外す(M38-03 時点で 0 件)。 */
+  .todo{color:var(--human);background:var(--human-soft);border:1px dashed var(--human);border-radius:6px;padding:8px 12px;font-size:0.88rem;}
+  figure.todo{border:1px dashed var(--human);border-radius:6px;padding:12px;background:var(--human-soft);}
+  figure.todo img{border-style:dashed;}
+
+  footer{padding:30px 0 56px;color:var(--text-dim);font-size:0.9rem;}
+  footer .sign{color:var(--text);font-weight:500;margin-bottom:8px;}
+  footer .fine{color:var(--text-faint);font-size:0.78rem;font-family:'JetBrains Mono',monospace;margin-top:18px;}
+
+  @media (max-width:520px){
+    body{font-size:14px;}
+    h2{gap:8px;}
+    li.toc-ch{padding-left:30px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Tacpendium · 操作説明書</div>
+    <h1>Tacpendium 操作説明書</h1>
+    <div class="meta">SF6 Tactics Workbench</div>
+    <p class="lead">この説明書は、<strong>Tacpendium の画面ごとの使い方</strong>をまとめたものです。インストールや起動の手順、スマホからつなぐ方法、うまくつながらないときの対処は、配布物に同梱の <code class="path">README.txt</code> にあります。</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="about">
+  <h2>本書の読み方</h2>
+  <div class="body">
+    <ul class="plain">
+      <li><span class="t">想定読者</span>：ストリートファイター6 は遊んでいるが、Tacpendium は初めて、という方。SF6 そのものの用語は説明せず、<span class="t">本アプリの用語だけ</span>を説明します。</li>
+      <li><span class="t">章の並び</span>：画面ごとに 1 章です。使い始める順に 5 部へ分けてあります。目的の画面が決まっているときは、下の目次から直接飛んでください。</li>
+      <li><span class="t">各章の形</span>：「何のためにあるか」→「どこから来て、どこへ行くか」→「よく使う操作」→「つまずきどころ」の順です。<span class="t">全機能の一覧ではありません</span>。</li>
+      <li><span class="t">画面の写真</span>：各章の末尾に置きます。<span class="t">画面全体ではなく、本文が触れている部分</span>を写しています。</li>
+    </ul>
+    <div class="note"><b>はじめての方へ</b>：本書は「この画面のこの欄は何か」を<b>引く</b>ための本です。<b>何から始めるか</b>の道案内は、同じフォルダの <a href="tacpendium-quickstart.html">クイックスタート</a>（1 画面で読み終わります）にあります。</div>
+  </div>
+</section>
+
+<section id="controls">
+  <h2>操作タイプについて</h2>
+  <div class="body">
+    <div class="caution">
+      <span class="label">はじめにお読みください</span>
+      <b>Tacpendium は「クラシック操作」を前提としています。</b>技の入力表記・コンボのレシピは、すべてクラシック操作のコマンドで記録・表示されます。<b>モダン操作の入力表記には対応していません。</b>
+    </div>
+    <p>モダン操作で遊んでいる方も、キャラクター・技・フレームのデータはそのまま参照できます。ただし、<span class="t">レシピに並ぶコマンドはクラシックの表記</span>であり、そのまま入力しても同じ技が出るとは限りません。</p>
+    <div class="note"><b>この先の予定</b>：モダン操作の表記と使用可否への対応は、今後の課題として残しています。現時点では対応していない、とだけご承知おきください。</div>
+  </div>
+</section>
+
+<nav class="toc" id="toc">
+  <h2>目次</h2>
+  <ol class="toc-list">
+    <li class="toc-part">第 1 部　使いはじめる</li>
+    <li class="toc-ch"><a href="#ch01">初回起動ウィザード</a><span class="toc-src">DES-005 §5.1</span></li>
+    <li class="toc-ch"><a href="#ch02">ユーザー選択</a><span class="toc-src">DES-005 §5.3</span></li>
+    <li class="toc-ch"><a href="#ch03">設定</a><span class="toc-src">DES-005 §5.16</span></li>
+    <li class="toc-ch"><a href="#ch04">ログイン</a><span class="toc-src">DES-005 §5.22</span></li>
+    <li class="toc-part">第 2 部　コンボを記録する</li>
+    <li class="toc-ch"><a href="#ch05">コンボ一覧</a><span class="toc-src">DES-005 §5.4</span></li>
+    <li class="toc-ch"><a href="#ch06">マイコンボ</a><span class="toc-src">DES-005 §5.5</span></li>
+    <li class="toc-ch"><a href="#ch07">コンボ詳細</a><span class="toc-src">DES-005 §5.6</span></li>
+    <li class="toc-ch"><a href="#ch08">コンボ登録・編集</a><span class="toc-src">DES-005 §5.7</span></li>
+    <li class="toc-ch"><a href="#ch09">タグ管理</a><span class="toc-src">DES-005 §5.12</span></li>
+    <li class="toc-part">第 3 部　組み立てる・比べる</li>
+    <li class="toc-ch"><a href="#ch10">コンボ比較</a><span class="toc-src">DES-005 §5.8</span></li>
+    <li class="toc-ch"><a href="#ch11">セットプレイ登録・編集</a><span class="toc-src">DES-005 §5.9</span></li>
+    <li class="toc-ch"><a href="#ch12">プリセット一覧</a><span class="toc-src">DES-005 §5.10</span></li>
+    <li class="toc-ch"><a href="#ch13">プリセット編集</a><span class="toc-src">DES-005 §5.11</span></li>
+    <li class="toc-part">第 4 部　出し入れする</li>
+    <li class="toc-ch"><a href="#ch14">エクスポートダイアログ</a><span class="toc-src">DES-005 §5.13a</span></li>
+    <li class="toc-ch"><a href="#ch15">取込</a><span class="toc-src">DES-005 §5.14</span></li>
+    <li class="toc-ch"><a href="#ch16">ゴミ箱</a><span class="toc-src">DES-005 §5.15</span></li>
+    <li class="toc-ch"><a href="#ch17">他から引っ越し</a><span class="toc-src">DES-005 §5.19</span></li>
+    <li class="toc-part">第 5 部　追いかける・探す・スマホで使う</li>
+    <li class="toc-ch"><a href="#ch18">ゲーム更新の影響コンボ</a><span class="toc-src">DES-005 §5.19b</span></li>
+    <li class="toc-ch"><a href="#ch19">確定反撃サーチ（探す）</a><span class="toc-src">DES-005 §5.20</span></li>
+    <li class="toc-ch"><a href="#ch20">確定反撃マイリスト（使う）</a><span class="toc-src">DES-005 §5.21</span></li>
+    <li class="toc-ch"><a href="#ch21">ホーム（スマホ専用）</a><span class="toc-src">DES-005 §5.2</span></li>
+  </ol>
+  <p class="backlink">全 21 章。アプリの画面ごとに 1 章です。</p>
+</nav>
+
+<div class="part-head"><span class="part-label">第 1 部　使いはじめる</span></div>
+
+<section class="chapter" id="ch01">
+  <h2>初回起動ウィザード<span class="src">DES-005 §5.1</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>Tacpendium を<span class="t">いちばん最初に開いたときだけ</span>出てくる画面です。言語・よく使うキャラクター・技の名前の出しかた・ほかの機器から使うかどうかを、<span class="t">あとで迷わないように最初にまとめて決めておく</span>ためにあります。</p>
+    <p>ここで決めたことは<span class="t">すべて設定画面からあとで変えられます</span>。決めきれない項目は、そのまま次へ進んでかまいません。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>アプリを初めて起動したときに自動で開きます。全部で 8 段ありますが、<span class="t">ほかの機器から使わない選択をすると 6 段で終わります</span>（機器から使うための 2 段が省かれるためです）。</p>
+    <p>最後まで進むと<span class="t">コンボ一覧</span>へ移ります。以降この画面は出ません。もう一度設定を見直したいときは、ヘッダの<code class="path">設定</code>から同じ項目に行けます。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">言語を選ぶ</span>：日本語か English です。お使いのブラウザの言語から推測したほうが最初から選ばれています。</li>
+      <li><span class="t">よく使うキャラクターを選ぶ</span>：コンボ一覧や登録画面を開いたとき、最初から絞り込まれた状態になります。<span class="t">決めずに飛ばせます</span>。</li>
+      <li><span class="t">ほかの機器から使うかを決める</span>：スマートフォンやタブレットから開きたいときだけ有効にします。迷ったら<span class="t">無効のまま</span>で進んでください。あとから設定画面で有効にできます。</li>
+    </ul>
+
+    <div class="caution">
+      <span class="label">ほかの機器から使う設定をするとき</span>
+      有効にすると、<b>同じ Wi-Fi につながっている機器から、コンボの追加・変更・削除ができるようになります</b>。見るだけではありません。<br>
+      いっぽうで、<b>外出先など別の回線からは開けません</b>。家の中のネットワークに入れる人だけが対象です。
+    </div>
+
+    <h3>つまずきどころ</h3>
+    <p><span class="t">パスワードは決めなくても先に進めます。</span>ただし決めずに進む段では、<span class="t">「パスワードなしで進む」ことに同意するチェック</span>を入れるまで確定ボタンが押せません。読まずに押し進めてしまうのを防ぐためです。段を戻ってやり直すと、このチェックは外れた状態に戻ります。</p>
+    <p>パスワードの入力欄は<span class="t">最初から文字が見える状態</span>です。伏せ字にも切り替えられます。ここで打ち間違えると、あとで設定ファイルを直接開いて消す作業が必要になってしまうため、見えるほうを既定にしています。</p>
+    <div class="note"><b>プリセットとは</b>：技の名前の出しかたの組み合わせです。たとえば同じ技を「中足」と呼ぶか「しゃがみ中キック」と呼ぶかを、まとめて切り替えられます。組み込みのものが 3 つ用意されており、既定は公式の技名で表示するものです。自分用のものは<b>プリセット一覧</b>から作れます。</div>
+    <figure class="shot">
+      <img src="images/ch01-wizard-1.png" alt="初回起動ウィザード のパスワードを決める段">
+      <figcaption>初回起動ウィザード（パスワードを決める段）</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch02">
+  <h2>ユーザー選択<span class="src">DES-005 §5.3</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>1 台の PC を家族や友人と一緒に使うときに、<span class="t">いま誰として操作しているか</span>を決める画面です。</p>
+    <p>選んだ人によって変わるのは<span class="t">タグとプリセットだけ</span>です。<span class="t">コンボとセットプレイは誰のものでもなく、全員で 1 つのものを共有します</span>。「自分のコンボ」という区別を作らず、みんなで 1 冊のノートを育てる形にしてあります。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>利用者が 2 人以上登録されているとき、アプリを開いた直後に出ます。<span class="t">1 人しか居ないときは出ません</span>。</p>
+    <p>選ぶとコンボ一覧（スマートフォンではホーム）へ進みます。あとから選び直したいときは、<span class="t">画面上部の共通ヘッダに出ている利用者名</span>から切り替えます。ブラウザの「戻る」でこの画面へ戻ることはできません。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">自分の名前を選ぶ</span>：一覧から 1 回押すだけです。確認は出ません。</li>
+      <li><span class="t">あとから切り替える</span>：共通ヘッダの利用者名から選び直します。</li>
+      <li><span class="t">利用者を増やす・名前を変える</span>：<code class="path">設定</code>の「ユーザー」から行います。この画面では増やせません。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>この画面は「本人確認」ではありません。</b>誰でも誰の名前でも選べます。パスワードは利用者ごとではなく<b>全員で 1 本</b>であり、それを聞かれるのは<b>ログイン</b>の画面だけです。
+    </div>
+    <p><span class="t">画面を再読み込みすると、この画面へ戻ります。</span>選んだ人を保存していないためで、不具合ではありません。もう一度選び直してください。</p>
+    <div class="note"><b>利用者を消す操作はありません。</b>その人のタグとプリセットが一緒に消えてしまうためです。使わなくなった名前は、残したままにしておいてかまいません。</div>
+    <figure class="shot">
+      <img src="images/ch02-user-select-1.png" alt="ユーザー選択 の画面">
+      <figcaption>ユーザー選択</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch03">
+  <h2>設定<span class="src">DES-005 §5.16</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>初回起動ウィザードで決めたことを<span class="t">あとから変える</span>ための画面です。あわせて、<span class="t">ほかの機器から使うための準備</span>と、<span class="t">データがどこに保存されているかの確認</span>もここで行います。</p>
+    <p>「決めたあとに触らない設定」ではなく、<span class="t">スマートフォンからつなぐたびに開く画面</span>だと考えてください。接続用の QR コードはここにあります。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>共通ヘッダの<code class="path">設定</code>から開きます（スマートフォンではホームのボタンからも行けます）。<span class="t">プリセット一覧へのリンクもこの画面の中にあります</span>。</p>
+    <p>PC では各セクションが横に並び、スマートフォンでは折りたたみになります。Windows では通知領域（タスクトレイ）にアイコンが常駐しているので、そこを右クリックして「設定画面をブラウザで開く」を選ぶと、<span class="t">QR コードを開いた状態</span>でこの画面が出ます。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">ほかの機器から使う／やめる</span>：「ネットワーク」の切り替えです。有効にすると確認が出ます。有効なあいだは、接続先のアドレスと <span class="t">QR コードのボタン</span>が同じ場所に出ます。</li>
+      <li><span class="t">最初に表示するキャラクターと技名の出しかたを変える</span>：「基本」で変えます。一覧や登録画面の初期状態が変わります。</li>
+      <li><span class="t">パスワードを決める・変える・ログアウトする</span>：「ユーザー」で行います。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="caution">
+      <span class="label">パスワードを変えたとき</span>
+      <b>いま開いているすべての機器で入り直しが必要になります。変更した端末自身も含みます。</b>スマートフォンを別の部屋に置いたまま PC で変えると、その場では気づきません。
+    </div>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>パスワードが分からなくなったとき、アプリの中から戻す方法はありません。</b>同じネットワークに居る人なら誰でも叩ける入口になってしまうためです。<br>
+      戻すには設定ファイル <code class="path">config.toml</code> の <code class="path">[security]</code> にある<b>有効化のフラグと保存されている値の 2 行を、どちらも消して</b>アプリを起動し直します。片方だけ消しても新しいパスワードを決め直せません。この案内は<b>ログイン</b>の画面にも置いてあります。
+    </div>
+    <p><span class="t">QR コードのボタンは、ほかの機器から使う設定が無効のあいだ「押せない状態」ではなく、そもそも出ません。</span>見当たらないときは、同じ「ネットワーク」の切り替えが無効になっていないか確かめてください。</p>
+    <p>表示されるアドレスは<span class="t">代表の 1 件だけ</span>です。PC が複数のネットワークにつながっている場合、スマートフォンから届かないアドレスが表示されることがあります。うまくつながらないときの手順は、配布物に同梱の <code class="path">README.txt</code> にまとまっています。</p>
+    <div class="note"><b>「手動バックアップ」「リストア」のボタンは、いまは押せません</b>（今後実装予定）。データの実体がどこにあるかは同じ「データ」の欄に出ているので、当面はそのファイルを自分でコピーして備えてください。</div>
+    <figure class="shot">
+      <img src="images/ch03-settings-1.png" alt="設定 の画面">
+      <figcaption>設定</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch04">
+  <h2>ログイン<span class="src">DES-005 §5.22</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>ほかの機器から使う設定にしていて、<span class="t">かつパスワードを決めているとき</span>だけ出る入口です。同じネットワークに入れる人すべてが対象になってしまうので、<span class="t">そこへもう 1 枚だけ扉を置く</span>ためにあります。</p>
+    <p>パスワードを決めていなければ、この画面は出ません。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p><span class="t">この画面には固有のアドレスがありません。</span>必要になった時点でその場に出ます。入り終えると、以降は「戻る」「進む」でもこの画面へは戻りません。</p>
+    <p>入ったあとは、利用者が 2 人以上ならユーザー選択へ、1 人ならコンボ一覧（スマートフォンではホーム）へ進みます。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">パスワードを入れて入る</span>：入力して入場ボタンを押すだけです。</li>
+      <li><span class="t">入力を見えるようにする</span>：伏せ字を解除して、打ち間違いを確かめられます。</li>
+      <li><span class="t">分からないときの案内を開く</span>：設定ファイルから消す手順が書いてあります。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <p><span class="t">失敗しても、何が悪かったかは表示されません。</span>「合っていない」とだけ出ます。どこまで合っているかを外から測れないようにするためで、不親切にしているわけではありません。エラーは入力欄のそばに出て、画面は切り替わりません。</p>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>使っている途中で急にこの画面が出たときは、時間切れではありません。</b>この画面に時間切れの仕組みはありません。出る理由は 2 つだけです——<b>アプリが起動し直されたか、パスワードが変更されたか</b>。心当たりがなければ、PC 側でアプリが落ちていないか確かめてください。
+    </div>
+    <p>入力欄は<span class="t">伏せ字が既定</span>です（初回起動ウィザードでパスワードを決めるときは逆に、最初から見える状態になっています）。ここは友人が隣に居るときや、画面を配信しているときに打つ場面を想定しているためです。</p>
+    <div class="note"><b>パスワードが分からなくなったら</b>、PC 側で設定ファイル <code class="path">config.toml</code> の <code class="path">[security]</code> にある 2 行を<b>どちらも</b>消してアプリを起動し直します。アプリの中から戻す手段は用意していません。</div>
+    <figure class="shot">
+      <img src="images/ch04-login-1.png" alt="ログイン の画面">
+      <figcaption>ログイン</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<div class="part-head"><span class="part-label">第 2 部　コンボを記録する</span></div>
+
+<section class="chapter" id="ch05">
+  <h2>コンボ一覧<span class="src">DES-005 §5.4</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>登録したコンボを<span class="t">ぜんぶ並べて、目当ての 1 本を見つけ出す</span>ための画面です。本アプリの入口であり、ここから登録・詳細・比較・書き出しへ広がります。</p>
+    <p>「記録した数が増えるほど探せなくなる」のを避けるため、<span class="t">絞り込みと並べ替えを厚く</span>してあります。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>PC ではアプリを開くと最初に出ます（スマートフォンではホームのボタンから）。共通ヘッダの<code class="path">コンボ一覧</code>からいつでも戻れます。</p>
+    <ul class="plain">
+      <li>行の<span class="t">ルート</span>（レシピの文字列）を押すと<span class="t">コンボ詳細</span>へ。</li>
+      <li><span class="t">▶</span> を押すと、そのコンボに紐づくセットプレイが下にぶら下がります。セットプレイの行を押すと<span class="t">セットプレイ登録・編集</span>へ。</li>
+      <li>行末の編集・コピー・削除、右上の<span class="t">新規登録</span>から<span class="t">コンボ登録・編集</span>へ。</li>
+    </ul>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">上の帯でキャラクターを切り替える</span>：一覧の絞り込みと、新規登録するコンボのキャラクターを<span class="t">兼ねています</span>。ここで選んでから「新規登録」を押すと、そのキャラクターで登録画面が開きます。</li>
+      <li><span class="t">絞り込む</span>：タグ・始動位置・ヒット種別・相手の状態・持続当て（始動技）・成立条件などで絞れます。折りたたんでいるあいだも、効いている条件は見出しの行にラベルで出ます。</li>
+      <li><span class="t">まとめて選んで比較・書き出す</span>：「比較/エクスポート対象選択」を入れて複数選び、比較ボタンかエクスポートボタンへ。何も選ばずにエクスポートを押すと<span class="t">いま絞り込んでいる全件</span>が対象です。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>表の列は自分で出し入れできます。</b>最初から出ていないものもあります（備考・セットプレイ数）。<br>
+      ただし<b>この「最初の状態」が効くのは、一度も列を触っていないときだけ</b>です。一度でも出し入れすると以後はその設定が優先されるので、あとから既定が変わっても追随しません。
+    </div>
+    <p><span class="t">絞り込みと並び順を覚えているのは、詳細や編集へ寄り道して戻ってきたときだけ</span>です。アプリを開き直すと既定に戻ります。また、覚えるのはこのコンボ一覧だけで、<span class="t">マイコンボは対象外</span>です。</p>
+    <p>成立条件の「成立」「不成立」「未検証」は<span class="t">互いに排他ではありません</span>。画面端では成立し画面中央では不成立、というコンボは両方に出ます。また<span class="t">「未検証」は「埋め残しがある」</span>という意味であり、「まったく手つかず」とは限りません。<span class="t">セットプレイを 1 つも持たないコンボは、3 つのどれにも出ません</span>。</p>
+    <p>「持続当て（始動技）」の絞り込みは<span class="t">「全て」「持続当て（始動技）」「通常始動」の 3 つ</span>から選びます。「全て」のあいだは両方が出ます。<span class="t">表の列は増えていません</span>——絞り込みだけです。</p>
+    <p>レシピの中の修飾（ディレイ・目押しなど）は<span class="t">技の左側に小さな札で</span>出ます。<span class="t">波括弧の書きかたが無くなったわけではありません</span>——マウスを載せたときの表示・エクスポート・コピーは、今までどおり <code class="path">{目押し}</code> のような波括弧付きの文字のままです。</p>
+    <div class="note"><b>札と波括弧が混ざって見えるとき</b>は、<code class="path">設定</code>の「データ」にある<b>「キャッシュ再構築」</b>を一度だけ押してください。押すまでのあいだ、古い行は波括弧付きの文字のまま残ります。</div>
+    <p>レシピを縦に並べて読む切り替え（「レシピを縦に表示」）は<span class="t">アプリ全体で 1 つ</span>です。一覧で切り替えると、詳細・比較・マイコンボの表示もまとめて変わります。</p>
+    <div class="note"><b>成立条件でうまく絞れないときは</b>、いちばん上の「成立条件」が「全て」のままになっていないか確かめてください。「全て」のあいだは、受け身種別と画面端の 2 つが押せない状態になります。</div>
+    <figure class="shot">
+      <img src="images/ch05-combo-list-1.png" alt="コンボ一覧 の画面">
+      <figcaption>コンボ一覧</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="images/ch05-combo-list-2.png" alt="コンボ一覧 の絞り込み欄を開いた状態">
+      <figcaption>絞り込み欄を開き、セットプレイを ▼ で展開した状態</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch06">
+  <h2>マイコンボ<span class="src">DES-005 §5.5</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>記録したコンボのうち、<span class="t">いま自分が実際に使っているものだけ</span>を取り出して見る画面です。コンボ一覧が「棚にある全部」なら、マイコンボは「いま手に取る分」です。</p>
+    <p>状態は<span class="t">使用中／練習中／頻度低下</span>の 3 つです。試合で使う前に「使用中」だけを見返す、練習の前に「練習中」だけを出す、といった使いかたを想定しています。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>共通ヘッダの<code class="path">マイコンボ</code>から開きます（スマートフォンではホームのボタンからも）。行を押すとコンボ詳細へ、行末の操作からコンボ登録・編集へ進みます。</p>
+    <p>コンボをどの状態にするかは<span class="t">コンボ登録・編集の「その他情報」</span>で決めます。この画面からは切り替えません。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">状態のタブを切り替える</span>：上の 3 つのタブで、使用中／練習中／頻度低下を切り替えます。</li>
+      <li><span class="t">キャラクターを切り替える</span>：複数のキャラクターを使っている場合に、上のプルダウンで切り替えます。</li>
+      <li><span class="t">行から詳細・編集へ進む</span>：表の作りはコンボ一覧と同じです。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <p>表はコンボ一覧と<span class="t">同じ部品を共有しています</span>。そのため<span class="t">列の出し入れの設定も共通</span>です。コンボ一覧で列を消すと、こちらからも消えます。</p>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>絞り込みと並び順の「戻ってきたときの記憶」は、コンボ一覧だけの機能です。</b>マイコンボは詳細から戻るたびに既定へ戻ります。同じ表に見えるので驚きやすいところです。
+    </div>
+    <p>マイコンボの状態は<span class="t">タグのしくみを使って</span>記録しています。タグは利用者ごとに分かれるため、<span class="t">利用者を切り替えると別の顔ぶれになります</span>。コンボそのものは全員で共有しているので、「コンボは見えるのにマイコンボに入っていない」という状態は正常です。</p>
+    <figure class="shot">
+      <img src="images/ch06-my-combo-1.png" alt="マイコンボ の画面">
+      <figcaption>マイコンボ</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch07">
+  <h2>コンボ詳細<span class="src">DES-005 §5.6</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>1 本のコンボについて<span class="t">記録したことを全部まとめて読む</span>場所です。ダメージやゲージだけでなく、<span class="t">そのあと起き攻めへつなげられるか</span>、<span class="t">どのセットプレイと組めるか</span>まで、ここで確かめられます。</p>
+    <p>一覧は「探すため」、詳細は「使えるかどうかを判断するため」の画面です。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>コンボ一覧・マイコンボ・コンボ比較から、行のルートを押して開きます。</p>
+    <p>画面内の<span class="t">「戻る」は、来た道があればそこへ戻り、無ければコンボ一覧へ落ちます</span>。ただし保存した直後にここへ来たときだけは、来た道をたどらずコンボ一覧へ行きます（編集中のフォームへ入り直してしまわないためです）。</p>
+    <div class="note"><b>ブラウザの「戻る」ボタンは別物です。</b>保存の直後に押すと、編集画面へ着くことがあります。画面内の「戻る」をお使いください。</div>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">紐づくセットプレイの成立条件を埋める</span>：セットプレイごとに「受け身種別 × 画面端」の 2×2 の表があります。セルを選んで、成立／不成立／未検証を直接指定します。押すたびに切り替わる方式ではありません。</li>
+      <li><span class="t">転用できるセットプレイを紐づける</span>：同じキャラクターで起き上がりまでの有利が同じ他のコンボのセットプレイが、候補として並びます。「このコンボにも紐付ける」で追加できます。</li>
+      <li><span class="t">セットプレイを自動で提案させる</span>：条件を指定して「提案を出す」を押すと、相手の起き上がりに重なる組み合わせを計算して出します。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      起き攻めの節には、<b>「まだ調べていない（未検証）」か「調べ終わった（検証済み）」かの印が、中身の有無にかかわらず常に出ます</b>。<br>
+      そのため<b>「調べたが、成立する起き攻めは無かった」と「まだ調べていない」を読み分けられます</b>。一覧が空でも、印が「検証済み」なら調べ終わっています。
+    </div>
+    <p><code class="path">状況</code>の欄には<span class="t">「持続当て（始動技）」</span>も並びます。始動技を持続当てしたかどうかで、レシピの途中の技に付ける修飾の「持続当て」とは<span class="t">別の項目</span>です。</p>
+    <p>同じ<code class="path">状況</code>の欄で、始動位置は<code class="path">80 マス (50%)</code>のように<span class="t">マス数とパーセントを並べて</span>出ます。<span class="t">運び量は「状況」ではなく<code class="path">メタデータ</code>の欄</span>に出ます——始動位置とは別の値で、コンボがどれだけ相手を運んだかを表します。</p>
+    <p><span class="t">ドライブダメージの符号に意味があります</span>——<span class="t">マイナスが削り、プラスが回復</span>です。画面には <code class="path">-1 削り</code> <code class="path">+2.5 回復</code> のように符号と語を並べて出しています。</p>
+    <p><span class="t">「コンボ開始時の◯◯ゲージ残量」と「ゲージ消費」は別の項目です。</span>前者は「始めるのに何本必要か」、後者は「このコンボで何本使うか」です。SAゲージ消費・ドライブゲージ消費として別に並びます。</p>
+    <div class="caution">
+      <span class="label">消す操作が 2 種類あります</span>
+      セットプレイのカードにある<b>「ゴミ箱へ移動」</b>は、<b>そのセットプレイ自体</b>をゴミ箱へ入れます。<br>
+      同じカードの<b>紐付け解除</b>は、<b>このコンボとの組み合わせだけ</b>を外します（セットプレイは残ります）。<br>
+      なお<b>コンボそのものの削除は、ページ最上部の操作バー</b>にあり、場所を離してあります。
+    </div>
+    <p>自動提案は<span class="t">出しただけでは何も保存されません</span>。「採用」を押したときに初めてセットプレイとして残ります。「不採用」はその行を一時的に隠すだけで、もう一度検索すると戻ります。起き上がりまでの有利（ノックダウンアドバンテージ）を入れていないコンボでは提案できません。</p>
+    <figure class="shot">
+      <img src="images/ch07-combo-detail-1.png" alt="コンボ詳細 の画面">
+      <figcaption>コンボ詳細</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="images/ch07-combo-detail-2.png" alt="コンボ詳細 の紐づくセットプレイと成立条件">
+      <figcaption>紐づくセットプレイと、成立条件の 2×2 グリッド</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="images/ch07-combo-detail-3.png" alt="コンボ詳細 のセットプレイ自動提案">
+      <figcaption>セットプレイの自動提案（採用・不採用を決める前の状態）</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch08">
+  <h2>コンボ登録・編集<span class="src">DES-005 §5.7</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>コンボを<span class="t">記録する</span>ための画面です。本アプリは「完成したコンボだけを載せる清書帳」ではなく、<span class="t">うろ覚えのものや、まだ試していない机上のアイデアも置いておける手帳</span>を目指しています。</p>
+    <p>そのため<span class="t">ダメージと有利フレームの 2 つを除けば、全部が埋まっていなくても保存できます</span>。この 2 つだけは必須で、空のままだと保存が止まります（仮登録として保存するときは、この 2 つも空のままでかまいません）。ほかの項目は足りなくても保存は止まりません。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>コンボ一覧の<span class="t">新規登録</span>ボタン、行末の<span class="t">編集</span>、行末の<span class="t">コピー</span>から開きます。コンボ詳細からも編集・コピーへ行けます。</p>
+    <p>保存するとコンボ詳細へ移ります。<span class="t">キャンセルは画面のいちばん上といちばん下の両方</span>にあり、長いフォームの途中からでも抜けられます。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">レシピを入れる</span>：技を選んで並べます。1 つめに置いた技が<span class="t">始動技</span>になります（始動技を選ぶ欄はありません）。</li>
+      <li><span class="t">仮登録として保存する</span>：「仮登録として保存」を入れておくと、同じ内容のコンボが既にあっても保存できます。あとから本登録に切り替えられます。</li>
+      <li><span class="t">似たコンボをコピーして作る</span>：一覧か詳細の「コピー」から開くと、中身が入った状態で新規登録になります。違うところだけ直して保存します。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>「直した」つもりでも、直す項目によっては別のコンボとして登録し直されます。</b><br>
+      レシピ・始動技・始動位置・相手の状態・ヒット種別・相手の大きさ・持続当て（始動技）——この 7 つのどれかを変えて保存すると、<b>元のコンボはゴミ箱へ入り、新しいコンボとして登録されます</b>。紐づいていたセットプレイは原則そのまま引き継がれます。<br>
+      ダメージ・ゲージ・タグ・メモなどを変えただけなら、そのコンボがそのまま書き換わります。
+    </div>
+    <div class="caution">
+      <span class="label">似た名前の項目が 2 か所にあります</span>
+      「状況」のヒット種別の隣にある<b>「持続当て（始動技）」</b>は、<b>始動技を持続当てしたかどうか</b>です。「はい」「いいえ」の 2 つだけで、「不問」はありません。<br>
+      いっぽう、レシピの技ごとに付ける修飾の<b>「持続当て」</b>は、<b>コンボの途中の技</b>についてのものです。<b>別々の項目</b>なので、どちらのことか確かめてから選んでください。
+    </div>
+    <p><span class="t">始動位置と運び量は、先に「入力方式」を選んでから 1 つの欄に入れます</span>。始動位置は<code class="path">通常入力</code>・<code class="path">パーセンテージ</code>・<code class="path">マス目</code>の 3 つ（最初は通常入力）、運び量は<code class="path">パーセンテージ</code>・<code class="path">マス目</code>の 2 つ（最初はマス目）です。<span class="t">運び量に「通常入力」はありません</span>。通常入力は「自分画面端」「画面中央」「相手画面端」などの区分から選ぶ方式です。<span class="t">どの方式で入れても記録される値は同じ</span>で、見えかたの単位が変わるだけです。</p>
+    <p>範囲の外の数字を打っても<span class="t">エラーにはならず、いちばん近いところまで戻されます</span>（マス目は 0〜160、パーセンテージは 0〜100）。</p>
+    <p>始動位置を<span class="t">マス目やパーセンテージで入れているときに、数字を消して欄から離れると、選んである区分の代表的な数字が戻ります</span>。保存したあとで値が生えてきたように見えるのを防ぐためです（通常入力では、区分を選んだ時点で数字が決まります）。<span class="t">運び量には戻りません</span>——運び量には区分の考えかたが無いので、空のままが正常です。</p>
+    <p>技を選ぶ<span class="t">仮想コントローラは、画面に余裕があるときは左右 2 列</span>になります（左が技のまとまり、右が種類・強度）。まとまりの一覧は<span class="t">高さが決まっていて、その中だけがスクロール</span>します。縦に長くなりすぎないようにするためです。</p>
+    <p>コントローラやキーボードでも入力できる、という案内は<span class="t">最初の 1 回だけ開いた状態で出ます</span>。2 回目からは畳まれているので、読み返したいときは自分で開いてください（コンボとセットプレイのどちらで開け閉めしても、もう一方にも効きます）。</p>
+    <p>技ごとに付ける修飾は<span class="t">呼び名がいくつか変わりました</span>——たとえば「低ジャンプ」は<span class="t">「低空」</span>です。ほかに「ノーキャン」「遅らせキャンセル」「高め当て」「低め当て」「空振り」「持続当て」「裏回り」も選べます。<span class="t">何も付けていない技は「キャンセルでつないだ」と読みます</span>ので、「キャンセルした」を表す修飾はありません。</p>
+    <p>入力欄は<span class="t">2 枚のタブ</span>に分かれています（画面の広さによらず同じ形です）。保存に失敗したとき、<span class="t">原因がいま見ていないほうのタブにあると、タブの見出しに件数が出ます</span>。エラーの一覧そのものは保存ボタンのすぐ上に出ます。</p>
+    <p>ドライブダメージは<span class="t">マイナスが削り、プラスが回復</span>です。小数も入れられます（1 本未満の増減を表すためです）。</p>
+    <p>コピーして開いたあと<span class="t">何も変えずに保存しようとすると</span>、画面の上に「既存のコンボと同じです」という警告が出ます。どこかを変えると消えます。</p>
+    <div class="caution">
+      <span class="label">保存前に離れるとき</span>
+      入力したまま別の画面へ移ろうとすると確認が出ます。<b>「あとで戻れば続きから書ける」わけではありません</b>——戻ってきても入力内容は復元されません。
+    </div>
+    <div class="note"><b>「競合しました」と出たとき</b>は、同じコンボを別の機器（またはブラウザの別のタブ）で先に保存しています。表示されている案内から、いまのサーバー側の内容を読み込み直してください。</div>
+    <figure class="shot">
+      <img src="images/ch08-combo-editor-1.png" alt="コンボ登録・編集 の画面">
+      <figcaption>コンボ登録・編集</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="images/ch08-combo-editor-2.png" alt="コンボ登録・編集 のレシピ入力タブ">
+      <figcaption>レシピを入力しているタブ</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch09">
+  <h2>タグ管理<span class="src">DES-005 §5.12</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>コンボに<span class="t">自分の分けかたで印をつける</span>ための画面です。対戦相手のキャラクター別、練習の優先度、動画に使った／使っていない——何を軸にするかは自由です。</p>
+    <p>タグは<span class="t">利用者ごとに分かれます</span>。同じ 1 本のコンボに、人によって違う印を付けられます。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>共通ヘッダ、または<code class="path">設定</code>から開きます。ここで作ったタグは、コンボ一覧の絞り込みとコンボ登録・編集のタグ欄に出てきます。</p>
+    <p><span class="t">タグは登録・編集の画面からも新しく作れます</span>。この画面は「あとから整理する」ための場所だと考えてください。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">探す</span>：上の検索欄にタグ名を入れて絞り込みます。「<code class="path">N 件 / 全 M 件</code>」が出るので、絞った結果か元から無いのかが分かります。</li>
+      <li><span class="t">作る</span>：新規作成から、名前・カテゴリ・色を決めて追加します。</li>
+      <li><span class="t">使われている数を見る</span>：一覧に、そのタグが付いているコンボの数が出ます。整理するときの目安になります。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="caution">
+      <span class="label">使用中のタグを消すとき</span>
+      <b>そのタグは、付いていたコンボすべてから一斉に外れます。</b>消す前に警告が出るので、使用数を見てから決めてください。<b>コンボそのものは消えません。</b>
+    </div>
+    <p><span class="t">カテゴリと色は、一度決めると「未設定」には戻せません</span>（別のカテゴリ・別の色には変えられます）。仕様であり、不具合ではありません。</p>
+    <div class="note"><b>タグが見当たらないとき</b>は、利用者が切り替わっていないか確かめてください。タグは利用者ごとに分かれるため、別の人として操作していると自分のタグは出てきません。</div>
+    <figure class="shot">
+      <img src="images/ch09-tag-manage-1.png" alt="タグ管理 の画面">
+      <figcaption>タグ管理</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<div class="part-head"><span class="part-label">第 3 部　組み立てる・比べる</span></div>
+
+<section class="chapter" id="ch10">
+  <h2>コンボ比較<span class="src">DES-005 §5.8</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>似たコンボを何本か並べて、<span class="t">どれを使うかを決める</span>ための画面です。</p>
+    <p>コンボ一覧は「探すため」の表なので、出す項目を絞っています。こちらは逆で、<span class="t">記録してある項目をすべて、縦に揃えて出します</span>。「ダメージは下がるがゲージを使わない」「起き攻めが 1 種類だけ増える」といった差を、見比べて判断するための画面です。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>コンボ一覧かマイコンボで「比較/エクスポート対象選択」を入れ、いくつか選んでから<span class="t">比較</span>ボタンを押します。</p>
+    <p>この画面の中の<span class="t">「コンボを追加」</span>からも足せます。各列の見出しのいちばん下にある<span class="t">「詳細を開く →」</span>からコンボ詳細へ進めます。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">コンボを追加する</span>：「コンボを追加」で別窓が開きます。最初に出るキャラクターは、いま並んでいる先頭のコンボに合わせてあります。</li>
+      <li><span class="t">比較から外す</span>：各列の右上の <code class="path">✕</code> です。</li>
+      <li><span class="t">詳細を開く</span>：列の見出しのいちばん下にあります。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      列の右上の <code class="path">✕</code> は<b>「比較から外す」であって、コンボを消す操作ではありません</b>。押しても表から抜けるだけで、データはそのまま残ります。<br>
+      同じ列の中に「詳細を開く →」もありますが、<b>位置・文言・色・形の 4 点で分けて</b>あります。
+    </div>
+    <p>起き攻めの出しかたが<span class="t">コンボ詳細とは違います</span>。詳細は「そのコンボで使えるものだけ」を並べますが、<span class="t">比較では 12 通りすべてを行として並べ、使えるかどうかを ✓ と ✗ で出します</span>。列を揃えて差を読むためで、意図的な違いです。</p>
+    <p>リンク・動画・画像の 3 行は、<span class="t">比較ではリンクになりません</span>（文字として出るだけです）。押して開けるのはコンボ詳細だけです。</p>
+    <div class="note">複数のキャラクターのコンボを並べたときのために、<b>各列の見出しにキャラクター名</b>が出ます。どの列が誰のものか分からなくなったときはそこを見てください。</div>
+    <figure class="shot">
+      <img src="images/ch10-combo-compare-1.png" alt="コンボ比較 の画面">
+      <figcaption>コンボ比較</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch11">
+  <h2>セットプレイ登録・編集<span class="src">DES-005 §5.9</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>コンボのあとに続ける<span class="t">起き攻めや詰めの並びを、1 本の「型」として記録する</span>ための画面です。</p>
+    <p>セットプレイを別のものとして記録しておくと、<span class="t">起き上がりまでの有利が同じ他のコンボへそのまま使い回せます</span>。同じ並びを何度も書かなくて済むように分けてあります。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>コンボ詳細、またはコンボ登録・編集の「セットプレイ」から開きます。保存すると呼び出し元のコンボへ戻ります。</p>
+    <p>すでにあるセットプレイを元に作りたいときは、<span class="t">編集画面のヘッダにある「コピー」</span>から始めます。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">名前を付ける</span>：<span class="t">名前は必須</span>です。空のままでは保存できません。</li>
+      <li><span class="t">レシピを組む</span>：コンボ登録と同じ仮想コントローラで入力します。</li>
+      <li><span class="t">成立条件を埋める</span>：受け身種別 × 画面端の 2×2 です。<span class="t">新しく登録するときだけ</span>出ます。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>仮想コントローラに出てくる技は、コンボ登録のときと同じではありません。</b>セットプレイでしか使わない技は、<b>この画面だけに出ます</b>。<br>
+      同じ見た目の入力欄なので「コンボ登録では出なかったのに」と迷いやすいところです。
+    </div>
+    <p><span class="t">成立条件の 2×2 は、編集のときには出ません。</span>あとから埋め直したいときは、<span class="t">そのセットプレイが紐づいているコンボの詳細</span>から行います。</p>
+    <p><span class="t">コピーしたあと、レシピを変えずに保存すると止まります。</span>コピー先には同じレシピのセットプレイが既に紐づいているためで、<span class="t">名前を変えても止まります</span>。コピーは「途中まで同じ並びを作る」ための機能なので、<span class="t">レシピに手を入れてから保存してください</span>。</p>
+    <p>コピーで引き継ぐのは<span class="t">名前・説明・レシピの 3 つだけ</span>です。成立条件は引き継がず、すべて未検証から始まります。</p>
+    <div class="note"><b>名前が自動で入ることがあります。</b>コンボ詳細の自動提案から「採用」したときだけで、「◯◯ 持続 3F 目重ね」のような形になります。ふつうに新規登録したときは自動で付きません。すでに入力してある名前を上書きすることもありません。</div>
+    <figure class="shot">
+      <img src="images/ch11-setplay-editor-1.png" alt="セットプレイ登録・編集 の画面">
+      <figcaption>セットプレイ登録・編集</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch12">
+  <h2>プリセット一覧<span class="src">DES-005 §5.10</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>技の<span class="t">呼び名の組み合わせ</span>を選んだり、自分用のものを作ったりする画面です。</p>
+    <p>同じ技でも、人によって「中足」と呼んだり「しゃがみ中K」と呼んだりします。<span class="t">レシピの読みやすさは呼び名で決まる</span>ので、まとめて切り替えられるようにしてあります。呼び名を変えても、記録されているコンボそのものは 1 文字も変わりません。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p><code class="path">設定</code>の中のリンク、または共通ヘッダの「プリセット管理」から開きます。</p>
+    <p>自作のプリセットの行を押すと<span class="t">プリセット編集</span>へ進みます。組み込みの行からは<span class="t">コピーして自作を作る</span>操作になります。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">使うプリセットを選ぶ</span>：行の「使用する」を押します。いま使っているものは「使用中」と出ます。</li>
+      <li><span class="t">自分用のものを作る</span>：組み込みの行からコピーして作ります。</li>
+      <li><span class="t">中身を直す</span>：自作の行を押してプリセット編集へ進みます。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>コピー元にできるのは組み込みの 3 つだけです。</b>自作のプリセットからさらにコピーを作ることはできません。<br>
+      似たものを 2 つ作りたいときは、どちらも組み込みからコピーして作ることになります。
+    </div>
+    <p>プリセットは<span class="t">全部で 8 件まで</span>です（組み込みの 3 つを含みます）。画面には <code class="path">3 / 8</code> のように現在の数が出ます。上限に達すると新規作成ボタンが押せなくなり、押せない理由もその場に出ます。</p>
+    <p>「使用する」で切り替えた呼び名は<span class="t">アプリ全体のレシピ表示に効きます</span>。コンボ一覧・詳細・比較・書き出しのすべてが、選んだプリセットの呼び名で出ます。</p>
+    <div class="note">組み込みのプリセットには、それぞれ<b>サンプルの表記プレビュー</b>が付いています。どんな呼び名になるかは、選ぶ前にここで見比べられます。</div>
+    <figure class="shot">
+      <img src="images/ch12-preset-list-1.png" alt="プリセット一覧 の画面">
+      <figcaption>プリセット一覧</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch13">
+  <h2>プリセット編集<span class="src">DES-005 §5.11</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>自作のプリセットの中身——<span class="t">技ごとの呼び名</span>——を書き換える画面です。</p>
+    <p>「この技だけ自分の言いかたにしたい」という直しかたを想定しています。全部を書き換える必要はなく、<span class="t">触らなかった技はコピー元の呼び名のまま</span>です。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>プリセット一覧で自作のプリセットの行を押すと開きます。保存すると一覧へ戻ります。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">キャラクターを選ぶ</span>：まずキャラクターを選びます。呼び名はキャラクターごとに持つためです。</li>
+      <li><span class="t">技を探して呼び名を入れる</span>：技のカテゴリでまとまっているので、そこから目的の技へたどります。</li>
+      <li><span class="t">保存する</span>：<span class="t">直した行だけ</span>が送られます。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>1 キャラクターあたり 77 行あります。</b>上から順に見ていく画面ではありません。<b>キャラクターを選び、技のカテゴリでたたんでから目的の技へ</b>たどってください。
+    </div>
+    <p><span class="t">組み込みのプリセットを開くと、読み取り専用になります</span>（その旨の案内が出て、入力欄はすべて無効になります）。直したいときはプリセット一覧からコピーして、自作のほうを開いてください。</p>
+    <p>この画面で変えられないものが 4 つあります——<span class="t">技と技のあいだの区切り記号／元にしたプリセットの名前／呼び名を決めていない技の表示のしかた／技そのものの追加と削除</span>。いずれも設計として固定してあり、直せないのは実装が追いついていないためではありません。</p>
+    <p><span class="t">同じ呼び名を 2 つの技に付けることはできません。</span>保存したときに「どの表記が重なったか」が画面と応答の両方に出るので、その行を直してから保存し直してください。</p>
+    <div class="note">英語表示用の呼び名はこの画面では扱いません。自作のプリセットでは、入力した呼び名がそのままその人の言葉として使われます。</div>
+    <figure class="shot">
+      <img src="images/ch13-preset-editor-1.png" alt="プリセット編集 の画面">
+      <figcaption>プリセット編集</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<div class="part-head"><span class="part-label">第 4 部　出し入れする</span></div>
+
+<section class="chapter" id="ch14">
+  <h2>エクスポートダイアログ<span class="src">DES-005 §5.13a</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>記録したコンボを<span class="t">アプリの外へ出す</span>ためのダイアログです。</p>
+    <p>想定しているのは、SNS へ貼る・配信の画面に出す・表計算で見直す・別の PC へ移す、といった場面です。<span class="t">出す形式と出す項目を、そのときの用途に合わせて選べます</span>。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>コンボ一覧またはマイコンボの<span class="t">エクスポート</span>ボタンで開きます。画面が切り替わるのではなく、その場に重なって出ます。</p>
+    <p>対象は<span class="t">押した時点で選んでいたコンボ</span>です。1 つも選んでいなければ<span class="t">いま絞り込んでいる全件</span>が対象になり、ボタンの文言も「全 N 件をエクスポート」に変わります。<span class="t">画面に見えているものがそのまま出る</span>ようにしてあります。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">形式を選ぶ</span>：CSV / PDF / PNG / クリップボード。<span class="t">同時に複数選べます</span>。</li>
+      <li><span class="t">出す項目を選ぶ</span>：既定はすべて入っています。用途に合わせて減らせます。</li>
+      <li><span class="t">ファイル名を確かめて実行する</span>：名前は自動で入りますが、その場で書き換えられます。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <p><span class="t">クリップボードだけは、単独で選んだときしか使えません。</span>ほかの形式と一緒に選ぶと最後の 1 つしか残らず意味がないためです。</p>
+    <p>複数の形式を選ぶと<span class="t">1 つの ZIP にまとまらず、別々のファイルとして順に落ちてきます</span>。3 つ以上を同時に出すと、ブラウザ側が 2 つめ以降のダウンロードを止めることがあります。止まったときは形式を分けて実行してください。</p>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>出す項目の数は、選んだ形式によって変わります。</b>PDF・PNG・クリップボードだけを選んだときは、<b>動画と画像のパスの 2 項目が出てきません</b>。<br>
+      見た目の出力には描き出されない項目なので、「チェックを入れたのに出ていない」という分かりにくい食い違いを避けるために、最初から出さないようにしてあります。CSV を選ぶと出てきます。
+    </div>
+    <p>ファイル名は<span class="t">同じ秒に 2 回出すと末尾に <code class="path">_2</code> が付きます</span>。自動で入る名前は、開いたとき・対象や件数が変わったとき・実行したときに取り直されますが、<span class="t">自分で書き換えたあとは取り直しません</span>。</p>
+    <div class="caution">
+      <span class="label">たくさん出すとき</span>
+      <b>1 度に出せるコンボは 1000 件までです。</b>それを超えるときは「対象 N 件のうち M 件までしか出力できません」という確認が出ます。そのまま出すこともできますが、<b>残りは含まれません</b>。<br>
+      また、<b>セットプレイの行数とファイルの大きさには書き出し側の上限がありません</b>。そのため、<b>出したファイルを自分で取り込めないことがあります</b>——取込のほうは 1000 行・10MiB を超えると受け付けないためです。
+    </div>
+    <div class="note"><b>出力に載るタグは、いま操作している利用者のものです。</b>タグは利用者ごとに分かれているため、同じコンボでも誰が出すかで載るタグが変わります。仕様です。</div>
+    <figure class="shot">
+      <img src="images/ch14-export-dialog-1.png" alt="エクスポートダイアログ の画面">
+      <figcaption>エクスポートダイアログ</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch15">
+  <h2>取込<span class="src">DES-005 §5.14</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>CSV ファイルを読み込んで<span class="t">コンボをまとめて登録する</span>ための画面です。</p>
+    <p>別の PC で作った記録を持ち込む、書き出しておいたファイルから戻す、<span class="t">他から引っ越し</span>で作った CSV を取り込む——このいずれかで使います。1 本ずつ手で入れ直さずに済ませるための入口です。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>共通ヘッダの<code class="path">取込</code>から開きます。<span class="t">他から引っ越し</span>から進んだときは、作られた CSV を持った状態で開き、<span class="t">そのまま自動でプレビューまで進みます</span>。</p>
+    <p>取り込みを実行すると、その結果がこの画面に出ます。登録されたコンボはコンボ一覧から確かめられます。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">ファイルを選ぶ</span>：入口は「ZIP、またはコンボの CSV」です。セットプレイの CSV は、コンボの CSV に添えて一緒に選びます。</li>
+      <li><span class="t">プレビューで取り込む行を選ぶ</span>：最初はすべてにチェックが入っています。警告の付いた行を外してから実行できます。</li>
+      <li><span class="t">重複したときの動きを決めて実行する</span>：「スキップ」（既定）か「セットプレイのみ取込」の 2 択です。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>セットプレイだけを取り込むことはできません。</b>セットプレイは「どのコンボのものか」をコンボの CSV 側の一時的な番号で指しているため、コンボの CSV が無いと行き先が決まらないからです。<br>
+      コンボの CSV を選ぶまで、セットプレイの欄は押せない状態になります。
+    </div>
+    <p>チェックを入れるのは<span class="t">コンボの行だけ</span>です。セットプレイに個別のチェックはなく、<span class="t">親のコンボが取り込まれれば一緒に入ります</span>。</p>
+    <p>セットプレイの表に出る親の解決可否（<code class="path">○</code> / <code class="path">×</code>）は、<span class="t">重複したときの動きを考えに入れていません</span>。そのため「スキップ」を選んでいると、<span class="t">○ が付いていても実際には取り込まれないこと</span>があります（親のコンボが重複でスキップされ、行き先が無くなるためです）。</p>
+    <p>「セットプレイのみ取込」を選ぶと、重複したコンボは飛ばしつつ、<span class="t">その配下のセットプレイだけを既存のコンボへ結びつけて</span>取り込みます。同じレシピのセットプレイは名前が違っても飛ばされます。</p>
+    <div class="caution">
+      <span class="label">読み込めるファイルの大きさ</span>
+      <b>1000 行・10MiB を超えるファイルは受け付けません。</b><br>
+      コンボのほうは書き出しも 1000 件で打ち切られるので釣り合っていますが、<b>セットプレイの行数とファイルの大きさには書き出し側の上限がありません</b>。そのため、<b>自分で書き出したファイルがそのままでは読み込めないことがあります</b>。分けて取り込んでください。
+    </div>
+    <div class="note"><b>取り込まれるタグは、いま操作している利用者のものになります。</b>タグは利用者ごとに分かれるためです。仕様です。</div>
+    <figure class="shot">
+      <img src="images/ch15-import-1.png" alt="取込 の画面">
+      <figcaption>取込</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch16">
+  <h2>ゴミ箱<span class="src">DES-005 §5.15</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>消したコンボ・セットプレイを<span class="t">戻すため</span>の画面です。</p>
+    <p>削除は<span class="t">すぐには本当に消さず、いったんここへ入れる</span>形にしてあります。取り違えて消してしまったときに、記録が失われないようにするためです。<span class="t">期限はありません</span>——放っておいても自動で消えることはないので、あわてて判断する必要はありません。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>共通ヘッダの<code class="path">ゴミ箱</code>から開きます。行を押すと<span class="t">読み取り専用のコンボ詳細</span>が開き、中身を確かめてから戻すかどうかを決められます。</p>
+    <p>コンボの表と<span class="t">セットプレイの表は別々</span>に並びます（それぞれ独立した表です）。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">キャラクターを選ぶ</span>：まずキャラクターを選びます。<span class="t">1 つの選択がコンボとセットプレイの両方の表に効きます</span>。</li>
+      <li><span class="t">戻す</span>：行の復元ボタン、または画面下に貼り付いている一括操作バーから。</li>
+      <li><span class="t">完全に消す</span>：確認のあと、本当に消えます。<span class="t">取り消せません</span>。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>コンボを編集したときに積まれた「古いほうの行」は、ここには出ません。</b><br>
+      レシピや始動位置などを変えて保存すると、内部では元のコンボがゴミ箱へ入って新しいコンボが登録されます。それが全部ここに出ると、<b>自分で消したものが埋もれて見つけられなくなる</b>ためです。<br>
+      なお、この扱いが始まる前に編集した分は出たままです（あとから遡って隠すことができないためです）。
+    </div>
+    <div class="caution">
+      <span class="label">セットプレイが完全に消せないとき</span>
+      <b>生きているコンボがそのセットプレイを掴んでいると、完全削除は拒否されます。</b><br>
+      そのとき、<b>どのコンボが掴んでいるかが行の下に並びます</b>。その場で紐付けを外せるので、外してから<b>もう一度</b>完全削除を押してください（外したあと自動ではやり直しません。結果を見てから決められるようにしてあります）。
+    </div>
+    <p>並びは<span class="t">消した日時の新しい順</span>です。コンボ一覧とは違う並びで、<span class="t">いま消したものがいちばん上</span>に来ます。「さっき消したものを戻したい」が最もよくある用事だからです。</p>
+    <p>同じセットプレイが<span class="t">複数のコンボに紐づいていることがあります</span>。その場合、ゴミ箱へ入れても紐付けは保たれ、<span class="t">戻すと紐づいていたコンボすべてに一斉に戻ります</span>。</p>
+    <p>ただし例外が 1 つあります——<span class="t">削除するときのダイアログにあるチェック（既定は入っていません）</span>を入れて消した場合だけ、<span class="t">そのコンボとの組み合わせ 1 つは戻ってきません</span>。ほかのコンボとの紐付けは残ります。</p>
+    <div class="note">一括操作のバーは<b>画面の下に貼り付いて</b>います。コンボとセットプレイのどちらの表を見ているときも、同じバーが受け持ちます。表ごとに別のキャラクターを選ぶことはできません。</div>
+    <figure class="shot">
+      <img src="images/ch16-trash-1.png" alt="ゴミ箱 の画面">
+      <figcaption>ゴミ箱</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="images/ch16-trash-2.png" alt="ゴミ箱 で完全削除を拒否され参照元コンボが並んだ状態">
+      <figcaption>セットプレイの完全削除が拒否され、掴んでいるコンボが行の下に並んだ状態</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch17">
+  <h2>他から引っ越し<span class="src">DES-005 §5.19</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>これまで<span class="t">ほかのアプリ・メモ帳・表計算で管理していたコンボ</span>を、本アプリへ移すための画面です。</p>
+    <p>手で書いたコンボの表記は人それぞれで、機械にはそのままでは読めません。そこを<span class="t">「曖昧な表記を読み解くのは AI にやらせ、技を確定させるのはアプリがやる」</span>という二段構えにしてあります。技の確定をアプリ側に残しているのは、<span class="t">AI に技を決めさせると、それらしいが違う技が混ざる</span>からです。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>共通ヘッダの<code class="path">他から引っ越し</code>から開きます。作業は 2 段階です。</p>
+    <ul class="plain">
+      <li><span class="t">ステップ 1</span>：キャラクターを選び、手元のコンボを貼り、<span class="t">プロンプトをコピー</span>します。それを<span class="t">お使いの AI サービスへ貼って</span>実行します。</li>
+      <li><span class="t">ステップ 2</span>：AI が返した結果をこの画面へ貼り、照合します。</li>
+    </ul>
+    <p>最後に CSV が作られ、<span class="t">取込</span>の画面へそのまま渡されて自動でプレビューまで進みます。登録そのものは取込の画面で行います。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">プロンプトをコピーする</span>：選んだキャラクターの技一覧と、貼ったコンボと、独自ルールが 1 つにまとまってコピーされます。</li>
+      <li><span class="t">AI の出力を貼って照合する</span>：行ごとに、どの技だと判断したかと確信度が出ます。</li>
+      <li><span class="t">未解決の行を直すか、除外する</span>：技を選び直すか、その 1 ステップを落とします。全部の行が解決か除外になると、次へ進めます。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>AI はご自分で用意してください。</b>本アプリが AI に問い合わせることはありません。コピーしたプロンプトを、お使いの AI サービスへ貼って実行していただく形です。<br>
+      <b>うまく読み取れないときは、別の AI サービスでも試してください。</b>1 つのサービスで安定するとは限らず、手元の書きかたによっても結果が変わります。
+    </div>
+    <p><span class="t">取り込むのは 1 キャラクターずつ</span>です。プロンプトには選んだキャラクターの技しか入らないので、キャラクターの取り違えが起きない作りになっています。</p>
+    <p><span class="t">未解決の行が出ることは失敗ではありません。</span>読み取れなかったものを無理に近い技へ寄せると、間違った記録が静かに残ってしまうため、あえて寄せずに人の判断へ回しています。</p>
+    <p>確信度に<span class="t">「低」や「?」が多く並ぶときは、AI が推測で埋めている疑い</span>があります。そのまま進めず、ステップ 1 の「書き方のコツ」に沿って手元の表記を整えてから、もう一度試すほうが早いことが多いです。</p>
+    <div class="caution">
+      <span class="label">「除外」を使うとき</span>
+      除外すると<b>その 1 ステップがレシピから落ちます</b>（手数が減ります）。コンボとしては別物になるため、警告が出ます。落としてよいかどうかは内容を見て判断してください。
+    </div>
+    <p>表しきれない書きかたがあります——<span class="t">ドライブラッシュ・OD・SA1〜3・ドライブインパクト・パニッシュカウンター・「×2〜3」のような回数・「/」による選択・条件付き</span>。これらは読み取りの語彙に無いため、<span class="t">原理的に表せません</span>。該当する部分は取り込んだあとにコンボ登録・編集で手を入れてください。</p>
+    <div class="note">移せるのは<b>コンボのレシピだけ</b>です。セットプレイは対象外で、技そのもののデータもここでは扱いません（技のデータは最初から同梱されています）。</div>
+    <figure class="shot">
+      <img src="images/ch17-intake-helper-1.png" alt="他から引っ越し の画面">
+      <figcaption>他から引っ越し</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<div class="part-head"><span class="part-label">第 5 部　追いかける・探す・スマホで使う</span></div>
+
+<section class="chapter" id="ch18">
+  <h2>ゲーム更新の影響コンボ<span class="src">DES-005 §5.19b</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>ゲームのアップデートで<span class="t">性能が変わった技を使っているコンボ</span>を並べて、直せるようにするための画面です。</p>
+    <p>大事なのは「影響があります」と告げることではなく、<span class="t">どの技が変わったのかを名指しで出す</span>ことです。技の名前が分からないと、どのコンボのどこを試し直せばよいか決められないためです。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>技のデータが更新されると、<span class="t">ホーム（スマートフォン）とコンボ一覧（PC）の両方</span>にお知らせの帯とボタンが出ます。そこから開きます。<span class="t">全キャラクターぶんをまとめて</span>出します。</p>
+    <p>行の<span class="t">［編集］</span>から直して保存すると、この画面へ戻ります。キャラクターごとに見出しと表が縦に並びます。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">変わった技を見る</span>：表に「変わった技」の列が出ます。ここが画面の中心です。</li>
+      <li><span class="t">直す</span>：行の［編集］から直します。保存するとこの画面へ戻ります。</li>
+      <li><span class="t">「問題なし」にする</span>：試してみて今までどおり成立したときに押します。次からこの一覧に出なくなります。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>「問題なし」は取り消せません。</b>また、<b>1 件ずつしか押せません</b>（まとめて押す操作はありません）。<br>
+      1 回のバランス調整で数十件がまとめて当たることもあります。押す前に、そのコンボを実際に試してから判断してください。
+    </div>
+    <p>行の操作は<span class="t">［詳細］［編集］［削除］の 3 つ</span>で、<span class="t">コピーは出ません</span>。コピーで生まれた行は「影響なし」の状態で作られ、元の行は影響ありのまま残ります。<span class="t">この画面の目的に対して何も進まない操作</span>なので、あえて外してあります。</p>
+    <div class="caution">
+      <span class="label">戻り先に限界があります</span>
+      <b>［編集］を直接押したときは、保存後この画面へ戻ります。</b><br>
+      いっぽう <b>［詳細］を開いてから、その中の編集へ入った場合は戻りません</b>。何本か続けて直すときは、この画面から直接［編集］を押すほうが手数が少なくて済みます。
+    </div>
+    <p>「更新未確認」の印が出るのは<span class="t">コンボ詳細だけ</span>です。コンボ一覧やマイコンボには出しません。この画面を開けば全部並んでいますし、件数はボタンが常に出しているためです。</p>
+    <p>一覧に出るのは<span class="t">1000 件まで</span>です。それを超えると、その旨の注記が出ます。また、<span class="t">件数が取れなかったときに「0 件」とは出しません</span>——失敗したことがそのまま出ます。</p>
+    <figure class="shot">
+      <img src="images/ch18-game-update-0.png" alt="ゲーム更新後のコンボ一覧 に出るお知らせの帯と「更新未確認のコンボ」ボタン">
+      <figcaption>この画面の入口——ゲーム更新後のコンボ一覧に出るお知らせの帯と「更新未確認のコンボ」ボタン</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="images/ch18-game-update-1.png" alt="ゲーム更新の影響コンボ の画面">
+      <figcaption>ゲーム更新の影響コンボ</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch19">
+  <h2>確定反撃サーチ（探す）<span class="src">DES-005 §5.20</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>相手の技をガード、またはジャストパリィしたあとの<span class="t">有利フレームの中で始動できるコンボを探す</span>ための画面です。</p>
+    <p>「探して終わり」ではなく<span class="t">実際に試して距離まで確かめた結果を記録する作業場</span>として作ってあります。フレームの上では成立しても、距離が離れていると届かないことがあるためです。<span class="t">確かめて採用したものだけ</span>が、次の章のマイリストへ並びます。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>共通ヘッダの<code class="path">確定反撃サーチ</code>から開きます。自分のキャラクター・相手のキャラクター・ガードの種別（既定はジャストパリィ）を選ぶと結果が出ます。</p>
+    <p><span class="t">選んだ条件は URL に入ります</span>。よく使う組み合わせはそのままブックマークしておけます。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">条件を選ぶ</span>：自キャラ・相手キャラ・ガード種別の 3 つです。</li>
+      <li><span class="t">ツリーをたどる</span>：相手技 → 始動技 → コンボ の 3 段です。相手技には「有利 +NF」が並びます。</li>
+      <li><span class="t">試した結果を記録する／確定反撃版を作る</span>：届いた・届かなかったを記録し、必要なら確定反撃版のコンボを生成します。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>判定できなかった相手技は、消さずに別のまとまりへ出します。</b>「自動判定できない相手技」の欄です。<br>
+      理由も一緒に出ます——<b>距離依存 / データ不足 / ダメージ不明 / 硬直データ不定</b>。飛び道具は「距離依存」に入ります（当たるまでの時間が距離で変わるため、フレームの数字だけでは判定できないからです）。<br>
+      <b>「出てこない＝データが無い」ではありません。</b>データが足りない技はこちらの欄に出ます。
+    </div>
+    <p>レシピの中の修飾は、<span class="t">この画面だけは札にならず</span> <code class="path">{目押し}</code> のような波括弧付きの文字のまま出ます。コンボ一覧や詳細とは見えかたが違いますが、中身は同じものです。</p>
+    <p>ダメージが <code class="path">0</code> の技は候補に出ません。ダメージが<span class="t">入っていない</span>技は「ダメージ不明」として手動確認の欄へ回ります。<span class="t">この 2 つは別の扱い</span>です。</p>
+    <p><span class="t">確定反撃版を作ると、元のコンボは候補からたたまれます</span>。消えるのではなく「変換済み (N 件)」の折りたたみに入るので、そこから開けます。<span class="t">確定反撃版を消せば自動で戻ります</span>。たたまれるのはこの画面の候補だけで、コンボ一覧や比較では今までどおりです。</p>
+    <div class="caution">
+      <span class="label">登録したあとの扱いが 2 通りあります</span>
+      <b>手動確認の欄から登録したコンボは、そのまま自動で「採用」されます。</b>その欄にはツリーが出ないため、自動で採用しないと登録したコンボがどこにも現れないからです。<br>
+      いっぽう<b>ツリーの中から登録したコンボは、自動では採用されません</b>。ほかの候補と見比べてから決められるようにしてあります。<b>自分で採用を押してください。</b>
+    </div>
+    <div class="note">この画面から新しくコンボを登録すると、<b>キャラクターとヒット種別は固定された状態</b>で登録画面が開きます（画面上に固定されている理由も出ます）。条件と食い違うコンボが混ざらないようにするためです。</div>
+    <figure class="shot">
+      <img src="images/ch19-punish-search-1.png" alt="確定反撃サーチ（探す） の画面">
+      <figcaption>確定反撃サーチ（探す）</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="images/ch19-punish-search-2.png" alt="確定反撃サーチ の自動判定できない相手技セクション">
+      <figcaption>「自動判定できない相手技」のまとまりと理由ラベル</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch20">
+  <h2>確定反撃マイリスト（使う）<span class="src">DES-005 §5.21</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>確かめて<span class="t">採用した確定反撃だけ</span>を見返すための画面です。</p>
+    <p>前の章の「探す」が試行錯誤の作業場なら、こちらは<span class="t">本番で使う持ち出し用</span>です。相手技から引ける形にしてあるので、「この技をガードしたら何を返すか」を対戦の前に見返せます。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>共通ヘッダの<code class="path">確定反撃マイリスト</code>から開きます。<span class="t">採用が 1 件も無いときは、探す画面への案内</span>が出ます。</p>
+    <p>相手技 → コンボ の 2 段です（探す画面より 1 段浅くなっています。始動技で悩む段階は終わっているためです）。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">相手技から引く</span>：上のタブでガードとジャストパリィを切り替え、相手技を開きます。</li>
+      <li><span class="t">使わないものを隠す</span>：相手技ごと隠すことも、コンボ 1 本だけ隠すこともできます。</li>
+      <li><span class="t">隠したものを戻す</span>：「隠したもの管理」のタブから解除します。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <p>タブは<span class="t">2 段</span>です——〔マイリスト／隠したもの管理〕と〔ガード／ジャストパリィ〕。上の段を切り替えると下の段はそのまま残ります。</p>
+    <div class="key">
+      <span class="label">大事</span>
+      画面のいちばん下にある<b>「区分を判定できない反撃」は、ゴミ箱ではありません。</b><b>これから確定反撃版に作り替えるかどうかを決める、待ち行列</b>です。<br>
+      中はさらに<b>「反撃に転用可能」</b>（確定反撃版をまだ作っていないもの＝変換のボタンが出ます）と<b>「再利用可能」</b>（変換のボタンは出ません）に分かれ、<b>すでに確定反撃版を作ったもの</b>はたたまれた別枠に入ります。
+    </div>
+    <p>「<span class="t">パニッシュカウンター(インパクト)</span>」は、名前にパニッシュカウンターと入っているのにこの欄へ出ます。<span class="t">仕様です</span>（扱いをどうするかは別に検討されています）。未対応の取りこぼしではありません。</p>
+    <p>すでに確定反撃版を作ったものを<span class="t">たたんで残してある</span>のは、<span class="t">そこにしか「確定反撃の採用を解除」が無い</span>ためです。画面から外してしまうと、解除する手段が無くなります。</p>
+    <p><span class="t">隠したものは相手キャラクターで絞られますが、ガードの種別では絞られません。</span>ガードのタブでもジャストパリィのタブでも、隠したものは同じ顔ぶれが見えます。</p>
+    <div class="note"><b>「隠す」を登録できるのは、いちばん下のまとまりの中だけ</b>です。マイリスト本体の行からは隠せません。隠したものを戻すのは「隠したもの管理」のタブからです。</div>
+    <figure class="shot">
+      <img src="images/ch20-punish-list-1.png" alt="確定反撃マイリスト（使う） の画面">
+      <figcaption>確定反撃マイリスト（使う）</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+<section class="chapter" id="ch21">
+  <h2>ホーム（スマホ専用）<span class="src">DES-005 §5.2</span></h2>
+  <div class="body">
+    <h3>この画面は何のためにあるか</h3>
+    <p>スマートフォンで開いたときの<span class="t">入口</span>になる画面です。</p>
+    <p>小さい画面でメニューを探させないために、<span class="t">よく使う行き先を大きなボタンで縦に並べて</span>あります。あわせて、最近さわったコンボへ直接飛べるようにしてあります。練習中に片手で開く場面を想定した画面です。</p>
+
+    <h3>どこから来て、どこへ行くか</h3>
+    <p>スマートフォンでアプリを開くと最初に出ます。<span class="t">PC・タブレットでは出ません</span>——この画面を飛ばして、そのままコンボ一覧が開きます。</p>
+    <p>ボタンからコンボ一覧・マイコンボ・新規コンボ登録・コンボ比較・プリセット管理・設定へ進めます。</p>
+
+    <h3>よく使う操作</h3>
+    <ul class="plain">
+      <li><span class="t">行き先を選ぶ</span>：主要な画面へのボタンが縦に並びます。</li>
+      <li><span class="t">最近更新したコンボを開く</span>：直近の 3 件がリンクで出ます。練習の続きから入るときに使います。</li>
+      <li><span class="t">初回の案内を読む</span>：はじめて開いたときだけ、案内の帯が出ます。</li>
+    </ul>
+
+    <h3>つまずきどころ</h3>
+    <div class="key">
+      <span class="label">大事</span>
+      <b>PC には「ホーム」がありません。</b>画面が広いときはこの画面を飛ばす作りになっているためで、機能が欠けているわけではありません。<b>PC での入口はコンボ一覧</b>です。<br>
+      そのため<b>初回の案内が自動で出るのもスマートフォンだけ</b>です。PC から使いはじめた方には自動では出ません。
+    </div>
+    <p>初回の案内は<span class="t">一度閉じると、次からは自動で出ません</span>。読み返したいときは <code class="path">設定</code> の「初回ガイドを見る」からいつでも開けます。<span class="t">PC から使いはじめた方も、そこから読めます</span>。</p>
+    <p>技のデータが更新されたときのお知らせの帯は、<span class="t">この画面とコンボ一覧の両方</span>に出ます。どちらから入っても気づけるようにしてあるので、同じ内容が 2 か所に出ていても重複ではありません。</p>
+    <div class="note">利用者が 2 人以上登録されているときは、いま誰として操作しているかがこの画面にも出ます。切り替えは共通ヘッダの利用者名からです。</div>
+    <figure class="shot">
+      <img src="images/ch21-home-1.png" alt="ホーム（スマホ専用） の画面">
+      <figcaption>ホーム（スマホ専用）</figcaption>
+    </figure>
+  </div>
+  <p class="backlink"><a href="#toc">目次へ戻る</a></p>
+</section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="sign">この説明書のほかに、2 つの README があります。</div>
+    <ul class="plain">
+      <li><span class="t">README.txt</span>（配布 zip に同梱）：起動方法・スマホからの接続・うまくつながらないときの対処・データの保存場所。<span class="t">利用者向け</span>です。</li>
+      <li><span class="t">README.md</span>（リポジトリの入口）：ビルド・CI・リポジトリ構成。<span class="t">開発者・貢献者向け</span>です。</li>
+    </ul>
+    <div class="fine">Tacpendium — 操作説明書 · 個人 OSS</div>
+  </div>
+</footer>
+
+</body>
+</html>

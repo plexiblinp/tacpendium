@@ -1,0 +1,140 @@
+# M1-06 レビュー報告書
+
+| 項目 | 内容 |
+|------|------|
+| レビュー日 | 2026-05-05 |
+| レビュー担当 | 機械レビュー Claude(devContainer チャット) |
+| 対象ブランチ | feature/m1-06-combo-editor-page |
+| テスト実行環境 | devContainer (Go 1.26.2 / pnpm 9.13) |
+
+---
+
+## 総評
+
+WSL 環境での未実行分(Go テスト・vitest・tsc)を全て devContainer で実行し、全て通過を確認した。
+実装品質は高く、設計書(DES-005 v2.6.0 §5.7、SUPP-001 §2.1/§2.2、CHANGE-001/003/006)への準拠も網羅的。
+型安全性・禁止事項遵守・コンポーネント分割も適切。
+コード修正は 0 件で、レビュー指摘は低優先度の確認事項のみ。
+
+---
+
+## テスト実行結果
+
+| コマンド | 結果 |
+|---------|------|
+| `go test ./internal/api/move/... ./internal/repository/move/...` | **4/4 PASS** |
+| `go test ./...` | **全パッケージ PASS**(新規導入で既存テストへの影響なし) |
+| `go build -tags=debug ./...` | **ビルド成功** |
+| `pnpm run lint` (tsc --noEmit) | **0 エラー** |
+| `pnpm exec vitest run` | **10/10 PASS**(utils.test.ts 7件 + api-client.test.ts 3件) |
+
+---
+
+## 設計準拠性レビュー結果
+
+| チェック項目 | 結果 | 詳細 |
+|------------|------|------|
+| DES-005 §5.7 入力項目の網羅性 | ✅ PASS | キャラ・ダメージ・状況コード4種・starter_move_id・ドライブ/SAゲージ・有利フレーム・起き攻め6 BOOLEAN・メモ・仮登録トグル 全実装 |
+| opponent_stance に `any`(CHANGE-003) | ✅ PASS | `OPPONENT_STANCE_OPTIONS` に `any:"どちらでも可"` 含む |
+| 有利フレーム `w-24` 幅指定(CHANGE-003) | ✅ PASS | `ComboEditorBasicFields.tsx` L202 で `className="w-24 ..."` |
+| hit_type(CHANGE-006: counter_type リネーム) | ✅ PASS | `BasicFieldsValue.hitType`、`ComboKeyFields.hitType`、`HIT_TYPE_OPTIONS` 全て `hit_type` |
+| 起き攻め 6 BOOLEAN(CHANGE-001) | ✅ PASS | `OkiBooleans` interface + `OKI_FIELDS` 6個、フィールド名は DES-003 §3.4 準拠 |
+| SUPP-001 §2.1 仮登録バリデーション緩和 | ✅ PASS | `comboFormSchemaDraft` で `steps.min(0)` / `starter_move_id` null 許容 |
+| SUPP-001 §2.2 PATCH/PUT 判定(7フィールド) | ✅ PASS | `ComboKeyFields` = characterId + starterMoveId + position + opponentStance + hitType + opponentSize + steps(move_id+modifiers) の7フィールドが完全一致 |
+| PUT 時確認ダイアログ(HANDOVER-001 §3.1) | ✅ PASS | `ComboEditor.tsx` L293〜L332: 「この編集はコンボの再登録となります(古いコンボはゴミ箱へ移動)」の文言あり |
+| 仮想コントローラ未実装 | ✅ PASS | `RecipeBuilder.tsx` にプレースホルダ表示のみ、本格実装なし |
+| バリデーション結果表示 | ✅ PASS | `ValidationDisplay.tsx`: ERROR 赤/WARNING 黄、severity 別表示 |
+| 重複警告(VAL-C02) | ✅ PASS | `DuplicateWarning.tsx`: モーダル表示、onClose で閉じる |
+
+---
+
+## コード品質レビュー結果
+
+| チェック項目 | 結果 | 詳細 |
+|------------|------|------|
+| TypeScript strict / any 使用なし | ✅ PASS | `tsc --noEmit` 0 エラー。`any` 使用なし |
+| 関数コンポーネント + Hooks のみ | ✅ PASS | class コンポーネントなし |
+| ブラウザストレージ API 使用なし | ✅ PASS | localStorage/sessionStorage/IndexedDB 不使用 |
+| フォーム状態管理の適切性 | ✅ PASS | `BasicFieldsValue` + `Step[]` を React state で管理、保存時に zod で検証 |
+| サブコンポーネントへの適切な分割 | ✅ PASS | ComboEditor / ComboEditorBasicFields / RecipeBuilder / StepRow / ValidationDisplay / DuplicateWarning の 6 分割 |
+
+### 技術的注目点
+
+`ComboEditorBasicFields.tsx` の起き攻めチェックボックスで `value[f.key]` のインデックスアクセスが strict mode に通るか懸念されていたが、`OKI_FIELDS` の `key` が `keyof OkiBooleans` の union 型で宣言されており、正しく型検査を通過している(tsc 実行で確認済み)。
+
+TanStack Query v5 との互換性については、`isPending`・`useMutation<TData, TError, TVariables>` の v5 API を正しく使用しており問題なし。
+
+---
+
+## UI 品質
+
+| チェック項目 | 結果 | 詳細 |
+|------------|------|------|
+| 保存中ローディング表示 | ✅ PASS | `isMutating` true 時に「保存中...」表示・ボタン disabled |
+| 保存後のコンボ詳細画面遷移 | ✅ PASS | `navigate('/combos/${data.id}')` で 201/200 成功時に遷移 |
+| エラー時の挙動(409/500) | ✅ PASS | 409: 楽観衝突メッセージ + 再読込促進 / 500: エラー表示 / ネットワーク断: 通信エラーメッセージ |
+| 仮登録トグルの視覚的識別性 | ✅ PASS | 独立した fieldset でチェックボックス + 「仮登録として保存(レシピ未入力等を許容)」ラベル |
+
+---
+
+## テスト網羅性
+
+| チェック項目 | 結果 | 詳細 |
+|------------|------|------|
+| `hasKeyChanges` テスト | ✅ PASS | 7 ケース: position 変化/modifiers 変化/メモのみ/タグのみ/hit_type/steps 長変化/flags 順序 |
+| RecipeBuilder コンポーネントテスト(任意) | 未実施 | 指示書 §5 で「任意」と明記されているため問題なし |
+
+---
+
+## 禁止事項違反の有無
+
+| チェック項目 | 結果 | 詳細 |
+|------------|------|------|
+| localStorage/sessionStorage/IndexedDB | ✅ 違反なし | グローバル検索で不使用を確認 |
+| console.log 本番コード残存 | ✅ 違反なし | 全 .ts/.tsx ファイルで不使用を確認 |
+| 仮想コントローラの本格実装 | ✅ 違反なし | RecipeBuilder.tsx にプレースホルダのみ |
+| 設計書未記載機能の追加 | ✅ 違反なし | moves API は Plan Mode で開発者が承認済み(引継ぎ書 §3) |
+
+---
+
+## 統合確認
+
+| チェック項目 | 結果 | 詳細 |
+|------------|------|------|
+| `/combos/new`・`/combos/:id/edit` ルート登録 | ✅ PASS | `router.tsx` で両ルート登録確認 |
+| M1-05 「編集」リンクからの遷移 | 未確認 | M1-05 は並列ブランチのため、開発者マージ後に統合テストが必要 |
+| M1-05 「新規登録」ボタンからの遷移 | 未確認 | 同上 |
+
+---
+
+## 推奨修正(優先度別)
+
+- **高(M1 完了前に修正必須):** なし
+
+- **中(並行可):** なし
+
+- **低(将来対応):**
+  - `utils.ts` の `modifiersEqual` 内の `as Modifiers` アサーション: TypeScript が `aEmpty !== bEmpty` 後に非 null を推論できないためのアサーション。将来 TypeScript が賢くなれば不要になる可能性がある(現時点では問題なし)
+  - タグ fieldset は M3 まで "M3 で実装予定" プレースホルダ。現行で機能的問題なし
+  - `DuplicateWarning.tsx` で重複コンボの ID リンクが提供できていない(M1 の API 制約。引継ぎ書 §6.6 で明記済み)
+
+---
+
+## 良かった点
+
+1. **型安全性が高い**: `OKI_FIELDS` の `key` を string ではなく具体的な union 型で宣言し、コンパイル時にフィールド名の誤りを防いでいる。
+2. **PATCH/PUT 判定ロジックの分離**: `utils.ts` に `hasKeyChanges` / `extractKeyFields` として切り出し、テストも書かれている。設計書の要件と完全に対応。
+3. **TanStack Query のキャッシュ戦略**: PATCH 後は `setQueryData` で即時更新 + `invalidateQueries` で一覧も無効化。PUT 後は詳細キャッシュを捨てて再取得(新 ID に変わるため正しい)。
+4. **エラー境界の網羅**: `ApiError` instanceof チェックによる分岐、409/VAL-C02/その他の3パターン全てハンドリング済み。
+5. **zod と buildCreatePayload の整合**: スキーマの入力が `parseOptInt` / `nullIfEmpty` 変換後の値を前提としており、コメントで明記されている。
+
+---
+
+## 制約事項
+
+- 本レビューはコード上で判定可能な範囲のみ対象。実際のフォーム入力体験・バリデーション体験・画面遷移は開発者目視に委ねる。
+- M1-05 との統合確認は開発者マージ後に実施すること。
+
+---
+
+*以上*

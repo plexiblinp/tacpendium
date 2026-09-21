@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>コンボ CRUD ウォークスルー — Tacpendium で学ぶ Go / React</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; background:#f8fafc; color:#1e293b; font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; line-height:1.9; }
+.topnav { background:#0f172a; color:#cbd5e1; padding:10px 20px; font-size:13px; }
+.topnav a { color:#93c5fd; text-decoration:none; margin-right:14px; }
+.topnav a:hover { text-decoration:underline; }
+.wrap { max-width:920px; margin:0 auto; padding:28px 20px 90px; }
+h1 { font-size:26px; border-left:6px solid #dc2626; padding-left:12px; line-height:1.5; }
+h2 { font-size:21px; margin-top:48px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+h3 { font-size:17px; margin-top:32px; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; font-size:.9em; font-family:Consolas,"SF Mono",Menlo,monospace; }
+.codebox { margin:16px 0; border-radius:8px; overflow:hidden; border:1px solid #334155; }
+.codebox .path { background:#1e293b; color:#93c5fd; font:12px Consolas,Menlo,monospace; padding:6px 12px; border-bottom:1px solid #334155; }
+.codebox pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow-x:auto; font:13px/1.7 Consolas,Menlo,monospace; }
+.codebox pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+.codebox b { color:#fbbf24; font-weight:600; }
+.codebox .cm { color:#7dd3fc; opacity:.65; }
+.note,.compare,.warn { border-radius:8px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+.note { background:#eff6ff; border:1px solid #bfdbfe; }
+.compare { background:#fffbeb; border:1px solid #fde68a; }
+.warn { background:#fef2f2; border:1px solid #fecaca; }
+.boxtitle { display:block; font-weight:700; font-size:12px; letter-spacing:.08em; margin-bottom:6px; color:#475569; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#fff; }
+th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; white-space:nowrap; }
+.flow { list-style:none; counter-reset:step; padding:0; margin:16px 0; }
+.flow li { position:relative; margin:0 0 10px; padding:10px 14px 10px 52px; background:#fff; border:1px solid #cbd5e1; border-radius:8px; font-size:14.5px; }
+.flow li::before { counter-increment:step; content:counter(step); position:absolute; left:12px; top:12px; width:26px; height:26px; background:#dc2626; color:#fff; border-radius:50%; text-align:center; line-height:26px; font-weight:700; font-size:13px; }
+footer { margin-top:64px; padding-top:16px; border-top:1px solid #cbd5e1; font-size:13.5px; color:#64748b; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+footer a { color:#2563eb; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">目次</a>
+  <a href="go-lang-primer.html">Go 言語プライマー</a>
+  <a href="react-ts-primer.html">React/TS プライマー</a>
+  <a href="tag-walkthrough.html">タグ管理ウォークスルー</a>
+  <a href="tag-tests.html">タグのテスト</a>
+  <a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+  <a href="combo-tests.html">コンボのテスト + E2E</a>
+  <a href="playwright-guide.html">Playwright ガイド</a>
+  <a href="shadcn-tailwind-guide.html">shadcn/Tailwind</a>
+  <a href="game-update-walkthrough.html">ゲーム更新影響判定</a>
+  <a href="shell-guardrails-guide.html">シェル検査とフック</a>
+</nav>
+<div class="wrap">
+
+<h1>コンボ CRUD ウォークスルー<br>— 中核機能で「実戦の設計」を読む</h1>
+
+<p>コンボ(combos + combo_steps + 関連テーブル)はこのアプリの中核ドメインで、Go 側だけで約 1 万行あります。全部は追わず、<strong>「新規作成 → 一覧表示 → 詳細表示 → 部分更新」の主要フロー</strong>に絞り、タグ管理には無かった応用要素を重点的に読みます。</p>
+
+<div class="tablewrap">
+<table>
+<tr><th>応用要素</th><th>タグ管理では</th><th>コンボでは</th></tr>
+<tr><td>トランザクション</td><td>不要(1 テーブル 1 文)</td><td>親子 4 テーブルを 1 Tx で書く(§3)</td></tr>
+<tr><td>集約(親子構造)</td><td>なし</td><td>Combo が Steps/Tags/OkiOptions を抱える(§2)</td></tr>
+<tr><td>同時編集の防御</td><td>なし</td><td>楽観的排他(version カラム)(§6)</td></tr>
+<tr><td>部分更新の表現</td><td>*string(nil=不変更)</td><td>Optional[T] の 3 状態(§6)</td></tr>
+<tr><td>削除</td><td>物理削除</td><td>論理削除(ゴミ箱)+ 復元 + 完全削除(§7)</td></tr>
+<tr><td>一覧の性能</td><td>気にしない規模</td><td>動的 WHERE・ソート whitelist・N+1 回避(§4)</td></tr>
+<tr><td>DTO</td><td>model を直接返す</td><td>専用の dto.go(597 行)で変換(§3.1)</td></tr>
+<tr><td>競合状態(race)</td><td>なし</td><td>検証と INSERT を 1 つの Tx に閉じ込める(§3.2)</td></tr>
+</table>
+</div>
+
+<p>API は 13 本(<code>internal/api/combo/routes.go:22-37</code>)。今回追うのは <code>POST /combos</code>、<code>GET /combos</code>、<code>GET /combos/:id</code>、<code>PATCH /combos/:id</code> の 4 本です。重複検知(check-duplicate)・ゴミ箱系(restore/permanent と読み取り専用詳細 <code>GET /:id/deleted</code>)・レシピ解決(recipe)・確定反撃版の生成(materialize)・ゲーム更新の「確認した」(acknowledge-version、<a href="game-update-walkthrough.html">別資料</a>)・CSV 入出力(comboio)は「あることと役割」だけ知っていれば十分です。</p>
+
+<h2>2. model.Combo — 「集約」を struct で表す</h2>
+
+<div class="codebox">
+<div class="path">internal/model/combo.go:190-305(大幅抜粋)</div>
+<pre><code>type Combo struct {
+    ID          int64      `db:"id"           json:"id"`
+    CharacterID int64      `db:"character_id" json:"characterId"`
+    IsDraft     bool       `db:"is_draft"     json:"isDraft"`      <span class="cm">// 仮登録(検証を緩くして保存できる)</span>
+    Damage      *int       `db:"damage"       json:"damage,omitempty"`
+    <span class="cm">// … メタデータ多数(position / hitType / メーター量 / memo / link …)…</span>
+    <b>OkiVerified bool       `db:"oki_verified" json:"okiVerified"`</b>  <span class="cm">// 起き攻めを一度でも調べたか(M27-02b、下記)</span>
+    StepCount   int        `db:"step_count"   json:"stepCount"`
+    RecipeCache *string    `db:"recipe_cache" <b>json:"-"</b>`       <span class="cm">// 内部キャッシュ。API に出さない</span>
+    <b>Version     int        `db:"version"      json:"version"`</b> <span class="cm">// 楽観的排他用(§6)</span>
+    CreatedAt   time.Time  `db:"created_at"   json:"createdAt"`
+    UpdatedAt   time.Time  `db:"updated_at"   json:"updatedAt"`
+    <b>DeletedAt   *time.Time `db:"deleted_at"   json:"-"`</b>       <span class="cm">// 論理削除。nil = 生きている(§7)</span>
+    BaselineVersion *string `db:"baseline_version" json:"baselineVersion,omitempty"` <span class="cm">// 前提ゲームバージョン(M28-02a)</span>
+    <span class="cm">// ★DB に保存されない「導出列」。SELECT のたびに EXISTS サブクエリで計算される(M28-02a)</span>
+    AffectedByGameUpdate bool `db:"affected_by_game_update" json:"affectedByGameUpdate"`
+
+    <span class="cm">// ── ここから下は「子」。DB カラムではなくリポジトリ層が別クエリで注入する ──</span>
+    AffectedMoves []AffectedMove `db:"-" json:"-"`       <span class="cm">// 基準より後に変わった技の列挙(M28-02c)</span>
+    Steps      []ComboStep `db:"-" json:"steps,omitempty"`  <span class="cm">// nil=未ロード / 非nil=ロード済み</span>
+    Tags       []Tag       `db:"-" json:"-"`
+    OkiOptions []OkiOption `db:"-" json:"okiOptions,omitempty"`
+    <span class="cm">// 一覧表示用の導出フィールド(DB マップ対象外)</span>
+    DefaultRecipe   string  `db:"-" json:"-"`
+    StarterMoveCode *string `db:"-" json:"-"`
+}</code></pre>
+</div>
+
+<p>読みどころは <code>Steps</code> の <strong>nil / 非 nil の使い分け規約</strong>です(combo.go:175-179 のコメントに明文化)。一覧 API は 100 件のコンボの Steps を全部返すと重いので Steps を「未ロード(nil)」のまま返し、詳細 API だけがロードします。<code>omitempty</code> により nil なら JSON からキーごと消えるので、フロントの <code>ComboDetail.steps?</code>(optional)と正確に対応します。「ロードしたか」を型で表すこの規約が、後述の N+1 対策の土台です。</p>
+
+<p>ファイル冒頭には列挙的文字列定数がまとまっています: <code>HitType*</code> は 8 値(combo.go:25-35。M27-01 で DI 系 3 種 + stun を追加)、<code>OpponentSize*</code> は 4 値(combo.go:52-57。medium → standard 改名 + large 新設)、<code>Position*</code> は 7 値(combo.go:72-82。M28-02a で mid_self / mid_opponent を挿入)。いずれもフロント側 <code>web/src/constants/</code> の定数と同期する規約です(CLAUDE.md §4)。定数ブロックのコメントに「新しい値は必ず末尾へ足す」「値の列挙をコメントに書き写さない(1 か所を正典にする)」という運用上の教訓が書かれているのも一読の価値があります。</p>
+
+<div class="note">
+<span class="boxtitle">「未検証」と「無かった」を区別する — 起き攻めの 3 状態(M27-02b)</span>
+<code>OkiOptions</code> は「行の存在 = そのオプションが成立する」という sparse 表現ですが、これだけだと「行が 0 件」が<strong>「まだ調べていない」なのか「調べたが成立するものが無かった」なのか区別できません</strong>。この区別を担うのがコンボ単位のフラグ <code>OkiVerified</code> です(combo.go:226-232): false=未検証、true+0 件=調べたが無かった、true+行あり=その行が成立。一度はセル単位の 3 状態(available 列)で作ったものの「入力量が増えるだけ」と実機確認で判明し、コンボ単位へ作り直したという経緯もコメントに残っています — <strong>NULL や空配列に 2 つの意味を背負わせない</strong>設計の好例です。</div>
+
+<div class="compare">
+<span class="boxtitle">符号の意味を後から入れ替える(M27-03)</span>
+<code>DriveDamage</code>(-6〜6)は当初と符号の意味が逆になり、現在は<strong>負が削り・正が回復</strong>です。既存データはマイグレーション 000103 が <code>UPDATE combos SET drive_damage = -drive_damage</code> 相当で一括反転しました。面白いのは down マイグレーション: <strong>符号反転は自己逆元(もう一度当てれば元に戻る)なので up と down が同一 SQL</strong> です(migrations/000103_flip_drive_damage_sign.down.sql)。「意味の変更はコードだけでなくデータも移行する」「可逆性を数学的性質で担保する」例として覚えておくと役立ちます。</div>
+
+<h2>3. 作成フロー(POST /api/combos)</h2>
+
+<h3>3.1 handler と DTO — model を直接受け取らない</h3>
+
+<p>タグは <code>model.CreateTagInput</code> を handler が直接 Bind しましたが、コンボは <code>dto.go</code> に API 専用の <code>CreateRequest</code>(dto.go:28-65)があり、<code>toServiceCreateInput</code>(dto.go:411-480)でサービス層の入力型へ詰め替えます。レスポンスも <code>toComboResponse</code>(dto.go:524-590)で <code>ComboResponse</code> へ変換します。</p>
+
+<div class="note">
+<span class="boxtitle">なぜ層ごとに型を分けるのか</span>
+API の形(JSON の互換性を守りたい)と内部モデル(自由にリファクタしたい)は変化の理由が違うからです。タグのような小さな機能では省略し、コンボのような大きな機能では分ける — 「常に全部やる」ではなくコストに応じて選ぶ、という判断の実例です。変換関数はただの写経に見えますが、<code>toComboResponse</code> が「Tags と AffectedMoves は常に非 nil の配列にする」(dto.go:576-585)「validations は Issues があるときだけ載せる」のような<strong>境界の正規化</strong>を担っています。逆に <code>affectedByGameUpdate</code> には意図的に <code>omitempty</code> を付けていません — false は「影響なし」という情報であり、キーごと消えると「判定していない」と区別が付かなくなるからです(dto.go:264-272 のコメント)。
+</div>
+
+<h3>3.2 service.Create — トランザクションの実戦形</h3>
+
+<p>ここがこのページの山場です。コンボ 1 件の保存は combos / combo_steps / combo_oki_options / combo_tags(+同時登録セットプレイ)への書き込みで、<strong>全部成功か全部無かったことにするか</strong>を Tx で保証します。</p>
+
+<div class="codebox">
+<div class="path">internal/service/combo/service.go:337-449(骨格を抜粋)</div>
+<pre><code>func (s *service) Create(ctx context.Context, input CreateInput) (*model.Combo, validation.ValidationResult, error) {
+    normalizePositionAndMass(&amp;input)                     <span class="cm">// ① 始動位置のマス数と区分を整合(M28-02a、後述)</span>
+    combo, steps := buildComboFromInput(input)
+
+    hash := CalcRecipeHash(steps)                        <span class="cm">// ② レシピ指紋(重複検知 VAL-C02 用)</span>
+
+    tx, err := s.db.BeginTx(ctx, nil)                    <span class="cm">// ③ ★検証より先に Tx を開く(M24-11、下記)</span>
+    if err != nil { return nil, validation.ValidationResult{}, busyOr(err, "begin tx") }
+    <b>defer func() { if err != nil { _ = tx.Rollback() } }()</b>  <span class="cm">// どこで失敗しても巻き戻す</span>
+
+    <span class="cm">// ④ 検証は同じ Tx の内側で実行する</span>
+    result := validation.ValidateComboForCreate(ctx, combo, steps, input.IsDraft, hash, s.<b>txScopedDeps(tx)</b>)
+    if result.HasError() {
+        _ = tx.Rollback()
+        return <b>nil, result, nil</b>                          <span class="cm">// 検証 NG は「エラーではなく結果」→ handler が 400</span>
+    }
+
+    combo.Version = 1
+    combo.StepCount = len(steps)
+
+    newID, err := s.repo.<b>InsertCombo</b>(ctx, tx, combo)     <span class="cm">// ⑤ 親を INSERT(採番)</span>
+    ...
+    if err = s.repo.<b>InsertSteps</b>(ctx, tx, newID, steps); err != nil { ... }   <span class="cm">// ⑥ 子ステップ</span>
+    if len(input.OkiOptions) &gt; 0 {
+        if err = s.repo.ReplaceOkiOptions(ctx, tx, newID, input.OkiOptions); err != nil { ... }
+    }
+    if err = s.notationSvc.<b>RecomputeComboCache</b>(ctx, tx, newID); err != nil { ... } <span class="cm">// ⑦ 表示文字列を事前計算</span>
+    if len(input.TagIDs) &gt; 0 {
+        if err = s.repo.ReplaceTagAssociations(ctx, tx, newID, input.UserID, input.TagIDs); err != nil { ... } <span class="cm">// ⑧ タグ関連</span>
+    }
+    <span class="cm">// ⑨(M4-04)同時登録セットプレイ。子の検証 NG なら手動 Rollback して 400 相当を返す</span>
+
+    if err = tx.<b>Commit</b>(); err != nil { return nil, result, fmt.Errorf("commit: %w", err) }
+
+    saved, getErr := s.repo.FindByID(ctx, newID)         <span class="cm">// ⑩ 完成形を再取得して返す</span>
+    ...
+    filterTagsByUser(saved, input.UserID)                <span class="cm">// タグは見ている利用者の分だけへ絞る(M22-02)</span>
+    return saved, result, nil
+}</code></pre>
+</div>
+
+<p>特に重要な設計判断が ④ です。<strong>「バリデーション NG」はエラー(error)ではなく戻り値(ValidationResult)</strong>として返します。Go のエラーは「想定外の失敗」用で、検証 NG は「想定内の正常な結果」だから、というエラー設計の使い分けです。handler 側(handler.go:67-69)は <code>result.HasError()</code> を見て 400 + 詳細(どのフィールドがどの VAL コードで NG か)を返し、フロントはそれをフォームの各欄に表示します。</p>
+
+<div class="warn">
+<span class="boxtitle">check-then-act の競合 — なぜ Tx を検証より先に開くのか(M24-11)</span>
+初期の実装は「検証 → BeginTx → INSERT」の順でした。すると VAL-C02(重複検知)の判定と INSERT の間に隙が空き、<strong>同じコンボを 2 リクエストが同時に登録すると、両方が「重複なし」を見て両方 INSERT できてしまいます</strong>(いわゆる check-then-act / TOCTOU 競合。決定論的に再現する観測が残っています)。対策は「判定と登録を 1 つの操作にする」: DSN の <code>_txlock=immediate</code> により BeginTx が<strong>開始時点で write lock を取る</strong>ため、2 本目の要求はここで 1 本目の commit を待ち、その後の判定は commit 済みの行を見ます(service.go:345-359 のコメント)。さらに <code>txScopedDeps</code>(service.go:318-335)が重複判定の読み取りだけを tx 経由へ差し替え、「この tx が今書いた行」も判定に見えるようにしています。判定ロジック自体は 1 文字も変えず、<strong>「いつ・どのハンドルで判定するか」だけを変えた</strong>のが読みどころです。Spring で言えば分離レベルやロックで守る問題を、SQLite では「書き込み Tx の直列化」で解いています。</div>
+
+<p>⑦ の RecomputeComboCache は「技 ID の列 → 人間可読なレシピ文字列(例: <code>屈中P &gt; 波動拳</code>)」への変換結果を全表記プリセット分 JSON で <code>recipe_cache</code> カラムに書き溜める処理です。一覧表示のたびに変換計算しない、書き込み時に前計算する(read-heavy 最適化)というキャッシュ戦略で、モデルの <code>json:"-"</code>・<code>extractDefaultRecipe</code>(service.go:556-565。実体は <code>model.ExtractDefaultRecipe</code> に集約済み)とセットで機能します。</p>
+
+<p>① の <code>normalizePositionAndMass</code>(service.go:1711-1748)は M28-02a で入った「同じ事実の 2 表現を整合させる」ヘルパです。始動位置は保存の正本がマス数(0〜160)へ変わりましたが、区分(<code>position</code>)も重複判定キーとして列に残っているため、「マス数があればマス数が勝ち、区分を導出し直す / 区分だけなら代表値をマス数へ入れる」という規則で<strong>ずれた状態を DB に入れない</strong>ようにしています。重複判定より前に呼ぶ順序が要件になっている点も含め、二重表現を持つときの実務の型として読めます。</p>
+
+<h2>4. 一覧フロー(GET /api/combos)— 動的検索と N+1 対策</h2>
+
+<h3>4.1 クエリパラメータ → ListFilter</h3>
+
+<p>handler.List(handler.go:219-396)は <code>character_id / is_draft / tag_ids / starter_move_id / position / hit_type / opponent_stance / affected_by_game_update / setup_result 系 3 種 / only_deleted / sort / order / limit / offset</code> を 1 つずつ検証しながら <code>ListFilter</code> struct に詰めます。タグのときと同じ地道な作業ですが量が多いだけです。<code>starter_move_id</code> は M27-03 で追加された始動技フィルタで、リポジトリ側は元々 <code>StarterMoveIDs</code>(IN 句)を持っていたため「足りていなかったのはクエリパラメータの受け口だけ。SQL は 1 バイトも変えていない」というコメントが残っています(handler.go:248-274)。</p>
+
+<p>レスポンスは <code>{ items, count, total }</code> の 3 点セットです(M29-02)。一覧は既定 100 件・上限 1000 件でクランプされるため、<code>count</code>(応答に載った件数)だけでは「ちょうど 100 件だった」と「100 件で切り捨てた」を区別できません。<code>total</code> は LIMIT を掛けずに同じ WHERE で数え直した総数で、<strong>total &gt; count が「切り捨てた」の観測</strong>になります(handler.go:381-395)。ページネーション API を作るときの定石です。</p>
+
+<h3>4.2 repository.List — SQL 組み立てと injection 対策</h3>
+
+<div class="codebox">
+<div class="path">internal/repository/combo/repository.go:718-743(ソートの whitelist)</div>
+<pre><code><span class="cm">// SQL injection 対策のため、ここに登録されたフィールドのみ ORDER BY に使用する。</span>
+var <b>sortFieldWhitelist</b> = map[string]string{
+    "default":         "starter_move_id ASC, position ASC, hit_type ASC, ...",
+    "updated_at":      "updated_at",
+    "damage":          "damage",
+    "step_count":      "step_count",
+    "starter_move_id": "starter_move_id",
+}
+
+func resolveSortClause(field, order string) string {
+    sqlExpr, ok := sortFieldWhitelist[field]
+    if !ok {
+        return sortFieldWhitelist["default"] + ", id ASC"
+    }
+    ...
+    <span class="cm">// id 副次キーで全順序を確定させる。同値行の順序が SQL 上未規定のままだと
+    // LIMIT/OFFSET のページ境界で重複・欠落が起こりうる(B9)。</span>
+    return sqlExpr + " " + dir + <b>", id " + dir</b>
+}</code></pre>
+</div>
+
+<p>2 つの実務知識が詰まっています: (1) <strong>ORDER BY はプレースホルダにできない</strong>ので、ユーザー入力をそのまま連結せず許可リストから引く。(2) ソートキーが同値の行の順序は SQL では不定なので、<strong>id をタイブレーカに足して全順序を確定</strong>させないとページネーションで行が重複・欠落する。WHERE 句の組み立て(buildListWhere、repository.go:889-967)はタグの Update で見た「スライスに条件を append して JOIN」パターンの拡大版です。<code>tag_ids</code> は <code>IN (SELECT combo_id FROM combo_tags WHERE tag_id IN (...))</code> というサブクエリになる点も見ておいてください。M29-02 の <code>Count</code>(repository.go:972-980)がこの buildListWhere を List と共用しているのもポイントで、<strong>「一覧と総数で WHERE を 2 回書かない」</strong>ことが total の正しさの担保になっています。</p>
+
+<h3>4.3 N+1 の回避 — 「まとめて取ってマップで配る」</h3>
+
+<p>一覧 100 件に対し「各コンボのタグを 1 件ずつ SELECT」すると 1+100 クエリになります(N+1 問題)。このリポジトリの対策は一貫して<strong>「ID 列で一括取得 → <code>map[comboID][]子</code> に束ねて配る」</strong>です:</p>
+
+<ul>
+<li>タグ: <code>findTagsByComboIDs(ctx, comboIDs) map[int64][]model.Tag</code>(repository.go:2115)</li>
+<li>起き攻め: <code>FindOkiOptionsForCombos</code>(repository.go:2205)</li>
+<li>ステップ: <code>FindStepsForCombos</code>(repository.go:1528。一覧では未使用 = Steps は nil のまま、が基本)</li>
+<li>変わった技(M28-02c): <code>attachAffectedMoves</code>(repository.go:1224)が <code>listAffectedMovesByComboIDs</code> で一括取得して注入。パターンが後年の機能追加でもそのまま踏襲されている例</li>
+<li>セットプレイ: handler 層でも同じパターン(handler.go:342 のコメント「セットプレイ情報をバッチ取得(N+1 回避)」)</li>
+</ul>
+
+<div class="compare">
+<span class="boxtitle">Flask / Spring 経験者向け</span>
+JPA の <code>@BatchSize</code> / fetch join、SQLAlchemy の <code>selectinload</code> がフレームワーク側でやってくれることを、ORM を使わないこのリポジトリでは手で書いています。仕組みが全部見えるので、「N+1 とは何で、どう潰すのか」を学ぶ教材としてはむしろ好都合です。</div>
+
+<h2>5. 詳細フロー(GET /api/combos/:id)</h2>
+
+<p><code>repo.FindByID</code>(repository.go:570-576)が集約を組み立てる現場です: 親 1 行を SELECT した後、<code>attachComboChildren</code>(repository.go:586-633)がステップ(moves と LEFT JOIN して技コードも取得)→ タグ → 起き攻めオプション → 始動技コード・表示名 → 変わった技、を順に取得して 1 個の <code>model.Combo</code> に注入します。子ロードが 1 関数に切り出されているのは、通常詳細とゴミ箱の読み取り専用詳細(<code>FindByIDAllowDeletedWithChildren</code>)が同じ「詳細として揃えるもの」を共有するためで、「母集団の違いはコンボ行を引く SQL の側だけに置く」という分離が効いています。詳細画面はさらにセットプレイ一覧を handler 層で埋め込みます(handler.go:131-156、「案 B1」)。</p>
+
+<p>なお SELECT 句そのものは <code>comboSelectSQL</code>(repository.go:435-453)という 1 定数に集約されています。M28-02a で <code>baseline_version</code> を足すまで同じ列並びが 6 か所に写しで存在し、「1 か所写し忘れると Scan 順がずれ、<strong>エラーにならずに違う列を読む</strong>」状態だったため統合された — 列追加を機にコピペを畳んだ良いリファクタリング例です。</p>
+
+<h2>6. 部分更新(PATCH)— Optional[T] と楽観的排他</h2>
+
+<h3>6.1 3 状態の部分更新</h3>
+
+<p>コンボのメタデータ編集は「memo を変えたい」「damage を<strong>クリアしたい</strong>」「他は触りたくない」を 1 リクエストで表現する必要があります。JSON では「キーを送らない / null を送る / 値を送る」の 3 通りがあり、これを受けるのが <a href="go-lang-primer.html">Go プライマー §9</a> で読んだ <code>Optional[T]</code> です:</p>
+
+<div class="codebox">
+<div class="path">internal/api/combo/dto.go:141-168(UpdateMetadataRequest 抜粋)</div>
+<pre><code>type UpdateMetadataRequest struct {
+    <b>Version int `json:"version"`</b>                          <span class="cm">// 楽観的排他のため必須(§6.2)</span>
+    IsDraft *bool `json:"isDraft,omitempty"`               <span class="cm">// 非 nullable なので従来のポインタ方式</span>
+    Damage  comborepo.<b>Optional[int]</b>     `json:"damage"`   <span class="cm">// キー不在=不変更 / null=クリア / 値=更新</span>
+    <span class="cm">// ★bool なのに Optional(M27-02b)——「省略」と「false」を区別するため。
+    //   値型だと、本欄を持たない古いリクエストが「未検証へ戻す」意味になってしまう</span>
+    OkiVerified comborepo.Optional[bool]   `json:"okiVerified"`
+    Memo        comborepo.Optional[string] `json:"memo"`
+    ...
+    TagIDs  *[]int64 `json:"tagIds,omitempty"`             <span class="cm">// nil=不変更 / 非nil(空含む)=全置換</span>
+}</code></pre>
+</div>
+
+<p>SQL 側(repository.UpdateMetadata、repository.go:1253-1342)は Present なフィールドだけ SET 句に足し、<code>Optional.Arg()</code>(optional.go:39-44)が「Value==nil なら SQL NULL」を返します。タグで見た <code>*string</code> 方式の上位互換が、要求が複雑になったコンボでだけ導入されている — <strong>同じ問題に対する道具の使い分け</strong>として対で覚えると理解が定着します。</p>
+
+<div class="note">
+<span class="boxtitle">部分更新の検証は「更新後の姿」に対して行う(VAL-C15・M27-02b)</span>
+M27-02b でダメージ・有利フレーム・消費ゲージ 2 欄が本登録の必須入力(VAL-C15、ERROR)になりました。ここで問題になるのが PATCH です — 部分更新のリクエストには「今回触っていない欄」が入ってこないので、<strong>入力だけを検証すると未入力に見えて誤って咎めます</strong>。実装は <code>applyMetadataInput</code>(service.go:575-629)で「DB の現在値 + 今回の変更」をマージした姿を作り、それを <code>ValidateRequiredForPublished</code> に渡します(service.go:693-717)。編集画面の保存は識別キーが変わらない限り PATCH 経路なので、「PUT だけに掛けると主経路が素通りする」という理由で PATCH 側にも掛けてある点まで含めて、部分更新 × 必須制約の教科書的な解き方です。</div>
+
+<h3>6.2 楽観的排他 — version カラムと 409</h3>
+
+<p>2 つのタブで同じコンボを開いて両方から保存すると、後勝ちで片方の編集が消えます。これを防ぐのが <code>version</code> カラムです:</p>
+
+<ol class="flow">
+<li>GET したとき <code>version: 3</code> がレスポンスに含まれ、フロントは編集中それを保持する</li>
+<li>PATCH のボディに <code>version: 3</code> を入れて送る</li>
+<li>リポジトリは <code>UPDATE ... WHERE id = ? AND version = 3</code> のように、<strong>読んだときの version のままの行だけ</strong>更新し、version をインクリメントする</li>
+<li>影響行数 0 = 誰かが先に更新した → <code>ErrConflict</code> → handler が <strong>409 Conflict</strong>「このコンボは他の処理で更新されました。再取得してください」(handler.go:418-419)</li>
+</ol>
+
+<div class="compare">
+<span class="boxtitle">Spring 経験者向け</span>
+JPA の <code>@Version</code> +  <code>OptimisticLockException</code> と同じ仕組みの手実装です。行ロック(悲観的排他)を取らないので、SQLite のような単純な DB でも安全に同時編集を捌けます。
+</div>
+
+<h2>7. 論理削除(ゴミ箱)</h2>
+
+<p>DELETE は行を消さず <code>deleted_at</code> に時刻を入れるだけ(SoftDelete、repository.go:1358-1386)。通常の SELECT はすべて <code>WHERE deleted_at IS NULL</code> が付き(FindByID の SQL、repository.go:567-568)、ゴミ箱画面は逆に <code>only_deleted=true</code> で削除済みだけを出します。復元(restore)は deleted_at を NULL に戻し、完全削除(permanent)だけが本当に DELETE します。タグ集計が「ゴミ箱のコンボを数えない」ために JOIN 条件へ <code>c.deleted_at IS NULL</code> を足していた(<a href="tag-walkthrough.html">タグ §2.2</a>)のは、この仕組みの波及でした — <strong>論理削除は導入した瞬間、全クエリに「生死の考慮」を要求する</strong>という良い教訓です。</p>
+
+<p>細部も進化しています。SoftDelete の UPDATE には <code>AND deleted_at IS NULL</code> が付き、既に削除済みの行を 2 度消しても deleted_at を上書きせず<strong>冪等に成功</strong>します(M23-08。上書きすると利用者から見て「消した日が後ろへずれる」)。またゴミ箱の絞り込みは <code>deleted_at IS NOT NULL AND superseded_by_combo_id IS NULL</code> の 2 条件です(buildListWhere、repository.go:952-957) — PUT(キー変更編集、§8.3)は「旧行を論理削除して新行を積む」方式なので、編集のたびに旧行がゴミ箱に並んでしまうのを、旧行へ後継 id を書いておき既定から外すことで防いでいます(M23-01)。</p>
+
+<h2>8. フロントエンド — 3 画面とキャッシュ戦略</h2>
+
+<h3>8.1 一覧画面(ComboListPage)</h3>
+
+<p><code>web/src/pages/ComboListPage.tsx</code> は約 380 行と大きめですが、構造はタグ管理画面の拡大版です。核はこの数行:</p>
+
+<div class="codebox">
+<div class="path">web/src/pages/ComboListPage.tsx:47-90(抜粋)</div>
+<pre><code>const { filters, updateFilters, ... } = useComboListFilters();   <span class="cm">// フィルタ UI の状態</span>
+
+<span class="cm">// 対象キャラは必ず 1 体へ解決される(URL クエリ → セッション保持 → 既定、の多段解決)</span>
+const selectedCharacterId = useResolvedCharacterId({ urlCharacterId: filters.characterId });
+
+const apiFilter = <b>useMemo</b>&lt;ComboListFilter&gt;(() =&gt; {              <span class="cm">// UI 状態 → API パラメータへ変換</span>
+  const f: ComboListFilter = { characterId: selectedCharacterId, sort: filters.sort, order: filters.order };
+  if (filters.isDraft !== null) f.isDraft = filters.isDraft;
+  if (filters.tagIds.length &gt; 0) f.tagIds = filters.tagIds;
+  if (filters.starterMoveId !== null) f.starterMoveId = filters.starterMoveId;  <span class="cm">// 始動技(M27-03)</span>
+  ...
+  return f;
+}, [filters, selectedCharacterId]);
+
+const combosQuery = <b>useCombos(apiFilter)</b>;   <span class="cm">// queryKey: queryKeys.combos.list(apiFilter)</span></code></pre>
+</div>
+
+<p>フィルタ状態が変わる → <code>apiFilter</code> が新しいオブジェクトになる → queryKey が変わる → TanStack Query が新条件で <code>GET /api/combos?...</code> を自動再取得。<strong>「検索ボタン」が存在しない検索画面</strong>がこの仕組みで成立しています。<code>useMemo(fn, [deps])</code> は「deps が変わらない限り前回の計算結果を使い回す」フックで、毎レンダリングで別オブジェクトを作って無駄な再取得が起きるのを防ぐ役です。細かい配慮として、キャラを切り替えると始動技フィルタが同時に解除されます(<code>updateFilters({ characterId, starterMoveId: null })</code>、ComboListPage.tsx:211-213) — 始動技はキャラに属するため、残すと「別キャラの技 id で絞ったまま 0 件」という原因の見えない状態になるからで、<strong>依存し合うフィルタ軸は片方の変更でもう片方をリセットする</strong>という UI の定石です。</p>
+
+<h3>8.2 エディタ画面 — 1 コンポーネント 3 モード</h3>
+
+<p><code>ComboEditorPage</code>(pages/ComboEditorPage.tsx:12-23)は URL から自分のモードを判定します: <code>/combos/new</code> → new、<code>/combos/:id/edit</code> → edit(既存データを <code>useCombo(id)</code> でロードして初期値に)、<code>/combos/new?copyFrom=5</code> → copy(5 番のデータを初期値にした新規)。「編集画面と新規画面はデータの初期値が違うだけ」という共通化で、サーバーレンダリングなら 3 テンプレートになりがちなものが 1 コンポーネント + モード分岐で済んでいます。</p>
+
+<h3>8.3 ミューテーションのキャッシュ操作 — invalidate の一歩先</h3>
+
+<div class="codebox">
+<div class="path">web/src/features/combo/api.ts:231-247(useUpdateComboWithKeyChange)</div>
+<pre><code>export function useUpdateComboWithKeyChange(id: number) {
+  const qc = useQueryClient();
+  return useMutation&lt;Combo, ApiError, PutComboRequest&gt;({
+    mutationFn: (req) =&gt; requestJSON&lt;Combo&gt;(`/api/combos/${id}`, { method: "PUT", ... }),
+    onSuccess: (data) =&gt; {
+      qc.<b>invalidateQueries</b>({ queryKey: queryKeys.combos.all() });      <span class="cm">// 一覧系は再取得へ</span>
+      qc.<b>removeQueries</b>({ queryKey: queryKeys.combo.detail(id) });      <span class="cm">// 旧 ID の詳細キャッシュは破棄</span>
+      if (data.id &amp;&amp; data.id !== id) {
+        qc.<b>setQueryData</b>(queryKeys.combo.detail(data.id), data);        <span class="cm">// 新 ID の詳細はレスポンスで直接充填</span>
+      }
+    },
+  });
+}</code></pre>
+</div>
+
+<p>PUT(キー変更編集)はサーバー側で「旧コンボを消して新コンボを作る」ため ID が変わりえます(旧行は論理削除され、後継 id が書き込まれる — §7)。そのため旧キャッシュの破棄と、<strong>再取得せずレスポンスをそのままキャッシュに書き込む</strong> <code>setQueryData</code>(1 往復の節約)を組み合わせています。invalidate / remove / setQueryData の 3 段活用は TanStack Query の実戦テクニックの見本です。</p>
+
+<div class="note">
+<span class="boxtitle">queryKey は「正本」ファクトリから引く(M24-08)</span>
+以前は <code>["combos"]</code> のような配列リテラルを各所に書いていましたが、現在は <code>web/src/lib/query-keys.ts</code> の <code>queryKeys</code> ファクトリが正本です。キーを書く側と invalidate する側は別ファイルに分かれるため、リテラルだと片方だけ直したときに<strong>例外も出ずキャッシュ更新が静かに効かなくなります</strong>(TanStack の前方一致は「当たらない」だけで失敗しない)。専用テストが「正本の外の配列リテラル」を機械検出し、「どの invalidate がどの query に当たるか」を表で固定しています(web/CLAUDE.md §1.5)。文字列キーが分散する仕組み全般(イベント名、キャッシュキー、i18n キー)に応用できる考え方です。</div>
+
+<h3>8.4 型の三兄弟 — ComboSummary / ComboDetail / Combo</h3>
+
+<div class="codebox">
+<div class="path">web/src/features/combo/types.ts:1-7, 83, 150, 224(構造のみ)</div>
+<pre><code><span class="cm">// 注: ComboSummary と ComboDetail / Combo は別 interface だが、バックエンド ComboResponse は同一型。
+//     フィールド追加時は該当するすべてに追加すること。</span>
+export interface ComboSummary { ... damage?: number; ... }          <span class="cm">// 一覧用。「無い」= undefined</span>
+export interface ComboDetail extends ComboSummary { steps?: ...; }  <span class="cm">// 詳細用。steps 等が増える</span>
+export interface Combo { ... damage?: number <b>| null</b>; ... }         <span class="cm">// 編集用。「未入力」= null を許す</span></code></pre>
+</div>
+
+<p>バックエンドは 1 つの <code>ComboResponse</code> しか返さないのに、フロントは用途別に 3 つの interface を持ちます。理由は「未指定」の意味が画面ごとに違うから: 一覧・詳細は「サーバーがキーを省略した(undefined)」、編集フォームは「ユーザーがまだ入力していない(null)」を区別したいのです。便利な反面、<strong>新フィールド追加時に 3 か所へ追記が必要</strong>という保守コストがあり、web/CLAUDE.md §2 とファイル冒頭コメントで注意喚起されています。型設計のトレードオフの生きた実例です。</p>
+
+<p>3 分岐の中で M28-02c の <code>affectedByGameUpdate: boolean</code> だけは <strong>3 つとも optional にせず必須</strong>で定義されています(types.ts:106、224 側も同様)。バックエンドが omitempty を付けず false でも必ずキーを出す(§3.1)ことと対になっていて、「型を optional にすると『キーが無い = 判定していない』と false の区別が 1 段下で潰れる。画面側で <code>?? false</code> を書かないこと」とコメントに明記されています — <strong>API 契約の「必ず出す」をフロント型の「必須」で受け止める</strong>、両側同期の見本です。</p>
+
+<h2>9. 自分で追ってみる(理解度チェック)</h2>
+
+<div class="note">
+<span class="boxtitle">課題</span>
+<ol>
+<li><strong>Tx の巻き戻し確認</strong>: service.Create で「⑥ InsertSteps が失敗したら combos の行はどうなるか」を defer 節(service.go:355-359)から説明する。次に <code>internal/service/combo/service_test.go</code> で該当の検証をしているテストを探す</li>
+<li><strong>version の旅</strong>: 詳細 GET のレスポンス → ComboEditor の状態 → PATCH ボディ → <code>UPDATE ... AND version = ?</code> → 409 の表示、と version が往復する経路をコードで指差し確認する(フロントは features/combo/ を <code>version</code> で grep)</li>
+<li><strong>一覧が Steps を返さない理由</strong>を、model.Combo の nil 規約(combo.go:175-179)・ComboResponse の <code>steps,omitempty</code>(dto.go:284)・ComboDetail の <code>steps?</code> の 3 点で説明する</li>
+<li><strong>race を再現してみる</strong>: §3.2 の M24-11 の修正が無かったらどう壊れるかを、<code>internal/service/combo/val_c02_race_test.go</code> のテストシナリオから逆算して説明する(2 リクエスト同時登録で何が 2 回起きるか)</li>
+<li><code>GET /api/combos?sort=damage;DROP TABLE combos</code> を投げたら何が起きるか、resolveSortClause を読んで答える(実際に叩いて確かめても安全)</li>
+<li>削除したコンボが「タグの使用数バッジ」から即座に消える理由を、タグ側 listWithUsage の JOIN 条件から説明する(タグとコンボの横断理解)</li>
+</ol>
+</div>
+
+<footer>
+<span><a href="tag-tests.html">← タグ管理のテスト</a></span>
+<span>生成日 2026-07-22 / 更新日 2026-09-08(コードは更新日時点の main 相当スナップショットに基づく)</span>
+<span><a href="combo-tests.html">次: コンボのテスト + E2E →</a></span>
+</footer>
+</div>
+</body>
+</html>

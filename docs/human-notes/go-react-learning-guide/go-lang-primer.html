@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Go 言語プライマー — Tacpendium のコードで学ぶ</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; background:#f8fafc; color:#1e293b; font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; line-height:1.9; }
+.topnav { background:#0f172a; color:#cbd5e1; padding:10px 20px; font-size:13px; }
+.topnav a { color:#93c5fd; text-decoration:none; margin-right:14px; }
+.topnav a:hover { text-decoration:underline; }
+.wrap { max-width:920px; margin:0 auto; padding:28px 20px 90px; }
+h1 { font-size:26px; border-left:6px solid #2563eb; padding-left:12px; line-height:1.5; }
+h2 { font-size:21px; margin-top:48px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+h3 { font-size:17px; margin-top:32px; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; font-size:.9em; font-family:Consolas,"SF Mono",Menlo,monospace; }
+.codebox { margin:16px 0; border-radius:8px; overflow:hidden; border:1px solid #334155; }
+.codebox .path { background:#1e293b; color:#93c5fd; font:12px Consolas,Menlo,monospace; padding:6px 12px; border-bottom:1px solid #334155; }
+.codebox pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow-x:auto; font:13px/1.7 Consolas,Menlo,monospace; }
+.codebox pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+.codebox b { color:#fbbf24; font-weight:600; }
+.codebox .cm { color:#7dd3fc; opacity:.65; }
+.note,.compare,.warn { border-radius:8px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+.note { background:#eff6ff; border:1px solid #bfdbfe; }
+.compare { background:#fffbeb; border:1px solid #fde68a; }
+.warn { background:#fef2f2; border:1px solid #fecaca; }
+.boxtitle { display:block; font-weight:700; font-size:12px; letter-spacing:.08em; margin-bottom:6px; color:#475569; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#fff; }
+th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; white-space:nowrap; }
+footer { margin-top:64px; padding-top:16px; border-top:1px solid #cbd5e1; font-size:13.5px; color:#64748b; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+footer a { color:#2563eb; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">目次</a>
+  <a href="go-lang-primer.html">Go 言語プライマー</a>
+  <a href="react-ts-primer.html">React/TS プライマー</a>
+  <a href="tag-walkthrough.html">タグ管理ウォークスルー</a>
+  <a href="tag-tests.html">タグのテスト</a>
+  <a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+  <a href="combo-tests.html">コンボのテスト + E2E</a>
+  <a href="playwright-guide.html">Playwright ガイド</a>
+  <a href="shadcn-tailwind-guide.html">shadcn/Tailwind</a>
+  <a href="game-update-walkthrough.html">ゲーム更新影響判定</a>
+  <a href="shell-guardrails-guide.html">シェル検査とフック</a>
+</nav>
+<div class="wrap">
+
+<h1>Go 言語プライマー<br>— Tacpendium のコードで学ぶ言語仕様</h1>
+
+<p>このページは Go の文法書ではありません。<strong>このリポジトリを読むのに必要な言語仕様だけ</strong>を、すべて実コードを例にして説明します。順番は「タグ管理ウォークスルーを読むときに登場する順」に近づけてあります。</p>
+
+<h2>1. パッケージと可視性 — 大文字/小文字がアクセス修飾子</h2>
+
+<p>Go のソースファイルは必ず <code>package 名前</code> で始まります。同じディレクトリのファイルは同じパッケージに属し、互いに自由にアクセスできます。Java の <code>public</code>/<code>private</code> に相当する仕組みは、<strong>識別子の頭文字の大小</strong>です。</p>
+
+<div class="codebox">
+<div class="path">internal/service/tag/service.go:2-11(抜粋)</div>
+<pre><code><b>package tag</b>                       <span class="cm">// このディレクトリは「tag」パッケージ</span>
+
+import (
+    "context"                     <span class="cm">// 標準ライブラリ</span>
+    "errors"
+    "strings"
+
+    "github.com/plexiblinp/tacpendium/internal/model"
+    <b>tagrepo</b> "github.com/plexiblinp/tacpendium/internal/repository/tag"  <span class="cm">// ← 別名 import</span>
+)</code></pre>
+</div>
+
+<ul>
+<li><code>Service</code>、<code>New</code>、<code>CreateTag</code> … 大文字始まり = <strong>公開</strong>(パッケージ外から使える。Java の public)</li>
+<li><code>service</code>、<code>validateName</code> … 小文字始まり = <strong>非公開</strong>(パッケージ内限定。Java の package-private に近い)</li>
+<li>公開識別子には godoc コメント(<code>// Service は〜</code>)を付けるのが規約(CLAUDE.md §4)</li>
+</ul>
+
+<p>注目してほしいのが別名 import です。このリポジトリには「tag」という名前のパッケージが 3 つあります(model ではなく api / service / repository の 3 階層)。サービス層がリポジトリ層を使うとき、両方とも <code>tag</code> だと衝突するので <code>tagrepo</code> という別名を付けています。<code>main.go</code> の import 一覧(cmd/tacpendium/main.go:29-83)が大量の別名だらけなのも同じ理由です。</p>
+
+<div class="compare">
+<span class="boxtitle">Flask / Spring 経験者向け</span>
+<code>internal/</code> というディレクトリ名は Go の言語仕様で特別扱いされます: <code>internal/</code> 配下のパッケージは<strong>このモジュール(リポジトリ)の外から import できません</strong>。ライブラリとして公開するつもりのないアプリ内部コードを守る仕組みで、Java でいう module-info の exports を「書かない」ことに相当します。
+</div>
+
+<h2>2. struct と struct タグ — DTO・Entity・ORM マッピングを 1 か所で</h2>
+
+<p>Go にはクラスがなく、データの器は <code>struct</code>(構造体)です。フィールド定義の右にあるバッククォート文字列が <strong>struct タグ</strong>で、シリアライズ時のメタデータになります。Jackson の <code>@JsonProperty</code> と JPA の <code>@Column</code> を 1 行に同居させたものと考えてください。</p>
+
+<div class="codebox">
+<div class="path">internal/model/tag.go:50-57</div>
+<pre><code>type Tag struct {
+    ID         int64   `db:"id"          json:"id"`
+    UserID     int64   `db:"user_id"     <b>json:"userId"</b>`     <span class="cm">// DB は snake_case、JSON は camelCase</span>
+    Name       string  `db:"name"        json:"name"`
+    Category   <b>*string</b> `db:"category"    json:"category,omitempty"`
+    Color      *string `db:"color"       json:"color,omitempty"`
+    UsageCount *int    `db:"<b>-</b>"           json:"usageCount,omitempty"` <span class="cm">// db:"-" = DB マッピング対象外</span>
+}</code></pre>
+</div>
+
+<p>読み取りポイント:</p>
+<ul>
+<li><strong>型がフィールド名の後ろ</strong>に来る(<code>ID int64</code>)。Go は「名前 型」の語順</li>
+<li><code>json:"userId"</code> — <code>encoding/json</code> がシリアライズ時に使うキー名。このリポジトリは「JSON は camelCase、DB カラムは snake_case」を規約化している(CLAUDE.md §4)</li>
+<li><code>omitempty</code> — 値がゼロ値(nil、0、"" など)ならそのキーを JSON から省略する</li>
+<li><code>json:"-"</code> — JSON に一切出さない。<code>model.Combo</code> の <code>RecipeCache</code>(combo.go:238)や <code>DeletedAt</code>(combo.go:242)が「内部専用でクライアントに見せないカラム」としてこれを使っている</li>
+</ul>
+
+<p>タグ文字列自体はただのメタデータで、それを読むのは <code>encoding/json</code> や自作のスキャン処理です。<strong>マジックはない</strong>ので、「このキーはどこから来た?」と思ったら struct タグを見れば必ず答えがあります。</p>
+
+<h2>3. ポインタと nil — 「値がない」の表現</h2>
+
+<p>上の <code>Category *string</code> の <code>*</code> はポインタです。Go でポインタを使う動機は C のようなメモリ操作ではなく、多くの場合<strong>「nil = 値がない」を表現するため</strong>です。</p>
+
+<div class="tablewrap">
+<table>
+<tr><th>型</th><th>とりうる値</th><th>意味</th></tr>
+<tr><td><code>string</code></td><td>"" を含む任意の文字列</td><td>「値がない」を表せない(ゼロ値 "" と区別できない)</td></tr>
+<tr><td><code>*string</code></td><td>nil または文字列への参照</td><td>nil = 未設定(DB の NULL)、非 nil = 値あり</td></tr>
+</table>
+</div>
+
+<p>タグの <code>Category</code>/<code>Color</code> は DB で NULL 許容カラムなので <code>*string</code> になっています。<code>database/sql</code> の <code>Scan</code> は <code>*string</code> のフィールドに NULL を読み込むと nil を入れてくれます(repository.go:66 の <code>rows.Scan(&amp;t.ID, ..., &amp;t.Category, &amp;t.Color)</code>)。</p>
+
+<p>もうひとつの用途が<strong>部分更新(PATCH)の「送られてこなかった」表現</strong>です:</p>
+
+<div class="codebox">
+<div class="path">internal/model/tag.go:66-71</div>
+<pre><code><span class="cm">// UpdateTagInput はタグ部分更新 API の入力(M3-01 §4.2.2)。</span>
+type UpdateTagInput struct {
+    Name     *string `json:"name,omitempty"`     <span class="cm">// nil = このフィールドは変更しない</span>
+    Category *string `json:"category,omitempty"`
+    Color    *string `json:"color,omitempty"`
+}</code></pre>
+</div>
+
+<p>リポジトリの <code>Update</code>(repository.go:157-192)は「nil でないフィールドだけ SET 句に足す」実装で、これが PATCH の部分更新を実現しています。</p>
+
+<div class="warn">
+<span class="boxtitle">注意: このやり方の限界と、その先</span>
+<code>*string</code> 方式は「キー不在」と「JSON の null」を区別できません(どちらも nil になる)。タグでは問題になりませんが、コンボの PATCH では「null を送って NULL クリアしたい」要求があり、3 状態(キー不在 / null / 値あり)を区別するジェネリック型 <code>Optional[T]</code> が導入されています(<code>internal/repository/combo/optional.go</code>)。詳細は<a href="combo-walkthrough.html">コンボウォークスルー §6</a>で。
+</div>
+
+<div class="compare">
+<span class="boxtitle">Flask / Spring 経験者向け</span>
+Java の <code>Integer</code> と <code>int</code> の関係に似ています(参照型なら null を持てる)。Python は全部参照なので意識しませんが、Go は「値型がデフォルト、nil が必要なときだけポインタ」と明示的に選びます。<code>&amp;x</code> でポインタを取り、<code>*p</code> で中身を取り出します(service_test.go の <code>ptrStr</code> ヘルパ、combo の <code>ptr[T any]</code> ヘルパはリテラルからポインタを作るための道具)。
+</div>
+
+<h2>4. エラー処理 — 例外はない。エラーは戻り値</h2>
+
+<p>Go 最大の発想転換ポイントです。<strong>Go に例外(try/catch)はありません</strong>。失敗しうる関数は最後の戻り値として <code>error</code> を返し、呼び出し側は毎回それを検査します。</p>
+
+<h3>4.1 基本形: <code>if err != nil</code></h3>
+
+<div class="codebox">
+<div class="path">internal/repository/tag/repository.go:57-71(一覧クエリ・listSimple)</div>
+<pre><code>rows, err := r.db.QueryContext(ctx, q, userID, category, category)
+<b>if err != nil {
+    return nil, fmt.Errorf("tag list: %w", err)</b>   <span class="cm">// %w = 原因エラーを包んで伝播</span>
+}
+defer rows.Close()
+
+var tags []model.Tag
+for rows.Next() {
+    var t model.Tag
+    if err := rows.Scan(&amp;t.ID, &amp;t.UserID, &amp;t.Name, &amp;t.Category, &amp;t.Color); err != nil {
+        return nil, fmt.Errorf("tag list scan: %w", err)
+    }
+    tags = append(tags, t)
+}
+return tags, rows.Err()</code></pre>
+</div>
+
+<p><code>fmt.Errorf("tag list: %w", err)</code> の <code>%w</code> は「wrap」。元のエラーに文脈("tag list で起きた")を積み増して返します。呼び出し階層を遡るたびに文脈が足され、最終的にログに出るメッセージは <code>"create combo: insert steps: ..."</code> のように<strong>スタックトレースの代わりになる因果の鎖</strong>になります。CLAUDE.md §4 の「エラーは必ず wrap する」はこのためです。</p>
+
+<h3>4.2 センチネルエラーと errors.Is — 「どの失敗か」を種別で判定</h3>
+
+<p>特定の失敗を呼び出し側が判別したいとき、パッケージ変数としてエラー値を定義します。これを<strong>センチネルエラー</strong>と呼びます。</p>
+
+<div class="codebox">
+<div class="path">internal/service/tag/errors.go:5-16(抜粋・godoc コメント省略)</div>
+<pre><code>var ErrNotFound        = errors.New("tag: not found")
+var ErrTagNameDuplicate = errors.New("tag: name duplicate") <span class="cm">// VAL-T01</span>
+var ErrTagNameEmpty     = errors.New("tag: name empty")     <span class="cm">// VAL-T02</span>
+var ErrTagInUse         = errors.New("tag: in use")         <span class="cm">// VAL-T03</span></code></pre>
+</div>
+
+<p>ハンドラ層はこれを <code>errors.Is</code> で判別して HTTP ステータスコードに翻訳します。<code>==</code> ではなく <code>errors.Is</code> を使うのは、<code>%w</code> で包まれていても鎖を遡って照合してくれるからです。</p>
+
+<div class="codebox">
+<div class="path">internal/api/tag/handler.go:90-101(Create のエラー分岐)</div>
+<pre><code>tag, err := h.service.CreateTag(c.Request().Context(), <b>mw.UserIDFrom(c)</b>, input)  <span class="cm">// ← §6.1 参照(M22 で利用者が固定 ID でなくなった)</span>
+if err != nil {
+    switch {
+    case <b>errors.Is(err, tagsvc.ErrTagNameEmpty)</b>:
+        return c.JSON(http.StatusBadRequest, model.NewAPIError("tag_name_empty", "タグ名は必須です"))
+    case <b>errors.Is(err, tagsvc.ErrTagNameDuplicate)</b>:
+        return c.JSON(http.StatusConflict, model.NewAPIError("tag_name_duplicate", "同名のタグが既に存在します"))
+    default:
+        slog.ErrorContext(...)
+        return c.JSON(http.StatusInternalServerError, ...)
+    }
+}</code></pre>
+</div>
+
+<div class="compare">
+<span class="boxtitle">Spring の @ExceptionHandler との対応</span>
+Spring では <code>TagNameDuplicateException</code> を throw して <code>@ExceptionHandler</code> が 409 に変換します。Go では「例外クラス」の代わりに「エラー値」、「例外ハンドラ」の代わりに「ハンドラ関数内の switch」です。制御フローが 1 か所に見えるのが利点、各ハンドラに分岐を書く手間が代償です。
+</div>
+
+<h3>4.3 カスタムエラー型と errors.As — エラーにデータを持たせる</h3>
+
+<p>「使用中タグの削除エラー」は件数という付加情報が必要なので、struct として定義されています。</p>
+
+<div class="codebox">
+<div class="path">internal/service/tag/errors.go:19-26</div>
+<pre><code>type TagInUseError struct {
+    UsageCount int                      <span class="cm">// エラーに載せたいデータ</span>
+}
+
+func (e *TagInUseError) <b>Error() string</b> { return ErrTagInUse.Error() }  <span class="cm">// これで error 扱いになる</span>
+func (e *TagInUseError) <b>Is(target error) bool</b> {                       <span class="cm">// errors.Is(err, ErrTagInUse) を成立させる</span>
+    return target == ErrTagInUse
+}</code></pre>
+</div>
+
+<p><code>Error() string</code> メソッドを持つ型は何でも <code>error</code> として使えます(次節のインターフェースの話)。ハンドラ側は種別判定に <code>errors.Is</code>、データ取り出しに <code>errors.As</code>(型としての取り出し)を使い分けています:</p>
+
+<div class="codebox">
+<div class="path">internal/api/tag/handler.go:157-166(Delete の 409 応答)</div>
+<pre><code>case errors.Is(err, tagsvc.ErrTagInUse):        <span class="cm">// ① 種別: 使用中エラーか?</span>
+    var inUse *tagsvc.TagInUseError
+    <b>errors.As(err, &amp;inUse)</b>                      <span class="cm">// ② 具体型を取り出す</span>
+    return c.JSON(http.StatusConflict, model.NewAPIErrorWithDetails("tag_in_use",
+        "このタグは使用中です。確認の上削除してください",
+        map[string]any{
+            "usage_count":        <b>inUse.UsageCount</b>,  <span class="cm">// ③ データを応答に載せる</span>
+            "force_delete_query": "?force=true",
+        },
+    ))</code></pre>
+</div>
+
+<h2>5. インターフェースと DI — 「実装している」宣言が要らない</h2>
+
+<p>Go のインターフェースは<strong>暗黙実装</strong>です。<code>implements</code> キーワードは存在せず、「必要なメソッドを全部持っていれば、その型はそのインターフェースを満たす」と自動的に見なされます(構造的型付け)。</p>
+
+<div class="codebox">
+<div class="path">internal/repository/tag/repository.go:17-35</div>
+<pre><code><span class="cm">// Repository はタグ CRUD の SQL 操作インターフェース。</span>
+type Repository <b>interface</b> {
+    List(ctx context.Context, userID int64, category string, includeUsage bool, characterID *int64) ([]model.Tag, error)
+    Get(ctx context.Context, userID, tagID int64) (*model.Tag, error)
+    Create(ctx context.Context, userID int64, input model.CreateTagInput) (*model.Tag, error)
+    CreateTx(ctx context.Context, tx *sql.Tx, userID int64, input model.CreateTagInput) error  <span class="cm">// M22-02: 利用者作成 Tx に相乗りする版</span>
+    Update(ctx context.Context, userID, tagID int64, input model.UpdateTagInput) (*model.Tag, error)
+    Delete(ctx context.Context, userID, tagID int64) error
+    CountUsage(ctx context.Context, tagID int64) (int, error)
+}
+
+type repository struct {              <span class="cm">// 非公開の実装 struct("implements Repository" とは書かない)</span>
+    db *sql.DB
+}
+
+func New(db *sql.DB) <b>Repository</b> {     <span class="cm">// コンストラクタはインターフェース型で返す</span>
+    return &amp;repository{db: db}
+}</code></pre>
+</div>
+
+<p>サービス層は具体実装ではなくインターフェースに依存します:</p>
+
+<div class="codebox">
+<div class="path">internal/service/tag/service.go:34-41</div>
+<pre><code>type service struct {
+    repo <b>tagrepo.Repository</b>            <span class="cm">// インターフェース型のフィールド = 差し替え可能な依存</span>
+}
+
+func New(repo tagrepo.Repository) Service {
+    return &amp;service{repo: repo}
+}</code></pre>
+</div>
+
+<p>そして組み立ては <code>main.go</code> が行います: <code>tagRepo := tagrepo.New(sqlDB)</code> → <code>tagService := tagsvc.New(tagRepo)</code>(cmd/tacpendium/main.go:345-346)。これが Go 流の DI(依存性注入)で、フレームワークもアノテーションもなく、<strong>コンストラクタ関数の入れ子呼び出し</strong>だけで完結します。</p>
+
+<div class="note">
+<span class="boxtitle">なぜインターフェースを切るのか</span>
+最大の理由はテストでの差し替えです。コンボのハンドラテスト(<code>internal/api/combo/handler_test.go:79-99</code>)は <code>combosvc.Service</code> インターフェースを満たす <code>mockService</code> を自作してハンドラに注入しています。暗黙実装のおかげで、本物のサービスに一切手を入れずにモックを作れます。<code>func (m *mockService) Create(...)</code> のレシーバ <code>(m *mockService)</code> が「この関数は mockService のメソッド」という宣言で、Java のクラス内メソッド定義に相当します。
+</div>
+
+<h3>5.1 メソッドとレシーバ</h3>
+
+<p>Go では「クラスの中にメソッドを書く」代わりに、関数名の前に<strong>レシーバ</strong>を書きます。</p>
+
+<div class="codebox">
+<div class="path">internal/service/tag/service.go:65-79(CreateTag)</div>
+<pre><code>func <b>(s *service)</b> CreateTag(ctx context.Context, userID int64, input model.CreateTagInput) (*model.Tag, error) {
+    if err := validateName(input.Name); err != nil {   <span class="cm">// VAL-T02: 空名検証</span>
+        return nil, err
+    }
+    existing, err := s.repo.List(ctx, userID, "", false, nil)
+    if err != nil {
+        return nil, err
+    }
+    for _, t := range existing {                       <span class="cm">// VAL-T01: 同名重複検証</span>
+        if t.Name == input.Name {
+            return nil, ErrTagNameDuplicate
+        }
+    }
+    return <b>s.repo.Create(ctx, userID, input)</b>           <span class="cm">// 通ったら INSERT へ</span>
+}</code></pre>
+</div>
+
+<p><code>(s *service)</code> は「service 型のポインタに対するメソッド、内部では s と呼ぶ」という意味で、Python の <code>self</code>、Java の <code>this</code> に相当します(ただし名前は自由)。<code>for _, t := range existing</code> はコレクション走査の構文で、range は (インデックス, 要素) の 2 値を返し、使わない方は <code>_</code>(ブランク識別子)で捨てます。</p>
+
+<h2>6. context.Context — リクエストの「生存信号」を運ぶ</h2>
+
+<p>ほぼすべてのサービス・リポジトリメソッドの第一引数が <code>ctx context.Context</code> です。これは Go のサーバー開発の全域的な規約で、主な役割は<strong>キャンセル伝播</strong>です。クライアントが接続を切ったら、その先の DB クエリも中断できるように、「このリクエストはまだ生きているか」という信号を関数から関数へ手渡しします。</p>
+
+<ul>
+<li>入口: ハンドラが <code>c.Request().Context()</code> で HTTP リクエストの context を取り出す(handler.go:49 など)</li>
+<li>中継: サービス→リポジトリへそのまま渡す</li>
+<li>出口: <code>db.QueryContext(ctx, ...)</code> / <code>ExecContext(ctx, ...)</code> が ctx を見て中断に応じる</li>
+<li>付随機能: <code>slog.ErrorContext(ctx, ...)</code> のようにログへリクエスト ID 等の文脈を紐付けるのにも使われる</li>
+</ul>
+
+<div class="compare">
+<span class="boxtitle">Flask / Spring 経験者向け</span>
+Flask の <code>request</code> コンテキストや Spring の ThreadLocal ベースの RequestContextHolder は「見えない場所」に文脈を隠しますが、Go は<strong>明示的に引数で運ぶ</strong>選択をしました。冗長ですが、「この関数はリクエスト文脈に依存する」ことがシグネチャから常に読み取れます。テストでは <code>context.Background()</code>(空の context)を渡します(service_test.go 全域)。
+</div>
+
+<h3>6.1 リクエストスコープの値と型アサーション — mw.UserIDFrom(c)</h3>
+
+<p>M22 の多人数化で、ハンドラは固定の <code>defaultUserID</code> 定数をやめ、ミドルウェアが <code>X-User-Id</code> ヘッダから解決した利用者 ID を <code>mw.UserIDFrom(c)</code> で受け取るようになりました(§4.2 のコード参照)。ここに Go の<strong>型アサーション</strong>という言語機能が登場します:</p>
+
+<div class="codebox">
+<div class="path">internal/api/middleware/user.go:60-65</div>
+<pre><code>func UserIDFrom(c echo.Context) int64 {
+    if v, ok := <b>c.Get(userIDContextKey).(int64)</b>; ok {  <span class="cm">// .(int64) = 型アサーション</span>
+        return v
+    }
+    return 0
+}</code></pre>
+</div>
+
+<p><code>c.Get(...)</code> の戻り値は <code>any</code>(何でも入る型)なので、そのままでは int64 として使えません。<code>x.(int64)</code> が「中身は int64 のはずだ」という宣言(型アサーション)で、<code>v, ok :=</code> の 2 値形式なら型が違っても panic せず <code>ok=false</code> になります(マップの 2 値取得 §8.3 と同じ作法)。値を <code>c.Set</code> で載せるのはミドルウェア <code>UserContext</code>(user.go:35-42)の仕事で、Spring の HandlerInterceptor + RequestContextHolder に相当する分業です。</p>
+
+<h2>7. defer — 後始末の予約</h2>
+
+<p><code>defer 文</code> は「この関数を抜けるとき(return 直前)に実行しろ」という予約です。§4.1 の <code>defer rows.Close()</code> は「どの return 経路を通っても必ず rows を閉じる」を 1 行で保証します。try-finally の代替です。</p>
+
+<p>もっと実戦的な例がコンボ作成のトランザクション処理です:</p>
+
+<div class="codebox">
+<div class="path">internal/service/combo/service.go:351-359, 432-434(Create の Tx 管理)</div>
+<pre><code>tx, err := s.db.BeginTx(ctx, nil)
+if err != nil {
+    return nil, validation.ValidationResult{}, busyOr(err, "begin tx")
+}
+<b>defer func() {
+    if err != nil {          <span class="cm">// 関数を抜ける瞬間に err が残っていたら…</span>
+        _ = tx.Rollback()    <span class="cm">// …ロールバック</span>
+    }
+}()</b>
+<span class="cm">// … バリデーション(VAL-C02)/ InsertCombo / InsertSteps / ReplaceTagAssociations などを実行 …</span>
+
+if err = tx.Commit(); err != nil {
+    return nil, result, fmt.Errorf("commit: %w", err)
+}</code></pre>
+</div>
+
+<p>途中のどの INSERT が失敗して return しても、defer が拾ってロールバックします。Spring の <code>@Transactional</code>(例外なら自動ロールバック)を手続きで書いた形です。<code>defer func(){...}()</code> は無名関数を即座に defer 登録するイディオムで、<code>err</code> という変数を閉じ込めて(クロージャ)、実行時点の最終値を見ます。</p>
+
+<div class="note">
+<span class="boxtitle">2026-07 以降の変更: バリデーションが Tx の内側へ(M24-11)</span>
+旧実装は「重複チェック → BeginTx → INSERT」の順で、チェックと INSERT の間に隙があり、同時に来た 2 要求が両方「重複なし」を見て両方 INSERT できました(TOCTOU 競合)。現在は DSN の <code>_txlock=immediate</code> により <code>BeginTx</code> が開始時点で write lock を取り、バリデーションも同じ Tx の内側で実行します(service.go:345-368 のコメントが経緯ごと説明しています)。もうひとつ、<code>busyOr(err, "begin tx")</code> は §4.2 の応用で、SQLite の BUSY エラー(<code>dbinfra.IsBusy</code>)だけをセンチネル <code>ErrDatabaseBusy</code> に包み直し、ハンドラが 503(Service Unavailable)に翻訳できるようにするヘルパです(service.go:46-51)。
+</div>
+
+<h2>8. スライス・マップ・ゼロ値</h2>
+
+<h3>8.1 スライス = 可変長配列</h3>
+
+<div class="codebox">
+<div class="path">internal/repository/tag/repository.go:158-179(動的 SQL 組み立て・抜粋)</div>
+<pre><code>setClauses := <b>make([]string, 0, 3)</b>    <span class="cm">// 長さ 0、容量 3 の string スライス</span>
+args := make([]any, 0, 5)             <span class="cm">// any = 何でも入る型(Java の Object)</span>
+
+if input.Name != nil {
+    setClauses = <b>append(setClauses, "name = ?")</b>   <span class="cm">// 末尾追加。append は新スライスを返す</span>
+    args = append(args, *input.Name)              <span class="cm">// *input.Name = ポインタの中身</span>
+}
+<span class="cm">// … Category / Color も同様 …</span>
+q := fmt.Sprintf("UPDATE tags SET %s WHERE id = ? AND user_id = ?",
+    strings.Join(setClauses, ", "))</code></pre>
+</div>
+
+<p>PATCH で送られたフィールドだけ SET 句に足していく典型パターンです。値は必ずプレースホルダ <code>?</code> で渡し、SQL 文字列には列名しか埋め込まない(SQL インジェクション対策)点も見どころです。</p>
+
+<h3>8.2 ゼロ値 — 未初期化でも「使える」</h3>
+
+<p>Go の変数は宣言しただけで型ごとのゼロ値(数値 0、string ""、ポインタ/スライス/マップ nil、bool false)に初期化されます。<code>var tags []model.Tag</code>(repository.go:63)は nil スライスですが、<strong>nil スライスに append しても安全に動く</strong>のが Go の特徴です。</p>
+
+<div class="warn">
+<span class="boxtitle">実務ではまる罠: nil スライスの JSON は null</span>
+nil スライスを JSON にすると <code>null</code>、空スライスは <code>[]</code> になります。フロントで <code>tags.map(...)</code> すると null は落ちるので、サービス層がわざわざ変換しています:
+<div class="codebox" style="margin-bottom:0">
+<div class="path">internal/service/tag/service.go:49-51</div>
+<pre><code>if tags == nil {
+    tags = []model.Tag{}   <span class="cm">// 0 件でも JSON で [] になるよう保証</span>
+}</code></pre>
+</div>
+コンボ側の <code>toComboResponse</code>(dto.go:576-585)にも同じ配慮(Tags と AffectedMoves は常に非 nil)があります。「API の配列フィールドは null にしない」はこのリポジトリの一貫した設計判断です。
+</div>
+
+<h3>8.3 マップ</h3>
+
+<div class="codebox">
+<div class="path">internal/model/tag.go:16-20</div>
+<pre><code>var MyComboStatusTagNames = <b>map[string]string</b>{   <span class="cm">// キー string → 値 string の辞書</span>
+    MyComboStatusInUse:      "使用中",
+    MyComboStatusPracticing: "練習中",
+    MyComboStatusReduced:    "頻度低下",
+}</code></pre>
+</div>
+
+<p>取り出しは <code>v, ok := m[key]</code> の 2 値形式が定番です(存在チェックと取得を同時に行う)。combo リポジトリの <code>label, ok := labelMap[*combo.StarterMoveID]</code>(repository.go:619)などで頻出します。</p>
+
+<h2>9. ジェネリクス — Optional[T] を読む</h2>
+
+<p>Go 1.18 で導入されたジェネリクス(型パラメータ)は、このリポジトリでは控えめに、しかし要所で使われています。テストヘルパの <code>func ptr[T any](v T) *T { return &amp;v }</code>(combo service_test.go:127)が最小例。<code>[T any]</code> が「任意の型 T について」という宣言です。</p>
+
+<p>実戦例が PATCH の 3 状態問題を解く <code>Optional[T]</code>:</p>
+
+<div class="codebox">
+<div class="path">internal/repository/combo/optional.go:15-34</div>
+<pre><code>type Optional[<b>T any</b>] struct {
+    Present bool <span class="cm">// JSON にキーが存在した</span>
+    Value   *T   <span class="cm">// nil ⇒ JSON null(NULL クリア)/ 非 nil ⇒ その値で更新</span>
+}
+
+<span class="cm">// UnmarshalJSON は JSON のキーが存在したときのみ呼ばれる。</span>
+func (o *Optional[T]) <b>UnmarshalJSON</b>(data []byte) error {
+    o.Present = true                  <span class="cm">// 呼ばれた = キーがあった</span>
+    if string(data) == "null" {
+        o.Value = nil
+        return nil
+    }
+    var v T
+    if err := json.Unmarshal(data, &amp;v); err != nil {
+        return err
+    }
+    o.Value = &amp;v
+    return nil
+}</code></pre>
+</div>
+
+<p>ここには 2 つの仕組みが重なっています: (1) ジェネリクスで int にも string にも float64 にも使える 1 個の型を定義、(2) <code>UnmarshalJSON</code> メソッドを持つ型は <code>encoding/json</code> が自動でそれを呼ぶ(= インターフェースの暗黙実装。<code>json.Unmarshaler</code> を満たしている)。「キーが来なければメソッド自体が呼ばれない」性質を逆手に取って presence を検出する、Go らしい設計です。使われ方は <code>UpdateMetadataRequest</code>(combo/dto.go:133-168)を参照。</p>
+
+<div class="warn">
+<span class="boxtitle">2026-08 以降の追加: typed-nil の罠と Arg() ヘルパ</span>
+Optional には SQL バインド用の <code>Arg()</code> と、テストを読みやすくするコンストラクタ <code>Some[T]</code> / <code>Null[T]</code> が追加されました。<code>Arg()</code> のコメントが指摘しているのが Go 名物の <strong>typed-nil の罠</strong>です:
+<div class="codebox" style="margin-bottom:0">
+<div class="path">internal/repository/combo/optional.go:39-44</div>
+<pre><code>func (o Optional[T]) Arg() <b>any</b> {
+    if o.Value == nil {
+        return nil          <span class="cm">// untyped nil を返す = database/sql は SQL NULL と解釈</span>
+    }
+    return *o.Value
+}</code></pre>
+</div>
+<code>*T</code> 型の nil ポインタをそのまま <code>any</code>(インターフェース)に入れると、「型情報は *T、値は nil」という<strong>非 nil のインターフェース値</strong>になり、<code>database/sql</code> は NULL として扱ってくれません。<code>if o.Value == nil { return nil }</code> と明示的に「型なし nil」へ落とすのはそのためです。「インターフェース == nil の判定は型と値の両方が nil のときだけ真」という言語仕様は、Go の FAQ にも載る頻出ハマりどころです。
+</div>
+
+<h2>10. goroutine — 今は「軽量スレッド」とだけ知っておけば OK</h2>
+
+<p>Go の看板機能である並行処理(goroutine / channel)は、このアプリでは<strong>ほぼ出てきません</strong>。Web サーバーとしての並行性は Echo(net/http)が「1 リクエスト = 1 goroutine」で勝手に面倒を見てくれるからです。唯一の明示的な使用例:</p>
+
+<div class="codebox">
+<div class="path">cmd/tacpendium/main.go:641-648(ブラウザ自動起動・抜粋)</div>
+<pre><code><b>go func() {</b>                                    <span class="cm">// go キーワード = この関数を別 goroutine で実行</span>
+    if err := browser.OpenURL(accessURL); err != nil {
+        slog.Warn("failed to auto-launch browser; open the URL manually", ...)
+    }
+<b>}()</b></code></pre>
+</div>
+
+<p>「ブラウザ起動を待たずにサーバー起動を続けたい」ので投げっぱなしにしています。逆に言うと、ハンドラやサービスのコードは<strong>同期的に上から下へ読めば良い</strong>(async/await の色分け問題がない)のが Go の書き味です。</p>
+
+<h2>11. まとめ — このリポジトリを読むためのチェックリスト</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>見かけたら</th><th>こう読む</th></tr>
+<tr><td><code>x, err := f()</code> / <code>if err != nil</code></td><td>例外の代わり。エラーは値で返り、その場で処理か上へ wrap して伝播</td></tr>
+<tr><td><code>fmt.Errorf("...: %w", err)</code></td><td>文脈を積んでエラーを包む。ログの因果の鎖の 1 節</td></tr>
+<tr><td><code>errors.Is / errors.As</code></td><td>包まれたエラーの種別判定 / 具体型の取り出し</td></tr>
+<tr><td><code>*T</code> 型のフィールド</td><td>nil = NULL / 未指定。DB NULL 許容カラムか PATCH の省略可能フィールド</td></tr>
+<tr><td>struct タグ <code>`db:"..." json:"..."`</code></td><td>DB カラム名と JSON キー名のマッピング定義</td></tr>
+<tr><td><code>type X interface{...}</code> + <code>New() X</code></td><td>テストで差し替えるための境界。実装は同ファイルの小文字 struct</td></tr>
+<tr><td><code>func (s *service) Method(ctx, ...)</code></td><td>service のメソッド。第一引数 ctx はリクエストの生存信号</td></tr>
+<tr><td><code>defer f()</code></td><td>関数を抜けるときの後始末予約(Close / Rollback)</td></tr>
+<tr><td><code>make / append / range</code></td><td>スライス・マップ操作。nil スライスへの append は安全</td></tr>
+<tr><td><code>go func(){...}()</code></td><td>別 goroutine で非同期実行(このアプリではレア)</td></tr>
+</table>
+</div>
+
+<footer>
+<span><a href="index.html">← 目次</a></span>
+<span>生成日 2026-07-22 / 更新日 2026-09-08(コードは 2026-09-08 時点の main 相当スナップショット)</span>
+<span><a href="react-ts-primer.html">次: React + TypeScript プライマー →</a></span>
+</footer>
+</div>
+</body>
+</html>

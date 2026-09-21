@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>並列運用手順書(parallel-ops)— M20 以降の複数レーン運用の正本 — CombMgr</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#fafaf8; --surface:#ffffff; --border:#e4e2dc; --border-strong:#d0cdc4;
+    --text:#2a2925; --text-dim:#6b6862; --text-faint:#9a968d;
+    --accent:#3d6b5e; --accent-soft:#eef3f1; --human:#b5763a; --human-soft:#f7efe5;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Zen Kaku Gothic New',sans-serif;line-height:1.85;font-size:15px;}
+  .wrap{max-width:820px;margin:0 auto;padding:0 24px;}
+  header{padding:64px 0 32px;border-bottom:1px solid var(--border);}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;}
+  h1{font-size:1.7rem;font-weight:700;line-height:1.4;margin-bottom:14px;letter-spacing:-0.01em;}
+  .meta{color:var(--text-faint);font-size:0.8rem;font-family:'JetBrains Mono',monospace;}
+  .summary{color:var(--text-dim);font-size:1rem;margin-top:14px;}
+  .summary strong{color:var(--text);font-weight:500;}
+  section{padding:34px 0;border-bottom:1px solid var(--border);}
+  h2{font-size:1.2rem;font-weight:700;margin-bottom:6px;letter-spacing:-0.01em;}
+  h2 .n{font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--accent);margin-right:10px;}
+  h3{font-size:0.98rem;font-weight:700;margin:20px 0 8px;}
+  .sub{color:var(--text-faint);font-size:0.84rem;margin-bottom:18px;}
+  p{margin-bottom:13px;color:var(--text-dim);}
+  p strong,li strong,td strong{color:var(--text);font-weight:500;}
+  .definition{background:var(--accent-soft);border-left:3px solid var(--accent);padding:18px 22px;border-radius:0 6px 6px 0;margin:20px 0;font-size:1.0rem;color:var(--text);}
+  .definition .label{font-family:'JetBrains Mono',monospace;font-size:0.66rem;letter-spacing:0.1em;color:var(--accent);display:block;margin-bottom:6px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:12px;}
+  .card-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+  .card-name{font-weight:700;font-size:1rem;}
+  .card-tag{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--text-faint);letter-spacing:0.03em;}
+  .card p{font-size:0.92rem;margin-bottom:8px;}
+  .card p:last-child{margin-bottom:0;}
+  .contrast{background:var(--human-soft);border-left:3px solid var(--human);padding:14px 18px;border-radius:0 6px 6px 0;margin:14px 0;font-size:0.9rem;color:var(--text);}
+  .contrast .label{font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;color:var(--human);display:block;margin-bottom:4px;}
+  code{font-family:'JetBrains Mono',monospace;font-size:0.82em;background:var(--accent-soft);padding:1px 6px;border-radius:4px;color:var(--accent);}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:0.87rem;}
+  th{font-family:'JetBrains Mono',monospace;font-size:0.68rem;letter-spacing:0.06em;color:var(--text-faint);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border-strong);font-weight:500;}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text-dim);vertical-align:top;}
+  ul.plain{list-style:none;margin:8px 0;}
+  ul.plain li{padding:5px 0 5px 22px;position:relative;color:var(--text-dim);font-size:0.92rem;}
+  ul.plain li::before{content:'—';position:absolute;left:0;color:var(--accent);}
+  ol.steps{margin:8px 0 8px 4px;list-style:none;counter-reset:r;}
+  ol.steps li{padding:6px 0 6px 30px;position:relative;color:var(--text-dim);font-size:0.92rem;}
+  ol.steps li::before{counter-increment:r;content:counter(r);position:absolute;left:0;top:6px;font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#fff;background:var(--accent);width:20px;height:20px;border-radius:50%;text-align:center;line-height:20px;}
+  .diagram{font-family:'JetBrains Mono',monospace;font-size:0.72rem;line-height:1.7;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin:16px 0;color:var(--text-dim);overflow-x:auto;white-space:pre;}
+  .checklist{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin:14px 0;}
+  .checklist li{list-style:none;padding:5px 0 5px 26px;position:relative;color:var(--text-dim);font-size:0.9rem;}
+  .checklist li::before{content:'☐';position:absolute;left:0;color:var(--accent);font-size:1rem;}
+  .newbadge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:0.58rem;letter-spacing:0.08em;background:var(--human);color:#fff;padding:1px 7px;border-radius:10px;vertical-align:middle;margin-left:8px;}
+  footer{padding:30px 0 56px;color:var(--text-faint);font-size:0.8rem;font-family:'JetBrains Mono',monospace;text-align:center;}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">parallel-ops · M20+</div>
+    <h1>並列運用手順書（parallel-ops）<br>— M20 以降の複数レーン運用の正本</h1>
+    <div class="meta">CombMgr ／ 2026-07-27 ／ 第2版：第1版を全面置換（第1版の6部品はすべて生存・矛盾なし）／ 2026-07-30 改称：旧名 <code>parallel-process-playbook-v2.html</code>。<strong>「playbook」は <code>docs/handover/design-instruction-playbook.md</code> 専用に戻した</strong>（両方が v2 を名乗り取り違えるため）／ <strong>2026-07-31 V2.1</strong>：親の成果物の渡し方（部品14 新設）・ボードの更新手段・親のスマホ運用の3件を追加 ／ <strong>2026-07-31 V2.2</strong>：教訓の昇格4件（契約の守り方の再評価・委任時の文書番号指定・レポートの追従・「読まない」例外の対象と期限）／ <strong>2026-07-31 V2.3</strong>：教訓の昇格3件（記録を先に書くが断定しない・後発パッチの上書き明示・運用変更直後の旧習残存）。<strong>既存の決定に変更なし</strong> ／ <strong>2026-08-11 V2.4</strong>：<strong>反映係の層を廃止し責務を親へ統合（§01・§05・§09）＋ 親の面を Web 版から Claude Code へ移した</strong>。パッチ発行・全文出力・コピー還流が消え、親は docs を直接 Edit する。<strong>ただし実装ソースは <code>scripts/design-desk-arm.sh</code> により作業ツリーから物理排除され、旧「全ソース不可視」の担保は維持される</strong>。正本 <code>docs/progress/20260811-design-desk-surface-study.md</code></div>
+    <p class="summary">第1版は6つの機構（連番・通信・反映・教訓・契約・知識）を定めたが、<strong>設計側のチャット構成は未規定</strong>だった。第2版はそこを<strong>親チャット方式</strong>で埋める。芯は<strong>熟考と結論の分離</strong>——探索の往復は使い捨てのチャットに閉じ込め、親には蒸留された結論だけを入れる。</p>
+  </div>
+</header>
+<div class="wrap">
+
+<section>
+  <h2><span class="n">00</span>全体像</h2>
+  <div class="diagram">                    ┌──────────────────────────────┐
+   開発者 ─起動プロンプト→│ 個別設計チャット（使い捨て）  │─レポート1本→┐
+     │              └──────────────────────────────┘             │
+     │                    設計権限なし・打ち合わせ・結論を蒸留      │
+     ↓                                                            ↓
+ ┌────────────────────────────────────────────────────────────────────┐
+ │ 親チャット（設計卓）                                                │
+ │  複数マイルストーンを同時担当／契約ファイル発行／指示書作成／裁定     │
+ │  状態は repo のボードファイルへ出す ＝ いつでも使い捨て可            │
+ └────────────────────────────────────────────────────────────────────┘
+     │ 指示書                                    ↑ 設計伝達レポート（例外のみ）
+     ↓                                          │
+ ┌──────────────────┐
+ │ 製造担当          │─完了報告→repo──→ 親が自分で読み、自分で当てる
+ │ Claude Code       │                  （反映係は 2026-08-11 廃止）
+ └──────────────────┘
+   開発者の役割 ＝ commit / merge / 承認 / 裁定 ＋ 1ファイルのリレー</div>
+  <div class="contrast"><span class="label">V2.4 / 2026-08-11</span><strong>反映係という層は存在しない。</strong>開発者裁定により<strong>廃止し、責務は親（設計卓）へ統合</strong>した（<code>docs/handover/roles-and-routing.md</code>）。廃止の理由＝<strong>パッチ往復が 4 往復級に達しており、往復そのものがコストだった</strong>。あわせて<strong>親の面を Web 版から Claude Code へ移した</strong>ため、<strong>親は docs を自分で Edit する</strong>（パッチ発行は不要）。本書に残る「反映係」の記述は<strong>当時の記録として読み、実行者は親に読み替える</strong>こと。正本 <code>docs/progress/20260811-design-desk-surface-study.md</code>。<br><strong>★ただし親は実装ソースを見ない</strong>——<code>scripts/design-desk-arm.sh</code> により作業ツリーから物理排除されている。<strong>「repo が見える」と「実装が見える」は別である。</strong></div>
+  <div class="definition"><span class="label">PRINCIPLE</span><strong>熟考は高価、結論は安価。</strong>設計判断で消費されるコンテキストの大半は探索・往復・却下された案であり、確定事項ではない。それを使い捨てのチャットに閉じ込め、親は蒸留された結論だけを読む。<br>——隔離リポジトリで自律実装させ人はマージだけする、という既存原則を<strong>設計フェーズに適用した</strong>もの。</div>
+</section>
+
+<section>
+  <h2><span class="n">01</span>役割（4層）<span class="newbadge">V2</span></h2>
+  <div class="card">
+    <div class="card-head"><span class="card-name">親チャット（設計卓）</span><span class="card-tag">Web／複数MS同時</span></div>
+    <p><strong>設計権限を持つ唯一の層。</strong>契約ファイルの発行・指示書作成・逸脱の裁定。製造の完了を待たずに作れる指示書は先行して作る。</p>
+    <p><span class="newbadge">V2.1</span> <strong>成果物はダウンロード可能なファイルで出す。応答本文には要旨と「開発者が次にやること」だけを書く。</strong>成果物の全文を本文に載せると、媒体が「開発者の手」に戻る（＝転記作業の再発）。<s>既存の巨大文書（DES 本体・registry）の改訂はパッチで出し反映係に当てさせる。例外はボードで、親が全文を保持しているため更新済み全文をそのまま出す。</s><br><span class="newbadge">V2.4</span> <strong>2026-08-11: 親の面が Claude Code になったため、DES 本体・registry・ボードはいずれも親が直接 Edit する。</strong>パッチ発行も全文出力も要らない。<strong>「応答本文には要旨と次の一手だけ」という上の規律は不変</strong>——むしろ成果物が repo に着地する分、本文へ載せる理由がなくなる。</p>
+    <p><span class="newbadge">V2.3</span> <strong>記録を先に書いてよいが、断定してはいけない。</strong>三点セットを同時に着地させるため change-report は反映の前に発行するが、<strong>ステータスを「反映済み」と断定して出すのは誤り</strong>（repo を見ないまま「反映済」と宣言する R-03 と同じ形）。先行発行する記録文書は<strong>ステータスを「ドラフト」とし、事実で埋めるべき箇所を明示し、適用者がそこだけを確定させてから配置する</strong>。<strong>判断を含む記述は適用者に書き換えさせない。</strong></p>
+    <p><span class="newbadge">V2.3</span> <strong>後発のパッチが前発を上書きする箇所を明示する。</strong>同一セッションで前後のパッチが同一項目に反対の指示を出した事例がある。適用者は正しく処置したが<strong>根拠は適用順という状況証拠だけ</strong>だった。後発に「<strong>本項は〈先発パッチ〉§X の指示を上書きする</strong>」と 1 行書く。<strong>発行の時系列＝適用の時系列とは限らない。</strong></p>
+    <p><span class="newbadge">V2.3</span> <strong>運用を変えた直後は、発行済みの成果物に旧習が残る。</strong>「版番号を書かない」運用の発効直後のパッチで、<strong>ヘッダは新運用・ボディは旧習の版番号がハードコード</strong>という同居が起きた。<strong>運用を変えたら、その時点で発行済み・未適用の成果物を洗う</strong>——告知だけでは足りない。</p>
+    <p>設計判断に長い検討が要るサブは<strong>個別設計チャットへ外注</strong>し、自らは肥大を避ける。状態は<strong>ボードファイル</strong>（§06）に出し、いつでも作り直せるようにする。</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-name">個別設計チャット</span><span class="card-tag">Web／使い捨て</span></div>
+    <p><strong>設計変更権限は一切持たない。</strong>指示書作成に必要な検討事項を開発者と打ち合わせ、最後に<strong>整理されたレポート1本</strong>を出す。</p>
+    <p>リレーは<strong>最初と最後だけ</strong>を心がける（疑問があれば質問は可）。目的達成で役目を終える。連続支援が有利な場合のみ次の設計判断へ継続。</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-name">製造担当</span><span class="card-tag">Claude Code</span></div>
+    <p>実装。完了報告は repo へ。<strong>例外だけ</strong>を設計伝達レポート（§07）で親へ返す。</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-name"><s>反映係</s>（2026-08-11 廃止・層として存在しない）</span><span class="card-tag">責務は親へ統合</span></div>
+    <p><s>文書パッチ適用・registry 更新・retrospective 反映。常駐しない。親は設計書を直接編集せずパッチを発行して反映係に直させる。</s><br><strong>【V2.4】この層は無い。</strong>文書パッチ適用・registry 更新・retrospective 反映は<strong>親が自分で行う</strong>（親の面が Claude Code になったため、パッチを介さず Edit できる）。<strong>継承した規律 2 件</strong>＝(1) <strong>正典内部の自己矛盾を検出する</strong>（D-252。範囲を限定して当てるときは同じ正典内の他の出現箇所を先に確認する）(2) <strong>実行できても目的を達成しないなら実行せずに報告する</strong>（D-204 (2)）。</p>
+  </div>
+  <div class="contrast"><span class="label">命名の注意</span>第1版の「中央」は<strong>反映係</strong>を指していた。第2版では<strong>親（設計卓）</strong>という別の層が加わる。<strong>両方を「中央」と呼ばないこと。</strong>混乱の原因になる。</div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>連番 — 資源の性質で二分（第1版から不変）</h2>
+  <div class="card">
+    <div class="card-head"><span class="card-name">CHANGE 番号・DES バージョン</span><span class="card-tag">事前ブロック割当</span></div>
+    <p>マイルストーン着手時にレンジを割当（例: M20 = CHANGE 0XX〜0XX）。割当表は repo 内の小さな正本1つ。枯れたら追加ブロック。<strong>欠番は無害</strong>（順序依存なし）。<strong>親が発行する。</strong></p>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-name">マイグレ番号</span><span class="card-tag">マージ時採番</span></div>
+    <p>開発中は<strong>レーン別作業 DB ＋ プレースホルダ名</strong>（例 <code>m20_xxx_XXXX</code>）。マージ直前に<strong>本線の最新番号＋1 へ一括リネーム</strong>。マージの直列性が採番の直列性を兼ねる。</p>
+  </div>
+  <div class="contrast"><span class="label">WHY — 配布先でだけ壊れる</span>golang-migrate は単一の現在バージョンで管理するため、DB が version 29 の状態に後から 24 が来ても適用されない。作り直せる作業 DB は常に 0 から順適用なので<strong>開発環境では再現しない</strong>。友人リリース済み＝<strong>配布先の既存 DB だけが壊れる</strong>。</div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>通信 — リレー文の廃止（第1版から不変）</h2>
+  <p>チャット間の伝達は<strong>全てファイルにして commit</strong>。開発者の仕事は「内容の転記」から「commit/push ＋ ポインタ1行」へ。</p>
+  <div class="definition"><span class="label">FORMAT</span>「<code>docs/relay/m20-to-parent-01.md</code> を読んで」——これだけ。本文は貼らない。</div>
+  <p>外出先（スマホ）では<strong>1ファイルのテキストコピペ</strong>で代替する。個別設計チャットのレポートが1本に収まる設計なのはこのため。</p>
+  <div class="contrast"><span class="label">名前空間の分離（V2 で修正）</span><code>docs/handover/</code> を「チャット間リレー」と「設計伝達レポート」の両方に使わない。同じ語が二つを指すと必ず取り違える。<br><strong>リレー ＝ <code>docs/relay/</code>／設計伝達レポート ＝ <code>docs/design-reports/</code></strong> に分ける。</div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>契約ファイル — ズレ検出の正本</h2>
+  <p class="sub">マイルストーン開始時に1枚。認識ズレの是正は会話でなく、この契約との diff で行う。</p>
+  <table>
+    <tr><th>#</th><th>項目</th><th>内容</th></tr>
+    <tr><td>1</td><td><strong>スコープ</strong></td><td>作るもの／作らないもの</td></tr>
+    <tr><td>2</td><td><strong>DES 所有権</strong></td><td>改訂してよい文書と §。他レーン所有分は read-only</td></tr>
+    <tr><td>3</td><td><strong>予約レンジ</strong></td><td>CHANGE・DES バージョンのブロック。マイグレは「プレースホルダ・マージ時採番」と明記</td></tr>
+    <tr><td>4</td><td><strong>触る領域</strong></td><td>スキーマ／コードの衝突面の宣言</td></tr>
+    <tr><td>5</td><td><strong>凍結インターフェース</strong></td><td>他レーンが依存する API/型/契約。変えたくなったら実装でなく契約改訂を先に</td></tr>
+    <tr><td>6</td><td><strong>通信規約</strong></td><td>成果物・報告・教訓の置き場パスと命名</td></tr>
+  </table>
+  <div class="definition"><span class="label">V2 での強化</span><strong>契約の発行者が親チャット1人になる。</strong>第1版では各レーンが自分の契約を持ち、契約自体がドリフトしうる隙があった。全マイルストーンの契約を単一著者が書くことで、<strong>DES 所有権の排他性が構造的に保証される。</strong></div>
+  <div class="definition"><span class="label">V2.2</span><strong>判断が覆ったら、その判断に依存していた不変条件の「守り方」を再評価する。</strong>不変条件を「どちらに決めても守る」形で書くのは正しいが、<strong>決定が下りたら、その不変条件が構造で守られるのか実装で守られるのかを再判定する</strong>。<strong>文言が同じだからといって放置してはならない＝契約の改訂事項である。</strong></div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>ボードファイル — 親の寿命対策<span class="newbadge">V2</span></h2>
+  <p>親もいずれ肥大する。状態がチャットの中にあると引き継ぎがまた大変になる＝<strong>今回避けたかった問題の再来</strong>。</p>
+  <ul class="plain">
+    <li><strong>1ファイルに小さく持つ</strong>：マイルストーン状況／外注中の個別設計／保留事項／予約レンジの消費状況</li>
+    <li><strong>裁定のたびに1行追記</strong>（例:「M20-03 の逸脱＝受理・DES-004 §6 更新済み」「指示書に X の制約を書き忘れがち」）</li>
+    <li>→ <strong>親はいつでも使い捨てにできる</strong>（新しい親はボードから起動）。親が想定外に落ちても学びが失われない</li>
+    <li>副次：<strong>「指示書の誤り」件数の推移が、指示書作成の改善を測る安価な計測点</strong>になる</li>
+    <li><span class="newbadge">V2.1</span> <strong>更新手段＝親が全文を保持し、更新済み全文をファイルで出す。</strong>「1行追記」は<strong>粒度</strong>の規定であって手段の規定ではない。初回運用では手段が手作業（開発者がチャット本文からコピーして貼る）だったため摩擦が積み上がった。<strong>ここで頻度を落とすと正本が陳腐化して方式の中核が失われる</strong>ため、頻度でなく1回あたりのコストを下げる</li>
+    <li><span class="newbadge">V2.1</span> <strong>ボードを編集してよいのは親だけ。</strong>書き手が複数いると、親が観測できない間に repo 側が進み、親の出力がそれを黙って消す<br><span class="newbadge">V2.4</span> <strong>2026-08-11: 手段が変わった。</strong>反映係が廃止され親の面が Claude Code になったため、<strong>更新は「全文出力して開発者が貼る」ではなく親が直接 Edit する</strong>。<strong>V2.1 が下げようとした「1 回あたりのコスト」はこれで消える</strong>（ボードは 517 KB / 768 行あり、全文出力の摩擦が実際に積み上がっていた）。<strong>「編集してよいのは親だけ」という排他は不変</strong></li>
+    <li><span class="newbadge">V2.1</span> <strong>溜めてよい区分／溜めてはいけない区分を分ける。</strong>§3 裁定ログ・§6 指示書の誤り・§7 教訓・§8 予行演習は<strong>溜めてよい</strong>。<strong>§1 マイルストーン状況と §2 予約レンジの消費は溜めない</strong>（製造がマイグレ連番を実査して親へ再請求する運用に直結するため、<strong>registry の更新と同期する</strong>）</li>
+    <li><span class="newbadge">V2.1</span> <strong>溜める上限</strong>＝「反映係を起こす回」「未反映5件」「セッション終了・親のコンテキスト逼迫」のいずれか早い方。未反映がある間は<strong>親が応答末尾に1行で持ち回る</strong></li>
+  </ul>
+  <div class="definition"><span class="label">RULE</span>親は<strong>実装レポートを読まない。</strong>ボードだけを見る。読み始めた瞬間、熟考を外出しした意味が消える。</div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>個別設計チャットの運用<span class="newbadge">V2</span></h2>
+  <h3>起動＝「小さな契約」</h3>
+  <p>開発者が渡すのは<strong>親が作ったプロンプトのコピペだけ</strong>。プロンプトに必ず含めるもの：</p>
+  <ul class="plain">
+    <li><strong>凍結事項</strong>（触ってはいけない決定）と<strong>スコープ</strong></li>
+    <li><strong>設計変更権限を持たない</strong>ことの明示</li>
+    <li><strong>読むべき文書名を明示</strong>（project knowledge の検索は取りこぼす。類似名の既存機能に吸われる実例あり）</li>
+  </ul>
+  <h3>最終レポートの様式（固定）</h3>
+  <table>
+    <tr><th>節</th><th>内容</th></tr>
+    <tr><td>目的</td><td>何を決めるために起動されたか</td></tr>
+    <tr><td><strong>読んだ資料</strong></td><td>鮮度ズレを親が安く検出するためのパリティチェック</td></tr>
+    <tr><td>検討した選択肢</td><td>却下案とその理由（1行ずつ）</td></tr>
+    <tr><td><strong>確定事項</strong></td><td>親が読む本体</td></tr>
+    <tr><td>開発者判断が要る未決</td><td>残ったもの</td></tr>
+    <tr><td><strong>DES 差分案</strong></td><td><strong>どの DES のどの節を、どう変えるか</strong>。ここまで書かせると親の仕事はレビューとパッチ発行だけになる</td></tr>
+    <tr><td>指示書に入れるべき制約</td><td>製造への申し送り</td></tr>
+    <tr><td><strong>教訓</strong></td><td>retrospective 行き。<strong>親は読まなくてよいと節に明記</strong></td></tr>
+  </table>
+  <div class="definition"><span class="label">V2.2</span><strong>委任するときは返却物の文書番号まで指定する。</strong>番号を割り当てないと<strong>委任先が自然に次番を取り文書番号が二重発番される</strong>。<strong>ローカル採番の文書系列は採番権を1箇所に集約する。</strong></div>
+</section>
+
+<section>
+  <h2><span class="n">07</span>設計伝達レポート（製造 → 親）<span class="newbadge">V2で改訂</span></h2>
+  <p class="sub">既存のカスタムコマンドを運用中。完了報告とは別に「例外だけ」を返す設計は正しい。親が必要とするのは記録ではなく<strong>例外</strong>。</p>
+  <h3>改訂点</h3>
+  <table>
+    <tr><th>#</th><th>改訂</th><th>理由</th></tr>
+    <tr><td>1</td><td><strong>§6 教訓を追加</strong>し「親は読まなくてよい」と明記</td><td>宛先分離が節構造だけで完成する。外出先では §1〜§3 だけコピペすれば足りる</td></tr>
+    <tr><td>2</td><td><strong>「契約に反する独自判断」を独立カテゴリに</strong></td><td>最も危険。実装が設計判断を下した状態の放置＝DES と実装の乖離（継ぎ目のドリフト）。親の仕事は<strong>受理して DES/契約を更新するか、却下して差し戻すか</strong>の二択。未処理で流れることだけを避ける</td></tr>
+    <tr><td>3</td><td>§5 の「registry で採番」を<strong>「契約ファイルの予約レンジから採る」</strong>へ</td><td>旧モデルの記述。§02 と不整合</td></tr>
+    <tr><td>4</td><td><strong>マイグレのプレースホルダ運用</strong>を明記する節を追加</td><td>製造がマイグレを作った場合、「プレースホルダ名・マージ時に採番」を報告させる</td></tr>
+    <tr><td>5</td><td><strong>該当なしの扱いを定義</strong></td><td>「該当が無い節は『なし』の一行で終える。埋めるために書かない。全節が『なし』ならその旨だけのレポートを出す」＝差分主義を機械的に守らせる</td></tr>
+    <tr><td>6</td><td>ファイル名を<strong><code>-design-exceptions.md</code></strong> 等へ</td><td>「例外だけ」と名前に書くと、生成側も受取側も契約を思い出せる</td></tr>
+  </table>
+  <div class="definition"><span class="label">維持する良い点</span>差分主義（指示書・設計書に書いてあることは繰り返さない）／事実には根拠（パス:行・テスト名）／<strong>設計判断はしない</strong>（判断は親・開発者へ委ねる）。この三点が外注レーンの契約になっている。</div>
+  <div class="definition"><span class="label">V2.2</span><strong>改訂7点目：レビュー通過後に仕様が動いたら、レポートを追従させたうえで後乗せ分の差分レビューを行う。</strong>レビューはコードを見るため<strong>「実装は正しいのにレポートだけが古い」状態は通過する</strong>。レポートは DES 反映の一次源なので、そのまま反映すると<strong>実装は正しいのに設計書だけが間違う</strong>。</div>
+</section>
+
+<section>
+  <h2><span class="n">08</span>progress ログの扱い<span class="newbadge">V2</span></h2>
+  <ul class="plain">
+    <li><strong>progress は全部書いたログ。基本的に渡さない。</strong>親・個別設計チャットへの唯一の入力は<strong>設計伝達レポート</strong>とする</li>
+    <li><strong>例外は認める契約</strong>（必要時に参照する経路は塞がない）。構造的に隠蔽はしない</li>
+    <li><strong>要求する側の起動プロンプトにも書く</strong>——「progress ログは要求しない」。コマンド側だけ直しても要求は止まらない（双方向の問題）</li>
+  </ul>
+  <div class="definition"><span class="label">V2.2</span><strong>「読まない」規律に例外を作るときは、対象と期限を同時に書く。</strong><strong>期限のない例外は既定になる。</strong>例外には<strong>対象・期限・観察点</strong>を同時に定義する。</div>
+</section>
+
+<section>
+  <h2><span class="n">09</span>教訓 — 記録と統制を分ける<span class="newbadge">V2</span></h2>
+  <ul class="plain">
+    <li><strong>収集</strong>：製造・個別設計の両方が<strong>同じ様式の「教訓」節</strong>で出す。<span class="newbadge">V2.4</span> バッチで retrospective へ入れるのは<s>反映係</s>→<strong>親</strong>（2026-08-11 廃止）</li>
+    <li><span class="newbadge">V2.1</span> <strong>親は <code>retrospective-log</code> を読まない</strong>（巨大で、親のコンテキストへ載せると本方式の意味が消える）。<strong>ただしマージ素材（<code>*-lessons-*.md</code>）は、昇格判断のために親が読む。</strong>親の担当は「<strong>どの教訓を playbook・コマンド仕様・指示書テンプレへ昇格させるか</strong>」の判断のみ。<span class="newbadge">V2.4</span> <strong>log への機械的マージと digest の再蒸留も親が行う</strong>（<s>反映係</s>は 2026-08-11 廃止。<code>/retrospective-digest-update</code> を親が実行する）。<strong>「読まない」規律は不変</strong>——書き込む先の線であって、読む線ではない。「記録」と「統制」を混ぜないという本節の趣旨は、<strong>読む／読まないの線ではなく、書き込む先の線</strong>である</li>
+    <li><strong>retrospective-log は追記専用構造化 or フェーズ分割を推奨</strong>（編集のたび全文がコンテキストに載る構造自体が継ぎ目）</li>
+  </ul>
+  <div class="contrast"><span class="label">重要</span><strong>「プロジェクト知識にあるから全員が見られる」は成立しない。</strong>見られるが読まれるとは限らず、検索は取りこぼす。<br>→ <strong>再発防止が要る教訓は、retrospective に書くだけで終わらせず、playbook・コマンド仕様・指示書テンプレへ昇格させる。</strong><br><strong>retrospective ＝ 履歴／統制 ＝ 起動プロンプトとコマンド仕様。</strong>役割を混ぜない。</div>
+</section>
+
+<section>
+  <h2><span class="n">10</span>プロジェクト知識の使い分け（第1版から不変）</h2>
+  <p>project knowledge は<strong>検索ベース取得</strong>（全ファイルが常時コンテキストに載るのではない）。同期資料が各チャットを常時圧迫する心配は不要。ただし<strong>検索は取りこぼす</strong>（実例：類似名の既存機能に意味検索が吸われ、目的ファイル本文が引けなかった）。</p>
+  <table>
+    <tr><th>資料</th><th>渡し方</th></tr>
+    <tr><td>DES・overview 等のバルク参照</td><td>project knowledge で可</td></tr>
+    <tr><td><strong>連番割当表・契約ファイル・ボード</strong></td><td><strong>検索に頼らない。</strong>明示パスで渡す or Claude Code に直接読ませる</td></tr>
+  </table>
+  <div class="definition"><span class="label">RULE</span>ロックや counter を検索取得に委ねない。<strong>起動プロンプトに要点を載せておけば、同期が多少古くても成立する</strong>設計にする（スマホで同期できない場合の保険を兼ねる）。</div>
+</section>
+
+<section>
+  <h2><span class="n">11</span>スマホ運用<span class="newbadge">V2.1</span></h2>
+  <p>親チャット自身がスマホから使われる場合の規定。<strong>外出先のスマホからはプロジェクト知識の同期を実行できない</strong>（同期操作の入口が無い）。したがって<strong>セッション中に repo が進んでも、親はそれを観測できない</strong>。</p>
+  <div class="contrast"><span class="label">重要</span><strong>「現行版の正本は repo に置く」は正しいが、「親がいつでも repo を読める」ことを含意しない。</strong>正本が正しい場所にあっても、正本を必要とする層がそれを見られない状況が実在する。</div>
+  <ul class="plain">
+    <li><strong>正本の書き手を1人にする。</strong>ボードは親が全文を保持し、<strong>親だけが書き換える</strong>（§05）</li>
+    <li><strong>親はセッション中に発行した成果物の一覧を保持し、どれが repo に着地したかを開発者に確認する。</strong>「成果物は生成しただけでは完了せず、repo へ着地したことの確認までが完了条件」の<strong>観測できない環境版</strong></li>
+  </ul>
+  <div class="definition"><span class="label">RULE</span>セッション中に確定した事項（<strong>採番の消費・裁定・版遷移</strong>）は、親が明示的に保持する。<strong>「あとで repo を見れば分かる」に頼らない。</strong></div>
+</section>
+
+<section>
+  <h2><span class="n">12</span>レーン割り（M20〜M23）</h2>
+  <div class="card">
+    <div class="card-head"><span class="card-name">M20 ∥ M21</span><span class="card-tag">好適</span></div>
+    <p>M20＝BE 寄り（preset_aliases・recipe_cache）／M21＝FE 入力系。<strong>触る層が縦に割れる。</strong>条件：<strong>recipe_cache の読み書き契約を M20 所有で凍結</strong>（M20 は並行性バグ修正そのものを含む）／M21 は Gamepad 検証が重いので<strong>PoC 先行</strong>。</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-name">M22</span><span class="card-tag">単独直列を推奨</span></div>
+    <p>ログイン・版管理・同時編集安全性は<strong>横断関心事</strong>（全 API に薄く触る）。並列の相手として構造的に不向き。依存も「FB 蓄積後」で急がない。</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-name">M23</span><span class="card-tag">分割</span></div>
+    <p>小修正多数・衝突高低混在。<strong>高衝突の小修正だけ1レーンに束ねて直列</strong>、低衝突は並列。契約の「触る領域」で振り分ける。</p>
+  </div>
+  <p><strong>改善版プロセスの初戦は M20∥M21 の2レーン。</strong>3レーン同時をもう一度やる必要はなく、バッチ周期を粗くする実験も2レーンの方がクリーンに検証できる。</p>
+</section>
+
+<section>
+  <h2><span class="n">13</span>起動前チェック（要約）</h2>
+  <p class="sub">詳細版は parallel-ops-decisions §5。</p>
+  <ul class="checklist">
+    <li>連番：ブロック値が具体的。マイグレはプレースホルダ＋マージ時採番。<strong>「中央に採番を問い合わせる」文言が残っていない</strong></li>
+    <li>通信：ファイル＋ポインタ方式。<code>docs/relay/</code> と <code>docs/design-reports/</code> が混ざっていない</li>
+    <li>契約ファイル：6項目すべて記入済み。DES 所有権が他レーンと排他</li>
+    <li>個別設計チャット：<strong>設計変更権限なし</strong>・凍結事項・<strong>読むべき文書名の明示</strong>・レポート様式（DES 差分案と教訓節を含む）</li>
+    <li>教訓：scratch パス指定・retrospective-log 直接編集の禁止</li>
+    <li>progress：<strong>要求しない</strong>旨が要求側にも書かれている</li>
+    <li>ホット正本を検索で引かせる前提になっていない</li>
+    <li><span class="newbadge">V2.1</span> <strong>成果物の渡し方</strong>：親の成果物が<strong>ダウンロード可能なファイル</strong>で出る前提になっているか。応答本文への直書き（＝開発者の転記作業）が残っていないか</li>
+    <li><span class="newbadge">V2.1</span> <strong>ボードの更新手段</strong>：「1行追記」の<strong>手段</strong>が書かれているか。<strong>書き手が親だけに限定</strong>されているか。溜めてよい区分（§3・§6・§7・§8）と溜めない区分（§1・§2）が分かれているか</li>
+    <li><span class="newbadge">V2.1</span> <strong>親のスマホ運用</strong>：セッション中に同期できない前提で、<strong>親が保持すべき情報</strong>（発行済み成果物の一覧・着地確認・採番の消費）が定義されているか</li>
+  </ul>
+</section>
+
+</div>
+<footer>
+  <div class="wrap">CombMgr — Parallel Milestone Process Playbook v2.3 · M20+</div>
+</footer>
+</body>
+</html>

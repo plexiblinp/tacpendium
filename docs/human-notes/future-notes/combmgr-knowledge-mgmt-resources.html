@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tacpendium — 知識管理メソッド 学習リソース集</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Shippori+Mincho:wght@500;700&display=swap');
+
+  :root {
+    --bg: #0f0d0a;
+    --bg-raised: #1a1611;
+    --bg-card: #211c16;
+    --border: #332b22;
+    --border-bright: #4a3f31;
+    --text: #f0e9dd;
+    --text-dim: #a89a85;
+    --text-faint: #6b5f4d;
+    --accent: #d4a24e;
+    --accent2: #c77b4a;
+    --book: #d4a24e;
+    --online: #6ba3c2;
+    --tool: #8bbf6b;
+    --paper: #c77dbf;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(212,162,78,0.06), transparent 38%),
+      radial-gradient(circle at 88% 92%, rgba(107,163,194,0.04), transparent 42%);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    line-height: 1.75;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 22px; }
+
+  /* Header */
+  header { border-bottom: 1px solid var(--border); padding: 54px 0 32px; }
+  .kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .kicker::before { content: ''; width: 28px; height: 1px; background: var(--accent); }
+  h1 {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 2.3rem; font-weight: 700; line-height: 1.25; margin-bottom: 14px;
+  }
+  h1 .en { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 700; font-size: 0.5em; display:block; letter-spacing:0.1em; margin-bottom: 6px; }
+  .lead { color: var(--text-dim); font-size: 0.97rem; max-width: 680px; }
+  .lead strong { color: var(--text); }
+  .note-box {
+    background: rgba(212,162,78,0.07);
+    border: 1px solid rgba(212,162,78,0.2);
+    border-radius: 8px; padding: 14px 18px; margin-top: 20px;
+    font-size: 0.85rem; color: var(--text-dim);
+  }
+  .note-box strong { color: var(--accent); }
+
+  /* TOC */
+  .toc {
+    display: flex; gap: 10px; flex-wrap: wrap; margin: 30px 0 10px;
+  }
+  .toc a {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.74rem;
+    text-decoration: none; color: var(--text-dim);
+    border: 1px solid var(--border); padding: 7px 13px; border-radius: 20px;
+    transition: all 0.18s;
+  }
+  .toc a:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Section */
+  section { margin-top: 50px; scroll-margin-top: 20px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .sec-num { font-family:'JetBrains Mono',monospace; color: var(--accent); font-size: 0.85rem; font-weight: 700; }
+  .sec-head h2 { font-family: 'Shippori Mincho', serif; font-size: 1.5rem; font-weight: 700; }
+  .sec-desc { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); }
+
+  /* Resource card */
+  .res {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 14px;
+    border-left: 3px solid var(--border-bright);
+  }
+  .res.book { border-left-color: var(--book); }
+  .res.online { border-left-color: var(--online); }
+  .res.tool { border-left-color: var(--tool); }
+  .res.paper { border-left-color: var(--paper); }
+
+  .res-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+  .res-type {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px; letter-spacing: 0.06em; white-space: nowrap;
+    margin-top: 3px;
+  }
+  .res-type.book { background: rgba(212,162,78,0.15); color: var(--book); border: 1px solid rgba(212,162,78,0.3); }
+  .res-type.online { background: rgba(107,163,194,0.15); color: var(--online); border: 1px solid rgba(107,163,194,0.3); }
+  .res-type.tool { background: rgba(139,191,107,0.15); color: var(--tool); border: 1px solid rgba(139,191,107,0.3); }
+  .res-type.paper { background: rgba(199,125,191,0.15); color: var(--paper); border: 1px solid rgba(199,125,191,0.3); }
+  .res-title { font-size: 1.08rem; font-weight: 700; flex: 1; min-width: 200px; }
+  .res-title .sub { display: block; font-size: 0.78rem; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
+  .res-meta { font-family:'JetBrains Mono',monospace; font-size: 0.68rem; color: var(--text-faint); }
+  .res-desc { color: var(--text-dim); font-size: 0.89rem; margin-bottom: 10px; }
+  .res-apply {
+    background: rgba(255,255,255,0.02);
+    border-left: 2px solid var(--border-bright);
+    border-radius: 0 6px 6px 0; padding: 10px 14px; font-size: 0.83rem;
+  }
+  .res-apply .al { font-family:'JetBrains Mono',monospace; font-size: 0.64rem; color: var(--accent); letter-spacing: 0.08em; display: block; margin-bottom: 4px; }
+  .res-apply .at { color: var(--text-dim); }
+  .res-apply .at strong { color: var(--text); }
+  .free-tag { font-family:'JetBrains Mono',monospace; font-size:0.62rem; color: var(--tool); border:1px solid rgba(139,191,107,0.3); padding: 2px 7px; border-radius: 4px; white-space:nowrap; margin-top:3px;}
+
+  /* priority star */
+  .star { color: #e5c558; font-size: 0.7rem; margin-left: 8px; font-family:'JetBrains Mono',monospace; }
+
+  /* Summary table */
+  .summary {
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 12px; padding: 26px 28px; margin-top: 50px;
+  }
+  .summary h3 { font-family:'Shippori Mincho',serif; font-size: 1.2rem; margin-bottom: 16px; }
+  .path-step { display: flex; gap: 14px; padding: 12px 0; border-top: 1px dashed var(--border); }
+  .path-step:first-of-type { border-top: none; }
+  .path-step .ps-num {
+    font-family:'JetBrains Mono',monospace; font-weight:700; color: var(--bg);
+    background: var(--accent); width: 24px; height: 24px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.8rem;
+  }
+  .path-step .ps-text { font-size: 0.9rem; }
+  .path-step .ps-text strong { color: var(--text); }
+  .path-step .ps-text span { color: var(--text-dim); }
+
+  footer {
+    margin-top: 50px; padding-top: 24px; border-top: 1px solid var(--border);
+    font-family:'JetBrains Mono',monospace; font-size: 0.7rem; color: var(--text-faint);
+    text-align: center; line-height: 2;
+  }
+
+  a.ref { color: var(--online); text-decoration: none; border-bottom: 1px dotted var(--online); }
+  a.ref:hover { color: var(--accent); border-color: var(--accent); }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 1.7rem; }
+    .res-head { flex-direction: column; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Learning Resources · Knowledge Management</div>
+    <h1><span class="en">FOR TACPENDIUM MEMO DESIGN</span>知識管理メソッド 学習リソース集</h1>
+    <p class="lead">支持された知識管理メソッドを学び、<strong>格闘ゲーム用の知識管理</strong>へアレンジして Tacpendium のメモ機能設計に活かすための、日本語中心の学習リソース。書籍・オンラインテキスト・ツール・原典を、<strong>Tacpendiumへの応用観点付き</strong>で整理。</p>
+    <div class="note-box">
+      <strong>使い方</strong>: メソッドの「思想」を学び、格ゲー特有の性質（パッチでの陳腐化／キャラ組み合わせ爆発／検証段階／構造データ連携／対戦中の瞬時参照）に合わせてアレンジするのが目的。ツールはメソッドの実装にすぎない。各項目の「→ Tacpendiumへ」が応用のヒント。
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="toc">
+    <a href="#books">書籍</a>
+    <a href="#online">オンラインテキスト</a>
+    <a href="#tools">体験用ツール（OSS/無料）</a>
+    <a href="#origin">原典・一次資料</a>
+    <a href="#path">推奨学習パス</a>
+  </div>
+
+  <!-- BOOKS -->
+  <section id="books">
+    <div class="sec-head"><span class="sec-num">01</span><h2>書籍</h2></div>
+    <p class="sec-desc">メソッドの体系を腰を据えて学ぶならまず書籍。日本語で読める主要なものを、重要度順に。</p>
+
+    <div class="res book">
+      <div class="res-head">
+        <span class="res-type book">書籍</span>
+        <div class="res-title">TAKE NOTES!　メモで、あなただけのアウトプットが自然にできるようになる<span class="sub">ズンク・アーレンス著（原題: How to Take Smart Notes）</span></div>
+        <span class="star">★必読</span>
+      </div>
+      <div class="res-desc"><strong>ツェッテルカステン</strong>の日本語決定版。社会学者ニクラス・ルーマンが58冊の著作と数百本の論文を生んだメモ術を解説。<a class="ref" href="https://futurismo.biz/how-to-take-smart-note-book-review/" target="_blank">日本語の解説記事</a>も豊富。「1枚に1概念を自分の言葉で書き、関連ノートにリンクする」という核を学べる。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">攻略知見を<strong>アトミック（最小単位）で記録し、コンボ/技/対策にリンクする</strong>発想の土台。バラバラの知見が繋がって新しい対策が見える、という Zettelkasten の真価は格ゲー研究と相性が良い。</span></div>
+    </div>
+
+    <div class="res book">
+      <div class="res-head">
+        <span class="res-type book">書籍</span>
+        <div class="res-title">SECOND BRAIN（セカンドブレイン）　時間に追われない「知的生産術」<span class="sub">ティアゴ・フォーテ著（原題: Building a Second Brain）</span></div>
+        <span class="star">★必読</span>
+      </div>
+      <div class="res-desc"><strong>PARAメソッド</strong>と<strong>CODEの4ステップ</strong>（収集・整理・抽出・表現）の日本語版。情報を「行動可能性」で4分類（Projects/Areas/Resources/Archives）する思想。整理より「使うこと」に焦点を置く実践的な体系。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">前回設計した<strong>「課題管理機能」と「状態分類」はまさにPARA的発想</strong>。CODEの「抽出（本質の発見）」「表現（アウトプット）」は、AI機能の<strong>要約・詳細度変換</strong>の思想的背景になる。</span></div>
+    </div>
+
+    <div class="res book">
+      <div class="res-head">
+        <span class="res-type book">書籍</span>
+        <div class="res-title">知的生産の技術<span class="sub">梅棹忠夫著（岩波新書・1969年）</span></div>
+        <span class="star">★日本の古典</span>
+      </div>
+      <div class="res-desc">日本の知的生産論の原点。<strong>「京大式カード」による情報カード法</strong>を提唱。驚くことに、<a class="ref" href="https://knowledgestuck.substack.com/p/zettelkasten" target="_blank">ツェッテルカステンとほぼ同じ方法論</a>を、ルーマンとは独立に日本で確立していた。半世紀前の本だが本質は古びない。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">「1枚のカードに1つの情報」という思想の日本における源流。<strong>カード=アトミックなメモ単位</strong>という設計判断の、文化的にも納得しやすい裏付けになる。安価（新書）で入手も容易。</span></div>
+    </div>
+  </section>
+
+  <!-- ONLINE -->
+  <section id="online">
+    <div class="sec-head"><span class="sec-num">02</span><h2>オンラインテキスト</h2></div>
+    <p class="sec-desc">まず無料で概要を掴むなら、質の高い日本語のWeb記事から。すべて無料で読める。</p>
+
+    <div class="res online">
+      <div class="res-head">
+        <span class="res-type online">記事</span>
+        <div class="res-title">ツェッテルカステンとは？知識を資産に変える最強ノート術<span class="sub">てとらのITさんぽ</span></div>
+        <span class="free-tag">無料</span>
+      </div>
+      <div class="res-desc"><a class="ref" href="https://www.tetoran.com/" target="_blank">tetoran.com</a>。Zettelkasten・PARA・GTD・セカンドブレインの<strong>違いと組み合わせ方</strong>を日本語で整理。「PARAは目的ベース、Zettelkastenはアイデアベース」という対比が明快。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">複数メソッドの<strong>使い分けと融合</strong>の考え方を最短で掴める。Tacpendiumが「リンク＋行動分類＋育成」の良いとこ取りであることの理解に直結。</span></div>
+    </div>
+
+    <div class="res online">
+      <div class="res-head">
+        <span class="res-type online">記事</span>
+        <div class="res-title">天才社会学者がやっていた 驚異のメモ術「ツェッテルカステン」<span class="sub">STUDY HACKER（スタディーハッカー）</span></div>
+        <span class="free-tag">無料</span>
+      </div>
+      <div class="res-desc"><a class="ref" href="https://studyhacker.net/memo-zettelkasten" target="_blank">studyhacker.net</a>。入門に最適。<a class="ref" href="https://studyhacker.net/zettelkasten-memo" target="_blank">実践レポート記事</a>もあり、「半信半疑で始めて5日間で起きた変化」など、実際に手を動かす際のイメージが湧く。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">書籍を読む前の<strong>30分の予習</strong>に。メソッドの肌感を掴んでから書籍に進むと理解が早い。</span></div>
+    </div>
+
+    <div class="res online">
+      <div class="res-head">
+        <span class="res-type online">解説</span>
+        <div class="res-title">Zettelkastenから始まるデジタルノートの活用<span class="sub">ナレッジスタック / knowledgestuck</span></div>
+        <span class="free-tag">無料</span>
+      </div>
+      <div class="res-desc"><a class="ref" href="https://knowledgestuck.substack.com/p/zettelkasten" target="_blank">knowledgestuck.substack.com</a>。デジタルでのZettelkasten実践に踏み込んだ日本語解説。<strong>梅棹忠夫の情報カードとの類似</strong>にも触れ、和洋の知識管理を橋渡しする視点が得られる。「変えてはいけないコアの3ルール」の指摘が実装設計に有用。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">「コアルールは固定、細部は自分流に改造」という姿勢は、<strong>格ゲー向けアレンジの指針そのもの</strong>。何を守り何を変えるかの判断基準になる。</span></div>
+    </div>
+
+    <div class="res online">
+      <div class="res-head">
+        <span class="res-type online">論考</span>
+        <div class="res-title">『TAKE NOTES!』感想〜AIツールに魔改造されてしまったツェッテルカステンのそもそも論<span class="sub">太陽がまぶしかったから</span></div>
+        <span class="free-tag">無料</span>
+      </div>
+      <div class="res-desc"><a class="ref" href="https://www.du-soleil.com/entry/takenotes-zettelkasten" target="_blank">du-soleil.com</a>。<strong>AI時代にZettelkastenをどう捉えるか</strong>を論じた批評的な記事。「AIで魔改造される前の本質は何か」という問いは、TacpendiumのAI機能設計で道を誤らないために重要。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">AI機能設計の核心（<strong>AIは「知識源」でなく「文章処理エンジン」</strong>）と響き合う。AIに頼りすぎてメソッドの本質を見失わないための批評的視点。</span></div>
+    </div>
+  </section>
+
+  <!-- TOOLS -->
+  <section id="tools">
+    <div class="sec-head"><span class="sec-num">03</span><h2>体験用ツール（OSS / 無料）</h2></div>
+    <p class="sec-desc">メソッドは「使って体得する」もの。比較対象はOSS・無料に限定。実装の参考にもなる。</p>
+
+    <div class="res tool">
+      <div class="res-head">
+        <span class="res-type tool">OSS</span>
+        <div class="res-title">Logseq<span class="sub">ローカルファースト・ブロックベースのアウトライナー</span></div>
+        <span class="star">★最推奨</span>
+      </div>
+      <div class="res-desc">Zettelkasten（リンク）とEvergreen（育てる）の両方を体験できる。ローカルファースト・プレーンテキスト。<strong>OSSなので実装の参考にもなる</strong>。アトミックなノートをリンクする感覚を格ゲー知見で実際に試せる。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">「リンクで知見を繋ぐ」UXの体得と、ローカルファースト実装の参考。<strong>使いながらコードも読める</strong>のが開発者にとっての価値。</span></div>
+    </div>
+
+    <div class="res tool">
+      <div class="res-head">
+        <span class="res-type tool">OSS</span>
+        <div class="res-title">AnyType<span class="sub">オブジェクトベースのローカルファースト知識管理</span></div>
+        <span class="free-tag">無料/OSS</span>
+      </div>
+      <div class="res-desc">「メモ」ではなく<strong>「型を持つオブジェクト」</strong>として情報を扱う発想。暗号化・ローカルファースト。Tacpendiumの「コンボ・技・メモを型付きで紐付ける」設計に最も近い思想。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">純粋なメモではなく<strong>構造データ＋メモのハイブリッド</strong>という、Tacpendiumが目指す形の最良の参考。型付き情報の扱い方を体験できる。</span></div>
+    </div>
+
+    <div class="res tool">
+      <div class="res-head">
+        <span class="res-type tool">OSS</span>
+        <div class="res-title">Joplin<span class="sub">Markdown対応・プライバシー重視のノートアプリ</span></div>
+        <span class="free-tag">無料/OSS</span>
+      </div>
+      <div class="res-desc">Markdown・ローカルファースト・汎用同期（Dropbox等）。PARA的なフォルダ整理もプラグインでのZettelkastenも試せる。<strong>OSSで実装が読める</strong>。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">「ローカルファースト＋Markdown＋汎用同期」の実装思想が、TacpendiumのDNAと近い。インポート/エクスポート設計の参考に。</span></div>
+    </div>
+
+    <div class="res tool">
+      <div class="res-head">
+        <span class="res-type tool">参考</span>
+        <div class="res-title">Obsidian<span class="sub">個人利用無料（OSSではない）</span></div>
+        <span class="free-tag">個人無料</span>
+      </div>
+      <div class="res-desc">製品としては採用しない判断だが、<strong>メソッド学習の対象としては宝の山</strong>。プラグインで全メソッドを試せる。「どこが非エンジニアに難しいか」を体感する教材として価値が高い。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">「これは便利だが非エンジニアには無理」の線引き感覚が、Tacpendiumで<strong>避けるべき複雑さ</strong>の判断に直結する。反面教師としても学べる。</span></div>
+    </div>
+  </section>
+
+  <!-- ORIGIN -->
+  <section id="origin">
+    <div class="sec-head"><span class="sec-num">04</span><h2>原典・一次資料</h2></div>
+    <p class="sec-desc">より深く理解したい場合の源流。日本語論文は知識管理（KM）が経営学寄りのため、メソッド学習としては書籍が主で、原典は補助的位置づけ。</p>
+
+    <div class="res paper">
+      <div class="res-head">
+        <span class="res-type paper">原典</span>
+        <div class="res-title">Niklas Luhmann “Kommunikation mit Zettelkästen”<span class="sub">ルーマン本人によるZettelkasten論（英訳あり）</span></div>
+      </div>
+      <div class="res-desc">Zettelkastenの考案者ルーマン自身が、自らのメモ術を「対話の相手（コミュニケーション・パートナー）」として論じた小論。英訳が複数Web公開されている。<strong>メソッドの哲学的な核</strong>に触れられる。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">「メモが思考のパートナーになる」という思想は、Tacpendiumの<strong>AI×メモ</strong>（メモを起点にAIと対話的に知識を育てる）の発想と深く響き合う。</span></div>
+    </div>
+
+    <div class="res paper">
+      <div class="res-head">
+        <span class="res-type paper">理論</span>
+        <div class="res-title">SECI モデル（野中郁次郎・知識創造理論）<span class="sub">暗黙知と形式知の変換理論</span></div>
+      </div>
+      <div class="res-desc">日本発の世界的な知識経営理論。<strong>暗黙知（言語化されていない知）を形式知（言語化された知）に変換する</strong>プロセス（共同化・表出化・連結化・内面化）を体系化。日本語の解説・論文が豊富。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">Tacpendiumの根本動機そのもの。<strong>「文書化されていない格ゲーの暗黙知を、言語化・構造化する」</strong>＝まさに表出化（暗黙知→形式知）。メモ機能の存在意義を理論的に裏付ける。</span></div>
+    </div>
+
+    <div class="res paper">
+      <div class="res-head">
+        <span class="res-type paper">概念</span>
+        <div class="res-title">Evergreen Notes / Andy Matuschak<span class="sub">育て続けるノートの思想（英語・Web公開）</span></div>
+      </div>
+      <div class="res-desc">研究者Andy Matuschakが自身の公開ノート群で実践・解説する「常緑（Evergreen）ノート」の思想。<strong>ノートを書きっぱなしにせず、理解が深まるたびに育てる</strong>。Web上で本人のノートそのものが読める。</div>
+      <div class="res-apply"><span class="al">→ Tacpendiumへ</span><span class="at">前回のAI設計の「下書き→人間確定」「元メモを更新して再生成」はEvergreenの発想。<strong>パッチで変わる格ゲー知識を育て続ける</strong>仕組みの理論的背景。</span></div>
+    </div>
+  </section>
+
+  <!-- PATH -->
+  <div class="summary" id="path">
+    <h3>推奨学習パス</h3>
+    <div class="path-step">
+      <span class="ps-num">1</span>
+      <span class="ps-text"><strong>無料記事で全体像（半日）</strong> <span>STUDY HACKER と てとらのITさんぽ で、Zettelkasten/PARA/Evergreen の違いと「融合」の考え方を掴む。</span></span>
+    </div>
+    <div class="path-step">
+      <span class="ps-num">2</span>
+      <span class="ps-text"><strong>Logseqを実際に使う（1〜2週間）</strong> <span>格ゲー知見を実際にアトミックなメモにしてリンクしてみる。手を動かして初めて分かる感覚を得る。OSSなので実装も覗ける。</span></span>
+    </div>
+    <div class="path-step">
+      <span class="ps-num">3</span>
+      <span class="ps-text"><strong>書籍で体系化（並行）</strong> <span>『TAKE NOTES!』（Zettelkasten）と『SECOND BRAIN』（PARA/CODE）を読む。『知的生産の技術』で日本的源流も押さえる。</span></span>
+    </div>
+    <div class="path-step">
+      <span class="ps-num">4</span>
+      <span class="ps-text"><strong>AnyTypeで構造化を体験</strong> <span>「型を持つ情報」の扱いを体験し、Tacpendiumの構造データ＋メモのハイブリッド設計に活かす。</span></span>
+    </div>
+    <div class="path-step">
+      <span class="ps-num">5</span>
+      <span class="ps-text"><strong>格ゲー向けにアレンジ（Tacpendium設計へ）</strong> <span>学んだメソッドに、格ゲー特有の「鮮度管理／組み合わせ爆発／検証段階／構造データ連携／瞬時参照」を足す。これが独自価値になる。</span></span>
+    </div>
+  </div>
+
+  <footer>
+    Tacpendium Knowledge Management Learning Resources<br>
+    ツールはメソッドの実装にすぎない。学ぶべきは思想、作るべきは格ゲーへのアレンジ。<br>
+    ※ 書籍の価格・入手性、ツールの料金/ライセンスは変わりうるため、利用時に最新情報を確認のこと
+  </footer>
+
+</div>
+
+</body>
+</html>

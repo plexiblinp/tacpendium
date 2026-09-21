@@ -1,0 +1,1219 @@
+{
+  "app": {
+    "title": "Tacpendium"
+  },
+  "health": {
+    "ok": "Server OK: version {{version}}",
+    "error": "Server unavailable: {{message}}",
+    "loading": "Checking connection..."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred: {{message}}",
+    "back": "Back",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "detail": "Detail",
+    "new": "New",
+    "copy": "Copy",
+    "confirm": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "unknown": "Unknown",
+    "notImplementedYet": "Not implemented yet",
+    "characterSearchPlaceholder": "Search characters",
+    "characterNotFound": "No characters found"
+  },
+  "auth": {
+    "show": "Show",
+    "hide": "Hide",
+    "login": {
+      "title": "Enter the password",
+      "description": "This is the password chosen by the person running this app.",
+      "expiredTitle": "The password is needed again",
+      "expiredDescription": "This screen appears when the app was restarted, or when the password was changed.",
+      "passwordLabel": "Password",
+      "submit": "Enter",
+      "submitting": "Checking...",
+      "failed": "That password is not correct.",
+      "forgotLink": "If you do not know the password"
+    },
+    "forgot": {
+      "intro": "The password cannot be recovered from inside the app.",
+      "step1": "On the computer running this app, open the following file.",
+      "fileName": "config.toml",
+      "fileLocation": "It sits in the same folder as the file you use to start the app (the Tacpendium program itself).",
+      "fileLocationHint": "If you cannot find it, right-click the icon you use to start the app and choose “Open file location” to open that folder.",
+      "fileOpenWith": "You can open it with any text editor, such as Notepad.",
+      "quitFirst": "Close the app before you edit the file. If you edit it while the app is running, the app may write the old value back.",
+      "step2": "Inside it, find the line that reads",
+      "step3": "and change it to",
+      "step4": ".",
+      "step5": "Then, in the same file, find the line that starts with",
+      "step6": "and delete that line. If it stays, the app will ask you for the old password — the one you forgot — when you try to choose a new one.",
+      "step7": "Save the file and start the app again. After that you can choose a new password from the settings screen.",
+      "note": "Only someone who can use the computer running this app can do this.",
+      "lanNote": "Turning the password off again does not turn off using the app from other devices."
+    },
+    "setPassword": {
+      "title": "Choose a password",
+      "description": "People opening this app from another device will be asked for this password.",
+      "passwordLabel": "Password",
+      "shownNote": "What you type is shown as it is. Press “Hide” if you are using a laptop away from home, or while streaming.",
+      "hintOtherService": "Do not reuse a password you use for other services.",
+      "hintLater": "You can change it later from the settings screen. You can also move on without choosing one now.",
+      "errorCharset": "Japanese and full-width characters cannot be used.",
+      "errorTooLong": "Please use at most {{max}} characters.",
+      "errorTooShort": "Please use at least {{min}} characters.",
+      "rule": "Use half-width letters, numbers and symbols.",
+      "submit": "Set",
+      "later": "Not now",
+      "failed": "The password could not be saved.",
+      "done": "The password has been set."
+    },
+    "changePassword": {
+      "currentLabel": "Current password",
+      "newLabel": "New password",
+      "warning": "After changing it, every device currently using this app will need the password again. That includes this screen.",
+      "submit": "Change",
+      "cancel": "Cancel",
+      "wrongCurrent": "The current password is not correct.",
+      "doneTitle": "The password has been changed. Please enter again.",
+      "doneAction": "Go to the login screen"
+    }
+  },
+  "user": {
+    "select": {
+      "title": "Who is using the app?",
+      "description": "Tags and presets are kept separately for each name. You can switch later."
+    },
+    "current": "Currently using",
+    "reselect": "Switch user",
+    "headerAria": "Current user: {{name}} (press to switch)",
+    "add": {
+      "nameLabel": "Name",
+      "submit": "Add",
+      "cancel": "Cancel",
+      "duplicate": "Someone with that name already exists.",
+      "failed": "Could not add.",
+      "done": "Added."
+    },
+    "rename": {
+      "nameLabel": "Name",
+      "submit": "Rename",
+      "cancel": "Cancel",
+      "duplicate": "That name is already in use.",
+      "empty": "Please enter a name.",
+      "failed": "Could not rename.",
+      "done": "The name has been changed."
+    },
+    "otherOwner": {
+      "preset": "This preset was made by {{name}}. You can look at it, but you cannot change or delete it. Make your own preset to have one you can change freely.",
+      "presetShort": "Made by someone else"
+    }
+  },
+  "onboarding": {
+    "bannerTitle": "New here?",
+    "bannerBody": "Use \"New Combo\" to register your first combo. The buttons above take you to each feature.",
+    "dismiss": "Dismiss"
+  },
+  "dataMigration": {
+    "title": "Your data has moved to a new location",
+    "failedTitle": "The data migration was stopped",
+    "skippedTitle": "Data from before the rename is still present",
+    "strandedTitle": "Your earlier data has been left behind",
+    "retiredTo": "Your previous data is still at {{path}}. Check it before deleting it.",
+    "retireFailed": "The previous data at {{path}} could not be set aside. It is still there, which is fine.",
+    "dismiss": "Dismiss"
+  },
+  "gameUpdate": {
+    "bannerTitle": "Some combos have not been checked since the game update",
+    "bannerBody": "{{count}} combo(s) use moves that changed in the update (all characters). Review them and mark them as fine.",
+    "bannerAction": "View affected combos",
+    "bannerPostpone": "Hide until the next update",
+    "listButton": "Unchecked combos ({{count}}, all characters)",
+    "listButtonError": "Could not load the number of unchecked combos",
+    "listButtonLoading": "Checking unchecked combos...",
+    "noticeError": "Could not load the game update notice. Please reload later.",
+    "noticeRetry": "Retry",
+    "pageTitle": "Combos affected by the game update",
+    "pageLead": "These combos use moves that changed in the update (all characters). Review them, then fix them or mark them as fine.",
+    "pageEmpty": "There are no unchecked combos.",
+    "pageError": "Could not load the affected combos. Please reload later.",
+    "pageLoading": "Loading...",
+    "columnAffectedMoves": "Changed moves",
+    "columnBaselineVersion": "Based on version",
+    "columnAcknowledge": "Looks fine",
+    "acknowledge": "Looks fine",
+    "acknowledgeHint": "Records that this combo still works after the game update",
+    "acknowledged": "Marked as fine",
+    "acknowledgeError": "Could not record it as fine",
+    "baselineUnknown": "Unknown",
+    "detailLabel": "Based on version",
+    "detailUnconfirmed": "Not checked since update",
+    "detailTrashNote": "Items in the trash cannot be checked. Restore it to check.",
+    "currentVersion": "Current version: {{version}}",
+    "backToList": "Back to the combo list",
+    "pageTruncated": "There are {{total}} affected combos in total, but this page shows up to {{shown}}. Mark some as fine to see the rest."
+  },
+  "comboList": {
+    "title": "Combos",
+    "characterRyu": "Ryu",
+    "characterScope": {
+      "label": "Target character",
+      "note": "Filters this list and sets the character for new combos"
+    },
+    "registeredCount": "Registered: {{count}}",
+    "filter": {
+      "draft": "Status",
+      "draftAll": "All",
+      "draftOnly": "Drafts only",
+      "officialOnly": "Confirmed only",
+      "sortBy": "Sort",
+      "order": "Order",
+      "ascending": "Asc",
+      "descending": "Desc",
+      "position": "Starting position",
+      "hitType": "Hit type",
+      "hitTypeSearchPlaceholder": "Search hit type",
+      "hitTypeNotFound": "No matching hit type",
+      "starterMove": "Starter move",
+      "starterMoveSearchPlaceholder": "Search moves",
+      "starterMoveNotFound": "No matching move",
+      "opponentStance": "Opponent stance",
+      "setupResult": "Setup verified conditions",
+      "setupTechType": "Setup tech type",
+      "setupInCorner": "Setup corner",
+      "tagFilter": "Tags",
+      "tagSearchPlaceholder": "Search tags",
+      "tagNotFound": "No tags found",
+      "tagClearSelection": "Clear selection ({{count}})",
+      "panelLegend": "Filters & sort",
+      "panelHide": "Hide",
+      "panelShow": "Show",
+      "summaryNone": "No filters applied",
+      "sortAxis": "Sort order",
+      "tagSelectedValue": "{{count}}",
+      "all": "All",
+      "columnVisibility": "Columns",
+      "resetColumns": "Reset",
+      "starterMeaty": "Meaty starter"
+    },
+    "sort": {
+      "default": "Starter situation",
+      "updated_at": "Updated",
+      "damage": "Damage",
+      "starter_move_id": "Starter move"
+    },
+    "column": {
+      "hitType": "Hit type",
+      "position": "Starting position",
+      "opponentStance": "Opponent stance",
+      "damage": "Damage",
+      "recipe": "Recipe",
+      "tags": "Tags",
+      "draftState": "Status",
+      "memo": "Memo",
+      "setupCount": "Setups",
+      "actions": "Actions"
+    },
+    "draftBadge": "Draft",
+    "officialBadge": "Confirmed",
+    "setupPlaceholder": "No linked setups",
+    "empty": "No combos registered. Use \"New\" to add one.",
+    "emptyCta": "Register a Combo",
+    "emptyFiltered": "No combos match the current filters",
+    "clearFilters": "Clear filters",
+    "deleteConfirm": "Delete this combo? (logical deletion)",
+    "sortLabel": {
+      "updated_at": {
+        "asc": "Oldest",
+        "desc": "Newest"
+      },
+      "damage": {
+        "asc": "Lowest first",
+        "desc": "Highest first"
+      },
+      "starter_move_id": {
+        "asc": "Starter ID asc",
+        "desc": "Starter ID desc"
+      }
+    }
+  },
+  "comboDetail": {
+    "title": "Combo detail",
+    "idLabel": "Combo ID",
+    "characterLabel": "Character",
+    "situation": {
+      "heading": "Situation",
+      "position": "Starting position",
+      "opponentStance": "Opponent stance",
+      "hitType": "Hit type",
+      "opponentSize": "Opponent size",
+      "starterMeaty": "Meaty starter"
+    },
+    "customStates": {
+      "heading": "Character-specific states",
+      "on": "On"
+    },
+    "metadata": {
+      "heading": "Metadata",
+      "damage": "Damage",
+      "driveGauge": "Drive gauge at combo start",
+      "saGauge": "SA gauge at combo start",
+      "knockdownAdvantage": "Knockdown advantage",
+      "driveDamage": "Drive damage",
+      "saGaugeConsumed": "SA gauge consumed",
+      "driveGaugeConsumed": "Drive gauge consumed",
+      "carryDistanceMass": "Carry distance",
+      "memo": "Memo",
+      "noMemo": "(no memo)",
+      "media": "Media",
+      "link": "Link",
+      "videoPath": "Video path",
+      "imagePath": "Image path",
+      "createdAt": "Created",
+      "updatedAt": "Updated"
+    },
+    "positionMassUnit": "sq",
+    "driveDamageDirection": {
+      "cut": "drained",
+      "recover": "recovered"
+    },
+    "oki": {
+      "heading": "Okizeme",
+      "verifiedNone": "Checked; no okizeme options apply",
+      "notVerified": "Okizeme has not been checked yet"
+    },
+    "recipe": {
+      "heading": "Recipe",
+      "presetLabel": "Preset",
+      "loading": "Loading recipe...",
+      "fallbackHint": "Other presets fall back to defaults until aliases are seeded"
+    },
+    "setups": {
+      "heading": "Linked setups",
+      "placeholder": "No linked setups",
+      "candidatesHeading": "Reusable setup candidates ({{count}})",
+      "candidatesEmpty": "No candidates"
+    },
+    "notFound": "Combo not found",
+    "deleteConfirm": "Delete this combo? (logical deletion)"
+  },
+  "conflict": {
+    "versionConflict": {
+      "titleCombo": "Someone else changed this combo",
+      "titleSetup": "Someone else changed this setup",
+      "bodyCombo": "Someone else changed this combo after you opened it. Saving now would erase their change, so we stopped here for a moment.",
+      "bodySetup": "Someone else changed this setup after you opened it. Saving now would erase their change, so we stopped here for a moment."
+    },
+    "notFound": {
+      "titleCombo": "This combo could not be found in its current form",
+      "titleSetup": "This setup could not be found in its current form",
+      "bodyCombo": "Someone else may have re-created or deleted this combo. There is no longer a place to save to, so we stopped here for a moment.",
+      "bodySetup": "Someone else may have re-created or deleted this setup. There is no longer a place to save to, so we stopped here for a moment."
+    },
+    "inputKept": "What you typed is still here.",
+    "viewTheirs": "See their copy",
+    "reload": "Reload",
+    "close": "Close",
+    "saveAsNew": "Save this as a new combo",
+    "goToList": "Go to the combo list",
+    "reloadConfirm": {
+      "title": "Reload?",
+      "body": "This loads their copy. What you are typing now will be lost.",
+      "confirm": "Reload",
+      "cancel": "Cancel"
+    },
+    "saveAsNewConfirm": {
+      "title": "Save as a new combo?",
+      "body": "What you typed will be saved as a new combo. Anything the other person changed stays as it is.",
+      "confirm": "Save as new",
+      "cancel": "Cancel"
+    },
+    "goToListConfirm": {
+      "title": "Go to the combo list?",
+      "body": "What you are typing now will be lost.",
+      "confirm": "Go to the list",
+      "cancel": "Cancel"
+    },
+    "duplicateSetup": "A setup with the same steps is already registered for this combo. Change the steps, or use the existing setup."
+  },
+  "comboEditor": {
+    "titleNew": "New Combo",
+    "titleEdit": "Edit Combo",
+    "titleCopy": "New combo (copied from #{{id}})",
+    "loading": "Loading...",
+    "loadError": "Failed to load combo: {{message}}",
+    "promoteToFinal": "Promote to final",
+    "promoteConfirm": "Promote this combo to final registration? Full validation will be applied.",
+    "promoteSuccess": "Promoted to final registration.",
+    "promoteError": "Promotion failed.",
+    "duplicateRealtimeLink": "View existing combo",
+    "characterField": "Character for this combo",
+    "duplicateRealtimeHeading": "This is identical to existing combo #{{id}} (\"{{name}}\"). Change something before saving.",
+    "duplicateNoMemo": "no memo",
+    "duplicateMatchedOn": "Matching fields: Character: {{character}} / Starter: {{starter}} / Starting position: {{position}} / Opponent stance: {{stance}} / Hit type: {{hitType}} / Opponent size: {{size}} / Recipe",
+    "duplicateDiff": {
+      "heading": "Differences in non-matching fields (existing → current input)",
+      "none": "No differences in the other fields either.",
+      "loading": "Loading the existing combo...",
+      "blank": "(empty)",
+      "memo": "Memo",
+      "damage": "Damage",
+      "driveDamage": "Drive damage",
+      "saGaugeConsumed": "SA gauge consumed",
+      "driveGaugeConsumed": "Drive gauge consumed",
+      "knockdownAdvantage": "Knockdown advantage",
+      "tags": "Tag count",
+      "loadError": "Could not load the existing combo, so differences cannot be shown here."
+    }
+  },
+  "myCombo": {
+    "title": "My Combos",
+    "subtitle": "Your personal combo collection managed by tags",
+    "unknownCharacter": "Unknown",
+    "noComboYet": "No combos in My Combos yet",
+    "comboCount": "{{count}}",
+    "nav": "My Combos",
+    "statusColumn": "Status",
+    "emptyStatus": "No combos with this status"
+  },
+  "compare": {
+    "title": "Combo Comparison",
+    "addCombo": "Add Combo",
+    "removeCombo": "Remove from comparison",
+    "empty": "No combos selected for comparison",
+    "maxReached": "Maximum {{max}} combos can be compared",
+    "maxExceeded": "Maximum {{max}} combos can be compared. Extra combos have been excluded",
+    "fetchError": "Failed to fetch combo data",
+    "fetchErrorPartial": "Fetch failed",
+    "alreadySelected": "Selected",
+    "backToList": "Back to combo list",
+    "comboHeader": "Combo #{{id}}",
+    "row": {
+      "starterSituation": "Starter Situation",
+      "route": "Route",
+      "damage": "Damage",
+      "situation": "Situation",
+      "customStates": "Character-specific states",
+      "knockdownAdvantage": "Advantage",
+      "driveAvailableAtStart": "Drive gauge at combo start",
+      "saAvailableAtStart": "SA gauge at combo start",
+      "saGaugeConsumed": "SA gauge consumed",
+      "driveGaugeConsumed": "Drive gauge consumed",
+      "setups": "Setups",
+      "tags": "Tags",
+      "memo": "Memo",
+      "link": "Link",
+      "videoPath": "Video path",
+      "imagePath": "Image path"
+    },
+    "maxItems": "Comparison limit reached (max {{max}})",
+    "openDetail": "Open detail"
+  },
+  "controller": {
+    "direction": {
+      "7": {
+        "label": "Back jump",
+        "aria": "Up-back"
+      },
+      "8": {
+        "label": "Jump",
+        "aria": "Up"
+      },
+      "9": {
+        "label": "Forward jump",
+        "aria": "Up-forward"
+      },
+      "4": {
+        "label": "Back",
+        "aria": "Back"
+      },
+      "5": {
+        "label": "Stand",
+        "aria": "Neutral"
+      },
+      "6": {
+        "label": "Forward",
+        "aria": "Forward"
+      },
+      "1": {
+        "label": "Down-back",
+        "aria": "Down-back"
+      },
+      "2": {
+        "label": "Crouch",
+        "aria": "Down"
+      },
+      "3": {
+        "label": "Down-forward",
+        "aria": "Down-forward"
+      }
+    },
+    "attack": {
+      "lp": {
+        "subLabel": "",
+        "aria": "Light punch"
+      },
+      "mp": {
+        "subLabel": "",
+        "aria": "Medium punch"
+      },
+      "hp": {
+        "subLabel": "",
+        "aria": "Heavy punch"
+      },
+      "lk": {
+        "subLabel": "",
+        "aria": "Light kick"
+      },
+      "mk": {
+        "subLabel": "",
+        "aria": "Medium kick"
+      },
+      "hk": {
+        "subLabel": "",
+        "aria": "Heavy kick"
+      }
+    },
+    "rush": {
+      "toggleAria": "Rush variant toggle",
+      "label": "Rush variant",
+      "airborneNo": "not available in the air",
+      "groundNormalOnly": "grounded normals only",
+      "specialToggleAria": "Unique-move rush variant toggle",
+      "specialHint": "ON uses the rush variant of unique moves"
+    },
+    "system": {
+      "heading": "Common moves",
+      "impact": {
+        "label": "Impact",
+        "aria": "Drive Impact"
+      },
+      "parry": {
+        "label": "Parry",
+        "aria": "Drive Parry"
+      },
+      "throwForward": {
+        "label": "Forward throw",
+        "aria": "Forward throw"
+      },
+      "throwBack": {
+        "label": "Back throw",
+        "aria": "Back throw"
+      },
+      "dashForward": {
+        "label": "Forward Dash",
+        "aria": "Forward Dash"
+      },
+      "dashBack": {
+        "label": "Back Dash",
+        "aria": "Back Dash"
+      },
+      "rush": {
+        "label": "Rush",
+        "aria": "Rush"
+      },
+      "delete": {
+        "label": "Delete",
+        "aria": "Delete step"
+      }
+    },
+    "panel": {
+      "heading": "Quick input (buttons)",
+      "tabNormal": "Normals",
+      "tabUnique": "Unique",
+      "tabSpecial": "Specials",
+      "uniqueEmpty": "No unique moves",
+      "saEmpty": "No Super Arts",
+      "tabTargetCombo": "Target combo",
+      "targetComboEmpty": "No target combos",
+      "tabCharacterState": "Character state",
+      "characterStateEmpty": "No moves tied to a character state",
+      "omitSurfacedLabel": "Hide moves already on a tab",
+      "omitSurfacedCount": "({{count}})",
+      "tabCommon": "Common",
+      "commonEmpty": "No common moves",
+      "tabUnclassified": "Unclassified",
+      "unclassifiedEmpty": "No unclassified moves"
+    },
+    "special": {
+      "none": "No-strength version",
+      "light": "L",
+      "medium": "M",
+      "heavy": "H",
+      "odLm": "OD (L+M)",
+      "odMh": "OD (M+H)",
+      "odLh": "OD (L+H)",
+      "odVariantsLegend": "OD strength pairs",
+      "empty": "No special moves",
+      "variantPlain": "Normal",
+      "variantHolding": "Hold",
+      "variantMaxHolding": "Max hold",
+      "variantPerfect": "Just",
+      "strengthLabel": "Strength",
+      "variantLabel": "Variant",
+      "odLmShort": "L+M",
+      "odMhShort": "M+H",
+      "odLhShort": "L+H"
+    },
+    "direct": {
+      "rushLabel": "{{name}} (rush)",
+      "rushAria": "{{name}} rush variant"
+    }
+  },
+  "selectMode": {
+    "enter": "Select to Compare/Export",
+    "exit": "Exit Selection",
+    "countPlain": "{{current}} selected",
+    "compare": "Compare"
+  },
+  "export": {
+    "buttonSelected": "Export {{count}} selected",
+    "buttonAll": "Export all {{count}}",
+    "maxReached": "Maximum {{max}} combos can be exported",
+    "truncation": {
+      "body": "Only {{included}} of {{total}} combos can be exported. The remaining {{dropped}} will not be included.",
+      "proceed": "Export anyway"
+    },
+    "dialog": {
+      "title": "Export",
+      "targetSelected": "Exporting {{count}} selected combos",
+      "targetAll": "Exporting all {{count}} combos in the current filter",
+      "fileNameLabel": "File name",
+      "fileNameHint": "Filled in automatically; consecutive exports never collide. Edit it if you want a different name (the extension is added per format).",
+      "formatLabel": "Format",
+      "formatCsv": "CSV",
+      "formatPdf": "PDF",
+      "formatPng": "PNG",
+      "formatClipboard": "Clipboard",
+      "clipboardExclusiveHint": "Clipboard can only be selected on its own",
+      "itemsLabel": "Fields to include",
+      "run": "Export",
+      "running": "Exporting…",
+      "cancel": "Cancel",
+      "noFormatSelected": "Select at least one format",
+      "pngLimitHint": "PNG may fail to generate when there are many combos (roughly 22+). For large exports, PDF (auto-paginated) is recommended."
+    },
+    "toast": {
+      "empty": "There are no combos to export.",
+      "success": "Export complete ({{formats}}).",
+      "partialFailure": "Some formats failed to export ({{formats}}).",
+      "allFailed": "Export failed.",
+      "imageWarnCount": "With {{count}} combos, the PNG image may be too large and fail. Exporting as PDF (auto-paginated) is recommended.",
+      "truncated": "{{dropped}} combos were left out because of the row limit ({{included}} of {{total}} exported).",
+      "reimportBlocked": "This export exceeds the import limit and cannot be imported back."
+    }
+  },
+  "help": {
+    "positionMass": "On the training-mode floor, 0 is you at your own corner and 160 (100%) is the opponent at their corner.",
+    "modifier": "Per-step supplementary settings. You can edit flags, notes, and more.",
+    "recipeModifier": "From each step's Edit button, you can edit that step's supplementary settings (flags, notes, etc.).",
+    "opponentSize": "If none of these fits, use a tag or the memo field.",
+    "driveDamage": "The change in the opponent's Drive gauge. Negative means drained, positive means recovered. Positive values are allowed because the opponent's gauge can recover during a combo (fractions represent less than one bar)."
+  },
+  "settings": {
+    "title": "Settings",
+    "nav": "Settings",
+    "basic": {
+      "heading": "Basic Settings",
+      "language": "Language",
+      "languageJa": "日本語",
+      "languageEn": "English",
+      "defaultCharacter": "Default Character",
+      "defaultPreset": "Default Preset",
+      "save": "Save",
+      "saved": "Settings saved",
+      "restartRequired": "App restart required"
+    },
+    "user": {
+      "heading": "User Management",
+      "addUser": "Add User",
+      "changePassword": "Change Password",
+      "passwordEnabled": "Password Protection",
+      "passwordNotSet": "Not set",
+      "setPassword": "Choose a password",
+      "passwordRecoveryHint": "How to fix it if you forget the password",
+      "logout": "Log out",
+      "logoutHeading": "Log out from this device",
+      "logoutNote": "You will need to enter the password again next time you open it.",
+      "rename": "Rename"
+    },
+    "network": {
+      "heading": "Network",
+      "mode": "Connection Mode",
+      "modeLocal": "Local",
+      "modeLan": "LAN",
+      "ipAddress": "IP Address",
+      "port": "Port",
+      "lanUrl": "LAN URL",
+      "showQr": "Show QR Code",
+      "noLanIp": "Could not resolve LAN IP",
+      "shareMode": "LAN sharing mode",
+      "enableConfirmTitle": "Allow other devices to use this app",
+      "enableConfirmAction": "Turn on",
+      "enableConfirmBodyNoPassword": "Turning this on lets devices on the same Wi-Fi (phones, tablets, other computers) open this app.\n\nAnyone who opens it can add, change and delete combos.\n\nNo password is set at the moment. Anyone on the same Wi-Fi can open it.\n\nDevices on a different connection, such as a phone on mobile data, cannot open it.",
+      "enableConfirmBodyWithPassword": "Devices on the same Wi-Fi will be able to open this app. They will be asked for the password you chose.\n\nDevices on a different connection, such as a phone on mobile data, cannot open it.",
+      "enableConfirmSetPassword": "Choose a password (recommended)",
+      "enableConfirmSkipPassword": "Turn on without one",
+      "enableConfirmCancel": "Cancel",
+      "consentTitle": "Turning on without a password",
+      "consentBody": "Anyone on the same Wi-Fi will be able to open this app and change or delete combos.",
+      "consentCheck": "I have read the above",
+      "consentAction": "Turn on",
+      "consentBack": "Back",
+      "externalNote": "This does not apply if you have changed your Wi-Fi box (router) settings so that this computer can be reached from outside. If that does not sound familiar, it has not been set up."
+    },
+    "data": {
+      "heading": "Data Management",
+      "dbPath": "Database File Path",
+      "backup": "Backup",
+      "restore": "Restore",
+      "cacheRebuild": "Rebuild Cache",
+      "notImplemented": "Coming soon",
+      "cacheRebuildHint": "Rebuilds the cached recipe display strings from the current preset definitions. Use this if labels look stale after a change.",
+      "cacheRebuilding": "Rebuilding...",
+      "cacheRebuildDone": "Recipe cache rebuilt ({{presetCount}} presets)",
+      "cacheRebuildError": "Failed to rebuild the recipe cache",
+      "cacheRebuildPartial": "Rebuilt only part of the cache ({{presetCount}} of {{total}}). Failed on \"{{name}}\"",
+      "cacheRebuildNoPresets": "Cannot rebuild: the preset list has not loaded"
+    },
+    "presetLink": {
+      "heading": "Preset Management",
+      "goToPresets": "Go to Presets"
+    },
+    "details": {
+      "heading": "Details",
+      "logFile": "Log File Path",
+      "version": "Version",
+      "onboardingShow": "View onboarding guide"
+    },
+    "validationError": "Validation error"
+  },
+  "wizard": {
+    "title": "Setup",
+    "step": "Step {{current}} / {{total}}",
+    "next": "Next",
+    "prev": "Back",
+    "skip": "Skip",
+    "step1": {
+      "title": "Welcome",
+      "description": "Let's set up Tacpendium. Answer a few questions to get started."
+    },
+    "step2": {
+      "title": "Language",
+      "description": "Select your preferred language."
+    },
+    "step3": {
+      "title": "Default Character",
+      "description": "Choose the character displayed by default in the combo list.",
+      "skipHint": "You can change this later in Settings."
+    },
+    "step4": {
+      "title": "Default Preset",
+      "description": "Choose the default preset for recipe display.",
+      "skipHint": "You can change this later in Settings."
+    },
+    "step5": {
+      "title": "Network",
+      "description": "Allow access from other devices on the same network?",
+      "lanEnable": "Enable LAN mode",
+      "lanDisable": "Local only (this PC only)",
+      "lanHint": "LAN mode allows access from other devices (e.g. smartphones) on the same network.",
+      "lanWarningBody": "Devices on the same Wi-Fi (phones, tablets, other computers) will be able to open this app.\n\nAnyone who opens it can add, change and delete combos.\n\nDevices on a different connection, such as a phone on mobile data, cannot open it."
+    },
+    "step6": {
+      "title": "LAN Connection Info",
+      "description": "Use the URL or QR code below to access from other devices.",
+      "showQr": "Show QR Code"
+    },
+    "password": {
+      "consentTitle": "Continuing without a password",
+      "consentAction": "Agree and continue"
+    },
+    "step7": {
+      "title": "Setup Complete",
+      "description": "Initial setup is complete. Start registering your combos!",
+      "finish": "Get Started"
+    }
+  },
+  "home": {
+    "subtitle": "SF6 Combo Manager",
+    "combos": "Combo List",
+    "myCombos": "My Combos",
+    "newCombo": "New Combo",
+    "compare": "Compare",
+    "presets": "Preset Management",
+    "settings": "Settings",
+    "recentCombos": "Recently Updated Combos",
+    "recentCombosEmpty": "No recently updated combos",
+    "recentCombosError": "Failed to load combos"
+  },
+  "footer": {
+    "nav": "Navigation",
+    "combos": "Combos",
+    "myCombos": "My Combos",
+    "newCombo": "New",
+    "settings": "Settings"
+  },
+  "qrModal": {
+    "title": "QR Code",
+    "description": "Scan this QR code to access the app.",
+    "close": "Close"
+  },
+  "comboImport": {
+    "val": {
+      "VAL-I01": "Value exceeds the maximum length (row {{row}})",
+      "VAL-I03": "Row count exceeds the limit",
+      "VAL-I04": "The CSV column layout is invalid",
+      "VAL-I05": "Invalid input value (row {{row}})",
+      "VAL-I06": "Unknown character code (row {{row}})",
+      "VAL-I07": "Unknown move code (row {{row}}; imported without the move)",
+      "VAL-ENUM": "Unknown value in {{col}} (row {{row}})",
+      "VAL-C04": "Drive gauge start value is out of range (row {{row}})",
+      "VAL-C05": "SA gauge start value is out of range (row {{row}})",
+      "VAL-C09": "Recipe is empty; at least 1 step is required (row {{row}})",
+      "VAL-C10": "Frame advantage is out of range (row {{row}})",
+      "VAL-C11": "Okizeme drive-rush setting is inconsistent (row {{row}})",
+      "VAL-C13": "Drive damage is out of range (row {{row}})",
+      "VAL-C15": "{{col}} is required for published combos (row {{row}})",
+      "VAL-T02": "Tag name is empty (row {{row}}; this tag is not imported)",
+      "VAL-S06": "Setup name is empty (row {{row}})"
+    },
+    "col": {
+      "character_code": "character",
+      "opponent_size": "opponent size",
+      "position": "position",
+      "opponent_stance": "opponent stance",
+      "hit_type": "hit type",
+      "move_code": "move",
+      "parent_combo_local_id": "parent combo",
+      "recipe": "recipe",
+      "tags": "tags",
+      "situation": "situation",
+      "drive_available_at_start": "drive gauge start",
+      "sa_available_at_start": "SA gauge start",
+      "drive_damage": "drive damage",
+      "knockdown_advantage": "frame advantage",
+      "damage": "damage",
+      "drive_gauge_consumed": "drive gauge consumed",
+      "sa_gauge_consumed": "SA gauge consumed",
+      "name": "name"
+    }
+  },
+  "setplay": {
+    "heading": "Setplay suggestions",
+    "description": "Oki options derived from knockdown advantage. Verify spacing in-game.",
+    "noKnockdown": "Cannot suggest: knockdown advantage is not set",
+    "empty": "No suggestions found",
+    "loading": "Calculating suggestions...",
+    "error": "Failed to load suggestions",
+    "nMinLabel": "Min active",
+    "nMaxLabel": "Max active",
+    "nMaxBelowMinHint": "Max active is below min active, so this will return no suggestions",
+    "sortLabel": "Sort",
+    "sortByN": "Deepest active first",
+    "sortByTarget": "By meaty move",
+    "hitOnActive": "Hits on active frame {{n}}",
+    "truncated": "Too many candidates; only a subset was computed. Please narrow the conditions",
+    "notSearched": "Set conditions and press \"Generate suggestions\"",
+    "generate": "Generate suggestions",
+    "targetTypeLegend": "Meaty move type",
+    "includeZeroDamage": "Include zero-damage moves",
+    "pickTargetToggle": "Search from a specific move",
+    "clearSelectedMove": "Clear selected move",
+    "modeLabel": "Mode",
+    "modeMeaty": "Meaty",
+    "modeGap": "Deliberate gap",
+    "gapRangeLabel": "Gap frames (G)",
+    "gapMinLabel": "Gap frames min",
+    "gapMaxLabel": "Gap frames max",
+    "gapBeforeWakeup": "Whiffs {{g}}F before wake-up",
+    "negativeKnockdown": "Knockdown advantage is negative, so there is no setplay",
+    "countLabel": "Showing {{shown}} of {{total}}",
+    "showMore": "Show more",
+    "targetType": {
+      "normal": "Normal",
+      "unique": "Unique",
+      "special_projectile": "Special (projectile)",
+      "special": "Special",
+      "throw": "Throw",
+      "normal_rush": "Normal (rush)",
+      "unique_rush": "Unique (rush)"
+    },
+    "picker": {
+      "category": "Category",
+      "allCategories": "All",
+      "placeholder": "Select a move",
+      "clear": "Clear"
+    },
+    "adopt": "Adopt",
+    "adopted": "Adopted",
+    "reject": "Reject",
+    "adoptNameFormat": "{{move}} meaty on active frame {{n}}",
+    "adoptNameLabel": "Setplay name",
+    "adoptSave": "Save",
+    "adoptCancel": "Cancel",
+    "adoptDuplicate": "This recipe is already registered for this combo",
+    "adoptError": "Failed to save",
+    "limitations": {
+      "_marker": "M19-LIMITATION-NOTICE: If you change this limitation copy, also review/update the BE target-enumeration rule (fastest_unreachable / startup_basis / parent refs), filler rule (exclude target_combo AND is_derived; exclude solo-unavailable moves), composite chain filler units, KA-NULL/negative-KA handling, gap mode, and truncation (internal/service/setplay/service.go), and vice versa.",
+      "title": "About suggestion limitations",
+      "info": "Show suggestion limitations",
+      "frameOnly": "Suggestions are derived from frame math only; spacing, opponent body size, and on-hit situation are not evaluated. Always verify in-game.",
+      "notExhaustive": "No suggestions does not mean no valid setplay exists.",
+      "outOfScope": "Currently out of scope: combos without knockdown advantage / combos with negative knockdown advantage / moves without active frames / moves that cannot reach a grounded opponent even on the fastest solo input / move types turned OFF in the type filter (special (non-projectile), throw, normal (rush), unique (rush)) / zero-damage moves (by default). Later hits of a target combo that require a preceding hit or block, and derived moves that cannot be performed on their own, are not used as standalone fillers. Derived moves whose startup is measured from a parent are suggested with the parent placed in front (the leading parent is not counted toward the frame budget).",
+      "frameCaveatsTitle": "Frame-data caveats (based on what the in-game frame meter can show)",
+      "multiHit": "Multi-hit moves (e.g. Ryu's Axe Kick) count the gaps between hits — where no hitbox is active — as part of the active window. So an \"active frame N\" hit may actually land during a gap with no hitbox.",
+      "lingeringProjectile": "Lingering projectiles (e.g. Hadoken) treat recovery as active frames, so the frame the projectile actually leaves the screen is not represented.",
+      "lingeringSetup": "Lingering setup moves (e.g. Rashid's Arabian Cyclone) treat recovery as active frames, so the frame the placed move actually disappears is not represented.",
+      "stateFiller": "Fillers may include moves that require a state (e.g. moves during Denjin charge).",
+      "weakChain": "Suggestions that whiff light attacks back to back are calculated assuming chain-cancelling (cancelling the previous light's recovery into the next). Note that some suggestions repeating the same light attack are still calculated without chain-cancelling, in which case the frame budget reads higher than in-game.",
+      "negativeKnockdown": "Combos with negative knockdown advantage cannot produce suggestions.",
+      "gapDependsOpponent": "\"Deliberate gap\" suggestions assume the opponent acts, so whether they work depends on the opponent.",
+      "topOnly": "When there are many candidates, only the top ones are shown (use \"Show more\" to load additional).",
+      "close": "Close"
+    },
+    "confirmedConditionsLegend": "Verified conditions (optional)",
+    "confirmedConditionsHint": "Check only the conditions you confirmed in game. You can adopt without checking any. Record failures later from the combo detail page."
+  },
+  "setupResult": {
+    "heading": "Verified conditions",
+    "editHeading": "Record verified conditions",
+    "axisLabel": "Corner",
+    "editStart": "Edit conditions",
+    "editDone": "Done editing",
+    "noteAriaLabel": "Note for this cell",
+    "noteSave": "Save note",
+    "noteMark": "Has note",
+    "saveError": "Failed to save the verified condition",
+    "state": {
+      "ok": "Works",
+      "ng": "Does not work",
+      "unverified": "Not tested"
+    },
+    "corner": {
+      "inCorner": "Opponent in corner",
+      "midScreen": "Mid-screen"
+    },
+    "selectedCell": "Selected: {{cell}}",
+    "selectCellLabel": "Select {{tech}} / {{corner}} (currently {{state}})",
+    "stateGroupLabel": "State of the selected cell",
+    "noteLabelSimple": "Note",
+    "noteUnsavedHint": "Notes on a not-tested cell are not saved. Set it to Works or Does not work to save."
+  },
+  "situation": {
+    "position": {
+      "corner_self": "Own corner",
+      "corner_self_near": "Near own corner",
+      "mid_self": "Own side of mid-screen",
+      "mid_screen": "Mid-screen",
+      "mid_opponent": "Opponent side of mid-screen",
+      "corner_opponent_near": "Near opponent corner",
+      "corner_opponent": "Opponent corner"
+    },
+    "hitType": {
+      "normal": "Normal",
+      "counter": "Counter",
+      "punish_counter": "Punish counter",
+      "just_parry_punish_counter": "Punish counter (just parry)",
+      "drive_impact_wall_splat_hit": "Impact wall splat (hit)",
+      "drive_impact_wall_splat_block": "Impact wall splat (block)",
+      "drive_impact_punish_counter": "Punish counter (impact)",
+      "stun": "Stun"
+    },
+    "hitTypeShort": {
+      "normal": "Normal",
+      "counter": "CH",
+      "punish_counter": "PC",
+      "just_parry_punish_counter": "PC (JP)",
+      "drive_impact_wall_splat_hit": "DI wall (H)",
+      "drive_impact_wall_splat_block": "DI wall (B)",
+      "drive_impact_punish_counter": "PC (DI)",
+      "stun": "Stun"
+    },
+    "opponentStance": {
+      "standing": "Standing",
+      "crouching": "Crouching",
+      "airborne": "Airborne",
+      "any": "Any"
+    },
+    "opponentSize": {
+      "standard": "Standard",
+      "large": "Large",
+      "large1": "Large 1 (e.g. Zangief)",
+      "large2": "Large 2 (e.g. Marisa)"
+    },
+    "starterMeaty": {
+      "yes": "Yes",
+      "no": "No"
+    }
+  },
+  "fieldRequirement": {
+    "required": "Required",
+    "optional": "Optional",
+    "legend": "In this section, fields without a mark are optional."
+  },
+  "oki": {
+    "verified": {
+      "label": "Okizeme checked",
+      "stateVerified": "Checked",
+      "stateUnverified": "Not checked"
+    },
+    "attackType": {
+      "throw_meaty": "Meaty throw",
+      "shimmy": "Shimmy",
+      "strike_meaty": "Meaty strike"
+    },
+    "techType": {
+      "neutral_tech": "Neutral tech",
+      "back_tech": "Back tech"
+    },
+    "usesDr": "Drive Rush",
+    "noGauge": "No gauge",
+    "separator": " / "
+  },
+  "tag": {
+    "management": {
+      "title": "Tags",
+      "create": "+ New tag",
+      "loading": "Loading...",
+      "loadError": "Failed to load the tag list.",
+      "searchPlaceholder": "Search by tag name",
+      "count": "{{shown}} of {{total}}",
+      "updated": "Tag updated",
+      "created": "Tag created"
+    },
+    "table": {
+      "name": "Name",
+      "category": "Category",
+      "color": "Color",
+      "usageCount": "Used by",
+      "none": "―",
+      "edit": "Edit",
+      "delete": "Delete",
+      "editAria": "Edit {{name}}",
+      "deleteAria": "Delete {{name}}",
+      "empty": "No tags yet. Add one from “+ New tag”.",
+      "emptyFiltered": "No tags match “{{query}}”. Try a different search.",
+      "clearSearch": "Clear search"
+    },
+    "form": {
+      "editTitle": "Edit tag",
+      "createTitle": "Create tag",
+      "description": "Set the tag's name, category and color",
+      "name": "Tag name",
+      "category": "Category",
+      "categoryPlaceholder": "e.g. custom, difficulty",
+      "color": "Color",
+      "colorHexHint": "Enter a HEX value directly (for colors outside the palette)",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "save": "Save",
+      "create": "Create",
+      "nameRequired": "Tag name is required",
+      "colorFormat": "Color must be in #RRGGBB format",
+      "duplicateName": "A tag with this name already exists",
+      "genericError": "Something went wrong",
+      "unexpectedError": "An unexpected error occurred"
+    },
+    "delete": {
+      "titleInUse": "Warning: this tag is in use",
+      "title": "Delete tag",
+      "inUse": "Tag “{{name}}” is used by {{usageCount}} combo(s).",
+      "inUseConsequence": "Deleting it removes the tag from those combos. Continue?",
+      "confirm": "Delete tag “{{name}}”?",
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "delete": "Delete"
+    },
+    "selector": {
+      "placeholder": "Select a tag, or create one",
+      "searchPlaceholder": "Search tags, or create one",
+      "notFound": "No tags found",
+      "creating": "Creating “{{name}}”...",
+      "createNew": "Create “{{name}}”"
+    },
+    "badge": {
+      "overflow": "{{hiddenCount}} hidden tag(s): {{names}}",
+      "separator": ", "
+    },
+    "color": {
+      "red": "Red",
+      "orange": "Orange",
+      "yellow": "Yellow",
+      "green": "Green",
+      "blue": "Blue",
+      "indigo": "Indigo",
+      "purple": "Purple",
+      "pink": "Pink",
+      "brown": "Brown",
+      "gray": "Gray"
+    }
+  },
+  "trash": {
+    "characterLabel": "Character",
+    "characterNote": "Filters both combos and setups by the selected character.",
+    "setup": {
+      "heading": "Setups",
+      "empty": "No setups in the trash",
+      "loadError": "Failed to load setups",
+      "unnamed": "(untitled)",
+      "columnName": "Name",
+      "columnDeletedAt": "Deleted at",
+      "columnActions": "Actions",
+      "restore": "Restore",
+      "permanentDelete": "Delete permanently",
+      "restoreError": "Failed to restore",
+      "permanentDeleteError": "Failed to delete permanently",
+      "inUse": "This setup is linked to a combo that is still in use, so it cannot be permanently deleted",
+      "notInTrash": "This setup is not in the trash",
+      "confirmTitle": "Confirm permanent deletion",
+      "confirmBody": "This setup will be permanently deleted. This cannot be undone. Continue?",
+      "confirmCancel": "Cancel",
+      "columnSelectAll": "Select all setups",
+      "columnSelect": "Select setup {{id}}",
+      "unlinkHeading": "These combos are using this setup. Unlink them to allow permanent deletion",
+      "unlinkAction": "Unlink",
+      "unlinkNote": "This only removes the link. The combo itself is not deleted",
+      "unlinkDoneRetryHint": "Unlinked. Press \"Delete permanently\" again to delete this setup",
+      "unlinkError": "Failed to unlink"
+    },
+    "preSaveDuplicate": {
+      "title": "The same item is in the trash",
+      "bodyCombo": "{{count}} identical combo(s) are in the trash. Choose whether to bring one back or create a new one.",
+      "bodySetup": "{{count}} setup(s) with the same recipe are in this combo's trash. Choose whether to bring one back or create a new one.",
+      "selectPrompt": "Choose which one to bring back",
+      "restore": "Restore from trash",
+      "restoreCaution": "Restoring will not save what you have just entered.",
+      "createNew": "Create a new one",
+      "createNewCaution": "The item in the trash stays there.",
+      "cancel": "Go back and keep editing",
+      "restoreFailed": "Could not restore. What you entered is still here."
+    },
+    "warning": {
+      "linkedSetupsDeleted": "{{count}} linked setup(s) are in the trash. They will not appear on the combo detail page after restoring",
+      "allParentCombosDeleted": "All {{count}} parent combo(s) are in the trash. This setup will not appear anywhere after restoring",
+      "moveNotFound": "The recipe contains a move that does not exist for this character",
+      "unknown": "There is something to check ({{code}})",
+      "restoredWithWarnings": "Restored. {{warnings}}",
+      "bulkRestored": "Restored {{count}} item(s)",
+      "bulkRestoredWithWarnings": "Restored {{count}} item(s). {{warned}} of them need attention",
+      "duplicateInTrash": "{{count}} identical combo(s) are also in the trash. Check whether this is a duplicate",
+      "duplicateSetupInTrash": "{{count}} setup(s) with the same recipe are also in this combo's trash. Check whether this is a duplicate",
+      "duplicateAliveCombo": "{{count}} identical combo(s) are already registered. Restoring has left duplicates side by side",
+      "duplicateAliveSetup": "{{count}} setup(s) with the same recipe are already linked to this combo. Restoring has left duplicates side by side",
+      "savedWithWarnings": "Saved. {{warnings}}",
+      "restored": "Restored",
+      "warningSeparator": " / ",
+      "warningTerminator": ".",
+      "bulkDetailHeading": "{{count}} item(s) need attention",
+      "bulkDetailLine": "{{label}}: {{warnings}}",
+      "bulkDetailRefs": " (targets: {{refs}})",
+      "unnamedCombo": "Combo {{id}}",
+      "unnamedSetup": "Setup {{id}}",
+      "dismissResult": "Dismiss"
+    },
+    "combo": {
+      "columnSelectAll": "Select all",
+      "columnSelect": "Select combo {{id}}",
+      "columnStarter": "Starter",
+      "columnDamage": "Damage",
+      "columnTags": "Tags",
+      "columnDeletedAt": "Deleted at",
+      "columnActions": "Actions",
+      "empty": "The trash is empty",
+      "loadError": "Failed to load",
+      "restore": "Restore",
+      "permanentDelete": "Delete permanently",
+      "restoreError": "Failed to restore: {{message}}",
+      "permanentDeleteError": "Failed to delete permanently: {{message}}",
+      "confirmTitle": "Confirm permanent deletion",
+      "confirmBodySingle": "This combo will be permanently deleted. This cannot be undone. Continue?",
+      "confirmBodyBulk": "The {{count}} selected combo(s) will be permanently deleted. This cannot be undone. Continue?",
+      "confirmCancel": "Cancel",
+      "confirmAction": "Delete permanently"
+    },
+    "heading": "Trash",
+    "loading": "Loading...",
+    "common": {
+      "unknownError": "Unknown error"
+    },
+    "bulk": {
+      "selectedCount": "{{count}} selected",
+      "restoreSelected": "Restore selected",
+      "permanentDeleteSelected": "Delete selected permanently",
+      "processing": "Processing...",
+      "failed": "{{count}} failed: {{labels}}",
+      "failedSeparator": " / ",
+      "failedHeading": "{{count}} failed",
+      "blockingCombos": "Held by: {{labels}}"
+    },
+    "detail": {
+      "backToTrash": "Back to trash",
+      "readOnlyNotice": "This combo is in the trash and cannot be edited. Restore it first to make changes",
+      "loadError": "Failed to load the combo",
+      "notInTrashNotice": "This combo is not in the trash.",
+      "openNormalDetail": "Open the combo detail"
+    }
+  },
+  "setup": {
+    "delete": {
+      "action": "Move to trash",
+      "confirmTitle": "Move setup to trash",
+      "confirmBody": "\"{{name}}\" will be moved to the trash. It will disappear from all {{count}} linked combo(s). You can restore it from the trash",
+      "confirmCancel": "Cancel",
+      "confirmAction": "Move to trash",
+      "done": "The setup was moved to the trash",
+      "openTrash": "Open trash",
+      "failed": "Failed to delete the setup: {{message}}",
+      "confirmBodyUnknownCount": "\"{{name}}\" will be moved to the trash. It will disappear from every linked combo. You can restore it from the trash",
+      "unlinkAlsoLabel": "Also unlink from this combo",
+      "unlinkAlsoWarning": "If unlinked, restoring will not bring the link back (you can re-link manually after restoring)"
+    },
+    "unnamed": "Setup {{id}}",
+    "editor": {
+      "loading": "Loading...",
+      "loadError": "Failed to load the setup.",
+      "editTitle": "Edit setup",
+      "createTitle": "New setup",
+      "createFromCopyTitle": "New setup (copied from #{{id}})",
+      "copy": "Copy",
+      "backCancel": "← Cancel",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "save": "Save",
+      "saveFailed": "Could not save.",
+      "networkError": "A network error occurred."
+    },
+    "candidate": {
+      "fallbackName": "Setup #{{id}}",
+      "stepCount": "{{stepCount}} steps",
+      "linkToThisCombo": "Also link to this combo"
+    },
+    "item": {
+      "stepCount": "{{stepCount}} steps",
+      "recipeHeading": "Recipe",
+      "unlink": "Unlink",
+      "unlinkConfirmTitle": "Confirm",
+      "unlinkConfirmBody": "Unlink this setup from the combo?",
+      "unlinkConfirmCancel": "Cancel",
+      "unlinkConfirmAction": "Unlink"
+    }
+  },
+  "comboCommon": {
+    "memoFirstLine": "First line of memo",
+    "recipeView": {
+      "label": "Show recipe vertically",
+      "hint": "Switch between a single-line recipe and a vertical view with one step per line. The setting is shared by the list, my combos, detail, compare and add-to-compare dialog"
+    },
+    "starterMoveFallback": "Starter move #{{id}}",
+    "starterMoveUnknown": "Starter move ?",
+    "characterFallback": "Character #{{id}}",
+    "recipeEmpty": "(No recipe)",
+    "recipeStepsEmpty": "No steps yet. Choose a move and add it.",
+    "moveFallback": "Move #{{id}}"
+  }
+}

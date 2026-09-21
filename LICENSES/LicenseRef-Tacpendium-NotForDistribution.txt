@@ -1,0 +1,71 @@
+LicenseRef-Tacpendium-NotForDistribution
+========================================
+
+本識別子は、Tacpendium の開発リポジトリ内に存在するが、**配布しない範囲**を表す。
+SPDX の登録ライセンスではなく、REUSE 仕様の `LicenseRef-` 形式による本プロジェクト
+独自の識別子である。
+
+対象
+----
+
+`REUSE.toml` の (6-T2) が指すパス。2026-09-20 時点では `docs/seed-data/**` の 1 件。
+
+なぜ独自の識別子が要るのか
+--------------------------
+
+同ディレクトリは、同ディレクトリ自身の README が「OSS 公開版リポジトリには含めない
+方針」と宣言している範囲であり、公式の生フレーム値・元データ抜粋を含む。つまり
+**第三者素材を含むと自分で判定した範囲**である。
+
+そこへ本プロジェクトの著作権表示と `CC-BY-SA-4.0`（層 B）を宣言することは、
+**他人の著作物に自分の権利主張と継承許諾を付ける**ことになり、実態と整合しない。
+既定の層 A（`AGPL-3.0-or-later`）へ落としても、著作権表示が `plexiblinp` である点は
+変わらないため解決にならない。
+
+この範囲は「どのライセンスで配るか」を宣言すべき対象ではなく、**配らない範囲である**
+ことを宣言すべき対象である。本識別子はそのために在る。
+
+許諾の内容
+----------
+
+**本識別子が付いたファイルについて、Tacpendium は第三者に対していかなる利用許諾も
+与えない。** 権利は各素材の権利者に属し、本プロジェクトは自らの著作権を主張しない。
+再配布・改変・公衆送信のいずれも許諾の対象外である。
+
+**本識別子は、本プロジェクトが配布する成果物に含まれるファイルには付かない。**
+配布物に含まれるファイルのライセンスは `LICENSE` ／ `LICENSES/` 配下 ／ `REUSE.toml`
+が定める（層 A ＝ `AGPL-3.0-or-later`、層 B ＝ `CC-BY-SA-4.0`、層 C ＝ `MIT`、
+および第三者由来のものは `REUSE.toml` (6-T1) が定める上流のライセンス）。
+
+二重の防壁
+----------
+
+本識別子は宣言の側である。実装の側は `scripts/public-snapshot-manifest.txt` の
+`DENY docs/seed-data/**` であり、公開スナップショットの生成時に同範囲を落とす。
+**両者は同じことを言っており、片方だけが外れたら食い違いが見える。**
+
+REUSE 仕様との関係
+------------------
+
+**REUSE には「リポジトリに在るが配布しない」を表す仕組みは無い**（2026-09-20 実査）。
+仕様 3.3 が Covered File から外すのは構造的なもの（`LICENSES/`、ルートの `LICENSE`、
+バージョン管理の無視対象、サブモジュール等）だけであり、配布の有無では切っていない。
+FAQ は次のように述べている——「you cannot exclude files from REUSE compliance testing.
+It would go entirely against the purpose of REUSE」「If you have an entire directory that
+you want to 'exclude' from REUSE compliance testing, you can use `REUSE.toml`」。
+
+**⇒ REUSE の答えは「除外する」ではなく「注釈する」である。** 本識別子はその形に従い、
+除外ではなく宣言として書いてある。
+
+出典: https://github.com/fsfe/reuse-website/blob/master/site/content/en/faq.md
+      https://github.com/fsfe/reuse-website/blob/master/site/content/en/spec-3.3.md
+      （2026-09-20 参照。reuse.software 本体は到達できなかったため、同ページを生成している
+        source markdown を引いた）
+
+経緯
+----
+
+- 2026-09-06 `REUSE.toml` が同範囲の層 B 宣言を「暫定」と自認し、再判定を予告した
+- 2026-09-11 `M26-03`（A3＝データ来歴の切り分け）で再判定。3 件（＋境界 1 件）に
+  第三者素材が現存することを確認した
+- 2026-09-20 `M40-01` で本識別子へ切り替えた（開発者確定）

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>タグ管理のテスト解説 — Tacpendium で学ぶ Go / React</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; background:#f8fafc; color:#1e293b; font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; line-height:1.9; }
+.topnav { background:#0f172a; color:#cbd5e1; padding:10px 20px; font-size:13px; }
+.topnav a { color:#93c5fd; text-decoration:none; margin-right:14px; }
+.topnav a:hover { text-decoration:underline; }
+.wrap { max-width:920px; margin:0 auto; padding:28px 20px 90px; }
+h1 { font-size:26px; border-left:6px solid #b45309; padding-left:12px; line-height:1.5; }
+h2 { font-size:21px; margin-top:48px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+h3 { font-size:17px; margin-top:32px; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; font-size:.9em; font-family:Consolas,"SF Mono",Menlo,monospace; }
+.codebox { margin:16px 0; border-radius:8px; overflow:hidden; border:1px solid #334155; }
+.codebox .path { background:#1e293b; color:#93c5fd; font:12px Consolas,Menlo,monospace; padding:6px 12px; border-bottom:1px solid #334155; }
+.codebox pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow-x:auto; font:13px/1.7 Consolas,Menlo,monospace; }
+.codebox pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+.codebox b { color:#fbbf24; font-weight:600; }
+.codebox .cm { color:#7dd3fc; opacity:.65; }
+.note,.compare,.warn { border-radius:8px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+.note { background:#eff6ff; border:1px solid #bfdbfe; }
+.compare { background:#fffbeb; border:1px solid #fde68a; }
+.warn { background:#fef2f2; border:1px solid #fecaca; }
+.boxtitle { display:block; font-weight:700; font-size:12px; letter-spacing:.08em; margin-bottom:6px; color:#475569; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#fff; }
+th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; white-space:nowrap; }
+footer { margin-top:64px; padding-top:16px; border-top:1px solid #cbd5e1; font-size:13.5px; color:#64748b; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+footer a { color:#2563eb; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">目次</a>
+  <a href="go-lang-primer.html">Go 言語プライマー</a>
+  <a href="react-ts-primer.html">React/TS プライマー</a>
+  <a href="tag-walkthrough.html">タグ管理ウォークスルー</a>
+  <a href="tag-tests.html">タグのテスト</a>
+  <a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+  <a href="combo-tests.html">コンボのテスト + E2E</a>
+  <a href="playwright-guide.html">Playwright ガイド</a>
+  <a href="shadcn-tailwind-guide.html">shadcn/Tailwind</a>
+  <a href="game-update-walkthrough.html">ゲーム更新影響判定</a>
+  <a href="shell-guardrails-guide.html">シェル検査とフック</a>
+</nav>
+<div class="wrap">
+
+<h1>タグ管理のテスト解説<br>— Go の実 DB テストと Vitest + Testing Library</h1>
+
+<p>テストコードは「この機能はこう振る舞うべき」という仕様の実行可能な記述です。<a href="tag-walkthrough.html">ウォークスルー</a>で読んだタグ機能について、Go 側(サービステスト・ハンドラ/スコープテスト)とフロント側(フック / コンポーネントテスト)を読み解きます。</p>
+
+<h2>1. このリポジトリのテスト戦略(CLAUDE.md §5)</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>レイヤ</th><th>方針</th><th>タグ機能での実体</th></tr>
+<tr><td>サービス層(Go)</td><td><strong>必須</strong>。ビジネスロジック網羅</td><td><code>internal/service/tag/service_test.go</code>(345 行・19 テスト)</td></tr>
+<tr><td>リポジトリ層(Go)</td><td>複雑なクエリのみ</td><td><code>internal/repository/tag/repository_test.go</code>(JOIN 集計・キャラ別集計・ゴミ箱除外の 4 テスト)</td></tr>
+<tr><td>ハンドラ層(Go)</td><td>正常系 + 主要異常系のみ(httptest)</td><td><code>handler_test.go</code>(サービスをモック・16 テスト)+ <code>scope_test.go</code>(実 DB でユーザー分離を検証・3 テスト)。§4.3 参照</td></tr>
+<tr><td>フロント純粋関数・フック</td><td><strong>必須</strong></td><td><code>useTagFormDialog.test.ts</code> など hooks/ 併置</td></tr>
+<tr><td>フロントコンポーネント</td><td>主要ロジック持ちのみ</td><td><code>TagFormDialog.test.tsx</code>、<code>TagListTable.test.tsx</code>、<code>TagSelector.test.tsx</code> など</td></tr>
+<tr><td>E2E(Playwright)</td><td>主要フロー</td><td>タグ専用 CRUD spec はなし。タグ絞り込みは <code>m24-02-filter-tag-character.spec.ts</code>、タグ欄のキーボード到達性は <code>m27-02a-reachability.spec.ts</code> が扱う(コンボ CRUD spec は<a href="combo-tests.html">次章</a>)</td></tr>
+</table>
+</div>
+
+<p>実行コマンド: Go は <code>go test ./...</code>(リポジトリ全体)、フロントは <code>cd web &amp;&amp; pnpm test</code>(Vitest)。</p>
+
+<h2>2. Go テストの基本ルール</h2>
+
+<ul>
+<li><strong>ファイル名</strong>: <code>*_test.go</code> はビルド対象から外れ、<code>go test</code> のときだけコンパイルされる</li>
+<li><strong>関数名</strong>: <code>func TestXxx(t *testing.T)</code> という署名の関数が自動発見・実行される。JUnit の <code>@Test</code>、pytest の <code>test_</code> プレフィクスに相当。<strong>テストランナー設定は不要</strong>(言語標準)</li>
+<li><strong>アサーションライブラリがない</strong>: <code>assertEquals</code> は存在せず、普通の if 文 + <code>t.Errorf</code> / <code>t.Fatalf</code> で書く(標準流儀)</li>
+</ul>
+
+<div class="codebox">
+<div class="path">internal/service/tag/service_test.go:1-38(ファイル冒頭・抜粋)</div>
+<pre><code>package <b>tag_test</b>                       <span class="cm">// 「_test」サフィックス = 外部テストパッケージ</span>
+
+import (
+    "context"
+    "database/sql"
+    "errors"
+    "testing"
+
+    "github.com/plexiblinp/tacpendium/internal/model"
+    tagrepo "github.com/plexiblinp/tacpendium/internal/repository/tag"
+    tagsvc "github.com/plexiblinp/tacpendium/internal/service/tag"
+    "github.com/plexiblinp/tacpendium/internal/testutil/dbtest"
+)
+
+const testUserID int64 = 1
+
+<span class="cm">// (中略: :17-30 の insertTaggableCombo ヘルパは §4.2 で読む)</span>
+
+func newSvc(t *testing.T) tagsvc.Service {
+    <b>t.Helper()</b>                          <span class="cm">// 失敗時の行番号報告をヘルパ内でなく呼び出し元にする</span>
+    db := dbtest.Setup(t)               <span class="cm">// テスト用 DB(後述)</span>
+    return tagsvc.New(tagrepo.New(db))  <span class="cm">// main.go と同じ配線をテストでも手で組む</span>
+}
+
+func ptrStr(s string) *string { return &amp;s }  <span class="cm">// リテラルから *string を作る定番ヘルパ</span></code></pre>
+</div>
+
+<div class="note">
+<span class="boxtitle">package tag_test の意味</span>
+テストファイルだけは同じディレクトリでも <code>tag_test</code> という別パッケージにできます。こうするとテストは<strong>公開 API(大文字)しか触れなくなり</strong>、「利用者と同じ立場」でテストを書くことになります。内部実装に癒着しないブラックボックステストを言語機構で強制するテクニックです。
+</div>
+
+<h3>t.Fatalf と t.Errorf の使い分け</h3>
+
+<div class="tablewrap">
+<table>
+<tr><th>呼び出し</th><th>挙動</th><th>使いどころ</th></tr>
+<tr><td><code>t.Fatalf(...)</code></td><td>失敗を記録して<strong>そのテストを即中断</strong></td><td>前提が崩れて以降の検証が無意味なとき(作成に失敗した、など)</td></tr>
+<tr><td><code>t.Errorf(...)</code></td><td>失敗を記録して<strong>続行</strong></td><td>独立した検証項目。1 回の実行で複数の失敗をまとめて報告できる</td></tr>
+</table>
+</div>
+
+<h2>3. dbtest.Setup — モックではなく「本物の使い捨て DB」</h2>
+
+<p>このリポジトリのサービステストの最大の特徴は、<strong>リポジトリをモックせず、毎テスト本物の SQLite を作る</strong>ことです。</p>
+
+<div class="codebox">
+<div class="path">internal/testutil/dbtest/dbtest.go:142-171(抜粋)</div>
+<pre><code>func Setup(t *testing.T) *sql.DB {
+    t.Helper()
+    conn, _ := setup(t, "dbtest.Setup")
+    return conn
+}
+...
+func setup(t *testing.T, who string) (*sql.DB, string) {
+    t.Helper()
+
+    dbPath := filepath.Join(<b>t.TempDir()</b>, "test.db")   <span class="cm">// テスト専用一時ディレクトリ(自動削除)</span>
+    if err := <b>provision</b>(dbPath); err != nil {          <span class="cm">// テンプレート複製 or マイグレーション実行(後述)</span>
+        t.Fatalf("%s: %v", who, err)
+    }
+
+    conn, err := db.Open(dbPath)                       <span class="cm">// 本番と同じ PRAGMA(WAL 等)で接続</span>
+    if err != nil {
+        t.Fatalf("%s: open: %v", who, err)
+    }
+    <b>t.Cleanup(func()</b> {                                 <span class="cm">// テスト終了時の後始末を予約</span>
+        _ = conn.Close()
+    })
+    return conn, dbPath
+}</code></pre>
+</div>
+
+<ul>
+<li><code>t.TempDir()</code> — テストごとに固有の一時ディレクトリを作り、終了時に自動削除。DB ファイルごと消える</li>
+<li><code>t.Cleanup()</code> — JUnit の <code>@AfterEach</code>、pytest の fixture teardown に相当。ヘルパの中から登録できるのが便利</li>
+<li>マイグレーション + seed(リュウの技マスタ等)込みなので、テストは「初回起動直後の本物のアプリ」と同じ土俵で走る</li>
+</ul>
+
+<h3>3.1 テンプレート方式 — 「速さ」を「正しさの根拠」にしない設計</h3>
+
+<p>初版のガイドを書いた時点では <code>Setup</code> がテストごとに <code>migration.Run</code> を呼んでいましたが、マイグレーション本数の増加でコストが積み上がったため、M24-09d(CHANGE-145)で<strong>テンプレート方式</strong>に変わりました。テストバイナリ(= パッケージ)ごとに 1 回だけマイグレーションを流して「テンプレート DB」を作り(<code>sync.Once</code>)、その<strong>ファイルの中身をバイト列でメモリに保持</strong>して、各テストは <code>os.WriteFile</code> で複製するだけです(<code>dbtest.go:174-191</code> の <code>provision</code>)。</p>
+
+<div class="warn">
+<span class="boxtitle">「壊れると何も検証しないまま緑になる」形の最適化</span>
+テンプレート方式は「壊れると落ちる」ではなく「壊れると<strong>何も検証しないまま緑になる</strong>」形をとりえます。複製に失敗して空の DB でテストが走っても、「その行は存在しない」を確かめるテストは緑のままで、しかも速い。だから<strong>速度を正しさの根拠にできません</strong>。このリポジトリは対策として <code>internal/testutil/dbtest/template_test.go</code> を置き、(1) テンプレート由来の DB と「テンプレートを通さず」マイグレーションを流した DB を、スキーマ全数(列・インデックス・外部キー)+ <strong>全テーブルの行数</strong>で突き合わせ、(2) seed が 1 行も無い「両方空だから一致」も明示的に排除しています(比較相手を同じ経路で作ると、壊れたとき両方が同じように壊れて検出できない、という理由までコメントに書かれています)。
+</div>
+
+<div class="codebox">
+<div class="path">internal/testutil/dbtest/template_test.go:237-248</div>
+<pre><code>func TestTemplate_BuiltOnlyOnce(t *testing.T) {
+    <span class="cm">// 本パッケージは DisableTemplate() を呼んでいないため、テンプレート方式で動く。</span>
+    _ = dbtest.Setup(t)
+    _ = dbtest.Setup(t)
+    _ = dbtest.Setup(t)
+
+    if got := <b>dbtest.MigrationRunCount()</b>; got != 1 {   <span class="cm">// 速度ではなく「回数」を主張する</span>
+        t.Errorf("dbtest.MigrationRunCount() = %d, want 1"+
+            "\n  1 でないなら、テンプレートがテストごとに作り直されている"+
+            "\n  (テストの実行順によらず、テンプレート方式なら常に 1 である)", got)
+    }
+}</code></pre>
+</div>
+
+<p>学びどころは 2 つ。<strong>①観測可能性をヘルパ側に仕込む</strong> — <code>MigrationRunCount()</code> というカウンタを公開しているのは、「速くなったから効いている」で済ませないためです(除外し忘れても、複製に失敗しても、速くはなる)。<strong>②例外はコードで施錠する</strong> — マイグレーションの適用過程そのものを検証するパッケージだけはテンプレートを使えないので <code>DisableTemplate()</code> がありますが、<code>runtime.Caller</code> で呼び出し元パッケージを特定し、許可一覧(現在は <code>internal/infra/migration</code> の 1 つ)以外から呼ぶと panic します。「テストが全部緑のまま遅くなるだけ」という誰も気づけない劣化を、機構で防いでいます。</p>
+
+<div class="compare">
+<span class="boxtitle">モック派 vs 実 DB 派</span>
+Spring で Mockito + H2 を使い分けた感覚で言うと、このリポジトリは「サービステスト = 実 DB(SQLite が軽量だから可能)」「ハンドラテスト = サービスをモック」という切り方です。実 DB 方式の利点は SQL の間違い(JOIN 条件・CASCADE)まで検出できること。SQLite はファイル 1 個 + 純 Go ドライバなので、Testcontainers のような重い仕掛けなしでこれができます。テスト間はプロセス内並列でも DB が別ファイルなので完全独立です。
+</div>
+
+<h2>4. テスト実例を読む</h2>
+
+<h3>4.1 正常系と異常系の基本形</h3>
+
+<div class="codebox">
+<div class="path">internal/service/tag/service_test.go:84-104</div>
+<pre><code>func TestCreateTag_VAL_T01_Duplicate(t *testing.T) {
+    svc := newSvc(t)                                          <span class="cm">// Arrange</span>
+    input := model.CreateTagInput{Name: "重複タグ"}
+    if _, err := svc.CreateTag(context.Background(), testUserID, input); err != nil {
+        t.Fatalf("first create: %v", err)                     <span class="cm">// 前提づくりの失敗は Fatal</span>
+    }
+    _, err := svc.CreateTag(context.Background(), testUserID, input)  <span class="cm">// Act: 2 回目</span>
+    if !<b>errors.Is(err, tagsvc.ErrTagNameDuplicate)</b> {          <span class="cm">// Assert: エラーの種別を検証</span>
+        t.Errorf("want ErrTagNameDuplicate, got %v", err)
+    }
+}
+
+func TestCreateTag_VAL_T02_EmptyName(t *testing.T) {
+    svc := newSvc(t)
+    <b>for _, name := range []string{"", "   "}</b> {                <span class="cm">// 簡易テーブル駆動: 複数入力を回す</span>
+        _, err := svc.CreateTag(context.Background(), testUserID, model.CreateTagInput{Name: name})
+        if !errors.Is(err, tagsvc.ErrTagNameEmpty) {
+            t.Errorf("name=%q: want ErrTagNameEmpty, got %v", name, err)
+        }
+    }
+}</code></pre>
+</div>
+
+<p>テスト名が <code>TestCreateTag_VAL_T01_Duplicate</code> と<strong>設計書のバリデーション ID を含む</strong>のがこのリポジトリの流儀です。設計書(DES-006)⇔ 実装 ⇔ テストが ID で相互参照でき、「VAL-T01 はテストされているか?」を grep で機械的に監査できます(<code>audit_validation_coverage</code> コマンドの土台)。</p>
+
+<h3>4.2 関連テーブルを手で仕込むテスト</h3>
+
+<p>「使用中タグは削除できない(VAL-T03)」のテストは、combo_tags に関連を作る必要があります。タグサービスにはコンボを作る API がないので、<strong>テストが直接 SQL で前提データを仕込みます</strong>。初版では inline の INSERT 文でしたが、現在は汎用の INSERT ヘルパ <code>dbtest.Insert</code> に寄せられています:</p>
+
+<div class="codebox">
+<div class="path">internal/service/tag/service_test.go:17-30(前提データ用ヘルパ)</div>
+<pre><code><span class="cm">// insertTaggableCombo は combo_tags の参照先にするコンボを 1 行作る。</span>
+func insertTaggableCombo(t *testing.T, db *sql.DB) int64 {
+    t.Helper()
+    return <b>dbtest.Insert</b>(t, db, "combos", <b>dbtest.Cols</b>{   <span class="cm">// 列名→値の map から INSERT を組み立て rowid を返す</span>
+        "character_id": 1,
+        "is_draft":     0,
+        "step_count":   0,
+        "version":      1,
+        "created_at":   <b>dbtest.Raw</b>("datetime('now')"),    <span class="cm">// Raw = 値でなく SQL 式をそのまま埋める</span>
+        "updated_at":   dbtest.Raw("datetime('now')"),
+    })
+}</code></pre>
+</div>
+
+<div class="codebox">
+<div class="path">internal/service/tag/service_test.go:210-232(TestDeleteTag_InUse_ForcefalseReturnsError)</div>
+<pre><code>db := dbtest.Setup(t)
+svc := tagsvc.New(tagrepo.New(db))
+created, _ := svc.CreateTag(context.Background(), testUserID, model.CreateTagInput{Name: "使用中タグ"})
+
+<span class="cm">// combo_tags に手動で関連付け(テスト用に combos も作成)</span>
+comboID := insertTaggableCombo(t, db)
+dbtest.Insert(t, db, "combo_tags", dbtest.Cols{"combo_id": comboID, "tag_id": created.ID})
+
+err := svc.DeleteTag(context.Background(), testUserID, created.ID, <b>false</b>)   <span class="cm">// force なし</span>
+if !errors.Is(err, tagsvc.ErrTagInUse) {
+    t.Fatalf("want ErrTagInUse, got %v", err)
+}
+<span class="cm">// usage count が含まれることを確認</span>
+var inUseErr *tagsvc.TagInUseError
+if <b>errors.As(err, &amp;inUseErr)</b> {                    <span class="cm">// エラーに載せた件数まで検証する</span>
+    if inUseErr.UsageCount != 1 {
+        t.Errorf("usage_count = %d, want 1", inUseErr.UsageCount)
+    }
+} else {
+    t.Errorf("error is not TagInUseError: %T", err)
+}</code></pre>
+</div>
+
+<div class="note">
+<span class="boxtitle">dbtest.Insert は「既定値を 1 つも埋めない」</span>
+<code>dbtest.Insert</code>(<code>internal/testutil/dbtest/insert.go</code>)は列名→値の map から INSERT 文を組み立てるだけの小さなヘルパですが、コメントに設計判断が明記されています — <strong>ヘルパ側で気を利かせて既定値を埋めると、「その既定値に依存した主張がたまたま通る」テストが生まれる</strong>ため、指定した列だけを INSERT し、省いた列はスキーマの DEFAULT に委ねる。テストヘルパは便利にしすぎない方が安全、という好例です。ついでに列名を昇順ソートしてから組み立てるので、同じ入力からは常に同じ SQL が出ます(失敗メッセージの再現性)。
+</div>
+
+<p>続く <code>TestDeleteTag_InUse_ForceTrueDeletes</code>(:234-253)は force=true で削除した後、<code>SELECT COUNT(*) FROM combo_tags</code> で <strong>ON DELETE CASCADE が効いて関連も消えた</strong>ことまで確認します。これはモックでは原理的にテストできない(CASCADE は DB の挙動)ので、実 DB 方式の価値が一番出る箇所です。</p>
+
+<h3>4.3 ハンドラテストとスコープテスト — モックと実 DB の分担</h3>
+
+<p>初版時点でタグのハンドラテストは省略されていましたが、現在は 2 ファイルあります。まず <code>handler_test.go</code> は<strong>サービスをモックして HTTP 層だけ</strong>を見ます。Go にモックライブラリは(このリポジトリでは)使わず、<strong>関数フィールドを持つ struct でインターフェースを満たす</strong>のが定番イディオムです:</p>
+
+<div class="codebox">
+<div class="path">internal/api/tag/handler_test.go:23-36(抜粋)</div>
+<pre><code>type <b>mockService</b> struct {                        <span class="cm">// tagsvc.Service を満たす自作モック(Mockito 不要)</span>
+    listFn   func(ctx context.Context, userID int64, category string, includeUsage bool, characterID *int64) ([]model.Tag, error)
+    getFn    func(ctx context.Context, userID, tagID int64) (*model.Tag, error)
+    ...
+}
+
+func (m *mockService) ListTags(ctx context.Context, userID int64, category string, includeUsage bool, characterID *int64) ([]model.Tag, error) {
+    if m.listFn != nil {
+        return m.listFn(ctx, userID, category, includeUsage, characterID)   <span class="cm">// テストごとに挙動を差し替え</span>
+    }
+    return []model.Tag{}, nil                     <span class="cm">// 指定がなければ無難な既定動作</span>
+}</code></pre>
+</div>
+
+<p>各テストは <code>listFn</code> 等に「409 を返す」「引数を記録する」クロージャを入れて、ステータスコードとエラーレスポンス(<code>tag_name_duplicate</code> 等のエラーコード)を検証します(16 テスト)。これは vi.fn() の Go 版と考えると分かりやすいはずです。</p>
+
+<p>一方 <code>scope_test.go</code> は M22 のマルチユーザー化で入ったファイルで、<strong>実 DB + 実サービス + Echo ルーティング + ミドルウェアを全部通し</strong>、<code>X-User-Id</code> ヘッダのユーザー分離が SQL の絞り込みまで届くことを検証します:</p>
+
+<div class="codebox">
+<div class="path">internal/api/tag/scope_test.go:84-104(抜粋)</div>
+<pre><code><span class="cm">// ★§5.1-17: 別の利用者のタグは見えない(D-402 の絞り込みが維持されている)。</span>
+func TestList_IsScopedToRequestingUser(t *testing.T) {
+    db, e := newScopedRouter(t)                   <span class="cm">// 実 DB + ミドルウェア + ルート登録(:33-41)</span>
+    userB := addUser(t, db, "B")
+
+    <span class="cm">// user 1 は migrations/000007 の 3 件を持つ。B はまだ 0 件。</span>
+    recA := request(t, e, http.MethodGet, "/api/tags", "", "1")
+    ...
+    if len(decodeTags(t, recA)) == 0 {
+        t.Fatal("user 1 のタグが見えていない<b>(対照)</b>")   <span class="cm">// 「0 件 = 分離できている」の緑を疑うための対照実験</span>
+    }
+
+    recB := request(t, e, http.MethodGet, "/api/tags", "", strconv.FormatInt(userB, 10))
+    ...
+    if got := decodeTags(t, recB); len(got) != 0 {
+        t.Errorf("★B に user 1 のタグが見えている: %+v", got)
+    }
+}</code></pre>
+</div>
+
+<p>ファイル冒頭コメント(:23-27)が両ファイルの分担を明言しています — <strong>モック版のハンドラテストでは userID が実際に SQL の WHERE 句へ届いているかは見えない</strong>ので、スコープテストが実物のスタックで補完する。もう 1 つの技法が「対照」です: user B に 0 件を主張する前に、user 1 に 1 件以上あることを先に主張する。これが無いと「リスト API が全員に空を返すバグ」でもテストが緑になってしまいます(§3.1 の「何も検証しないまま緑」への防御と同じ発想)。書き込み側も <code>TestUpdate_CannotTouchAnotherUsersTag</code>(:128-149)がステータスコードだけでなく <strong>DB を直接 SELECT して名前が書き換わっていない</strong>ことまで確かめます。</p>
+
+<h2>5. フロントエンドのテスト</h2>
+
+<p>フロントは <strong>Vitest</strong>(テストランナー、Jest 互換 API)+ <strong>React Testing Library</strong>(コンポーネント/フックの描画・操作)で書かれています。jsdom というブラウザ模擬環境上で動く点だけ頭に入れてください(本物のブラウザは E2E の仕事)。</p>
+
+<h3>5.1 一番安いテスト: zod スキーマの単体テスト</h3>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/hooks/useTagFormDialog.test.ts:14-32(抜粋)</div>
+<pre><code><span class="cm">// ★M24-07: 検証メッセージを locale へ出したためスキーマはファクトリになった。</span>
+<span class="cm">//   実 i18n の t を渡して組み立てる(文言そのものはここでは主張しない)。</span>
+const tagFormSchema = <b>createTagFormSchema</b>((k) =&gt; i18n.t(k));
+
+<b>describe</b>("tagFormSchema", () =&gt; {                <span class="cm">// テストのグループ化(JUnit のネストクラス相当)</span>
+  <b>it</b>("正常な値でパースが成功する", () =&gt; {         <span class="cm">// 1 テストケース</span>
+    const result = tagFormSchema.<b>safeParse</b>({ name: "テスト", category: "", color: "#10B981" });
+    <b>expect</b>(result.success).toBe(true);           <span class="cm">// アサーション(Go と違い専用 API がある)</span>
+  });
+
+  it("スペースのみの name は trim 後に空になり失敗する", () =&gt; {
+    const result = tagFormSchema.safeParse({ name: "   ", category: "", color: "" });
+    expect(result.success).toBe(false);
+  });
+  ...</code></pre>
+</div>
+
+<p>スキーマはただの値変換関数なので、描画もモックも不要でそのまま呼べます。<strong>ロジックを純粋関数(スキーマ)に切り出しておくとテストが一番安くなる</strong>、という設計の見返りがここに出ています。Go 側 <code>TestCreateTag_VAL_T02_EmptyName</code> と同じ仕様(空白のみ禁止)を両側でテストしていることにも注目 — 二重検証(UX 用と防衛線)にはテストも両側必要です。</p>
+
+<p>初版時点では <code>tagFormSchema</code> は定数エクスポートでしたが、M24-07 の i18n 対応でエラーメッセージがロケールファイルへ移り、<strong><code>createTagFormSchema(t)</code> というファクトリに変わりました</strong>。テストは実物の <code>i18n.t</code> を注入して組み立てつつ、「メッセージ文言そのもの」は主張しない(文言は翻訳の都合で変わるため、主張すると翻訳のたびにテストが壊れる)。「何を検証し、何を検証しないか」を線引きした好例です。</p>
+
+<h3>5.2 フックのテスト: renderHook + act</h3>
+
+<p>フックはコンポーネントの中でしか呼べないルールがあるので、Testing Library の <code>renderHook</code> が「フックだけを載せた見えないコンポーネント」を作ってくれます。</p>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/hooks/useTagFormDialog.test.ts:80-97</div>
+<pre><code>it("送信時に color が空文字列なら undefined に正規化される", async () =&gt; {
+  const onSubmit = <b>vi.fn()</b>.mockResolvedValue(undefined);   <span class="cm">// vi.fn = モック関数(Mockito の mock)</span>
+  const onClose = vi.fn();
+
+  const { result } = <b>renderHook</b>(() =&gt;
+    useTagFormDialog(true, null, onSubmit, onClose),
+  );
+
+  await <b>act</b>(async () =&gt; {                                  <span class="cm">// act = React の状態更新を確定させる枠</span>
+    result.current.form.setValue("name", "新タグ");
+    result.current.form.setValue("color", "");
+    await result.current.handleSubmit();
+  });
+
+  expect(onSubmit).<b>toHaveBeenCalledWith</b>(                   <span class="cm">// モックの呼び出し内容を検証</span>
+    expect.objectContaining({ color: undefined }),          <span class="cm">// ウォークスルー §3.3 の正規化の検証</span>
+  );
+});</code></pre>
+</div>
+
+<p>読み方のポイント:</p>
+<ul>
+<li><code>vi.fn()</code> — 呼び出しを記録するダミー関数。<code>mockResolvedValue</code> / <code>mockRejectedValue</code> で成功/失敗をシナリオ化できる。API を実際に呼ぶ代わりに「onSubmit が 409 で失敗したら」を <code>mockRejectedValue(new TagApiError(409, ...))</code> で再現するテスト(:136-166)が好例</li>
+<li><code>act(...)</code> — 「この中で起きた state 更新を全部反映してから次へ進む」という React テストの約束事</li>
+<li><code>result.current</code> — フックの現在の戻り値。再レンダリングされると差し替わる</li>
+</ul>
+
+<h3>5.3 コンポーネントのテスト: ユーザー視点で操作する</h3>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/components/TagFormDialog.test.tsx:38-46, 90-102(抜粋)</div>
+<pre><code>it("VAL-T02: タグ名が空のままサブミットするとエラーメッセージが表示される", async () =&gt; {
+  const user = <b>userEvent.setup()</b>;
+  render(&lt;TagFormDialog open={true} onOpenChange={vi.fn()} onSubmit={vi.fn()} /&gt;);
+
+  await user.click(<b>screen.getByRole("button", { name: "作成" })</b>);  <span class="cm">// 「作成」ボタンをクリック</span>
+
+  const err = await <b>screen.findByText</b>("タグ名は必須です");           <span class="cm">// find = 出現を待つ(async)</span>
+  expect(err).toBeTruthy();
+});
+
+it("スウォッチをクリックすると選択色でサブミットされる", async () =&gt; {
+  ...
+  await user.type(<b>screen.getByLabelText(/タグ名/)</b>, "新しいタグ");   <span class="cm">// ラベルで input を特定して入力</span>
+  await user.click(screen.getByTestId("tag-color-swatch-red"));
+  await user.click(screen.getByRole("button", { name: "作成" }));
+
+  expect(onSubmit).toHaveBeenCalledWith(
+    expect.objectContaining({ name: "新しいタグ", color: "#ef4444" }),
+  );
+});</code></pre>
+</div>
+
+<div class="note">
+<span class="boxtitle">Testing Library の思想: 実装ではなくユーザーの見え方で選択する</span>
+要素の特定に CSS セレクタや内部 state ではなく <code>getByRole("button", {name:"作成"})</code>(役割とラベル)や <code>getByLabelText(/タグ名/)</code>(フォームラベル)を使います。「ユーザー/スクリーンリーダーに見えているもの」でテストを書くと、内部リファクタリングでテストが壊れず、ついでにアクセシビリティの検証にもなる、という設計です。どうしても意味的に特定できないもの(色スウォッチ)だけ <code>data-testid</code> を使います(リポジトリには testid 命名規約 <code>docs/design/testid-convention.md</code> まであります)。
+</div>
+
+<p>ファイル冒頭(TagFormDialog.test.tsx:8-17)の <code>ResizeObserverStub</code> は、jsdom に無いブラウザ API を UI ライブラリ(Radix)が要求するために置いた最小スタブです。「jsdom は本物のブラウザではない」ことの典型的なパッチとして覚えておくと、他所で同種のコードを見ても驚きません。</p>
+
+<h3>5.4 キーボード操作のテスト: user.keyboard と activeElement</h3>
+
+<p>M27-02a で「タグ欄だけマウスが必須」という到達性の穴が直され、そのとき <code>TagSelector.test.tsx</code> に <code>describe("キーボード操作")</code> ブロック(:189-300)が加わりました。§5.3 の「ユーザーの見え方でテストする」思想を、キーボード利用者の視点まで押し広げた実例です:</p>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/components/TagSelector.test.tsx:198-204, 218-227(抜粋)</div>
+<pre><code>it("検索欄から ↓ で先頭候補へ入れる", async () =&gt; {
+  const user = userEvent.setup();
+  render(&lt;TagSelector selectedTagIds={[]} onChange={vi.fn()} /&gt;, { wrapper });
+  await user.click(screen.getByRole("button", { name: /タグを選択/ }));
+  await <b>user.keyboard("{ArrowDown}")</b>;                      <span class="cm">// キー入力をユーザー視点で再現</span>
+  expect(<b>document.activeElement</b>).toBe(screen.getAllByRole("option")[0]);  <span class="cm">// フォーカス位置を直接主張</span>
+});
+
+it("★Enter で選べる。★複数選択なので候補は開いたままにする(M27-02a §2.2.4-3 の決定)", async () =&gt; {
+  ...
+  await user.keyboard("{ArrowDown}{Enter}");
+  expect(onChange).toHaveBeenCalledWith([mockTags[0].id]);
+  <span class="cm">// ★閉じない——タグは続けて複数選ぶのが普通である。</span>
+  expect(<b>screen.getByRole("listbox")</b>).toBeTruthy();
+});</code></pre>
+</div>
+
+<ul>
+<li><code>user.keyboard("{ArrowDown}{Enter}")</code> — <code>click</code> / <code>type</code> と同じ userEvent 系列でキー操作をシナリオ化する。<code>fireEvent.keyDown</code> より実際のブラウザ挙動(keydown → keyup の連鎖)に近い</li>
+<li><code>document.activeElement</code> — 「いまフォーカスがどこにあるか」を直接主張する。同ブロックの白眉は「新規作成した直後もキーボードで続けられる」テスト(:259-279)で、<strong>フォーカスの載っていた要素が unmount されるとフォーカスが body へ落ち、以後 ↓ も Enter も効かなくなる</strong>という、目視でもモックでも捕まえにくい退行を固定しています</li>
+<li><code>getAllByRole("option")</code> / <code>getByRole("listbox")</code> — role でクエリすること自体が「支援技術に候補が公開されている」ことの検証を兼ねる(着手前は role が 1 つも無かった、とコメントに実測が残っています)</li>
+<li>ファイル冒頭(:10-14)の <code>vi.mock("@/features/tag/hooks/useTagsForSelector", ...)</code> は <strong>モジュール単位のモック</strong>(<code>vi.fn</code> は関数 1 個、<code>vi.mock</code> は import 先を丸ごと差し替え)。TanStack Query でデータを取るフックを固定データに差し替えて、コンポーネントの操作だけをテストしています</li>
+</ul>
+
+<h2>6. 対応表: JUnit / pytest → このリポジトリ</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>概念</th><th>JUnit / pytest</th><th>Go(標準 testing)</th><th>Vitest + Testing Library</th></tr>
+<tr><td>テスト発見</td><td><code>@Test</code> / <code>test_*</code></td><td><code>func TestXxx(t *testing.T)</code></td><td><code>it("...", ...)</code> in <code>*.test.ts(x)</code></td></tr>
+<tr><td>グループ化</td><td>クラス / ネスト</td><td>ファイル分割 + <code>t.Run</code>(サブテスト)</td><td><code>describe</code></td></tr>
+<tr><td>アサーション</td><td>assertEquals 等</td><td>if 文 + <code>t.Errorf/Fatalf</code>(標準流儀)</td><td><code>expect(x).toBe(y)</code> 等</td></tr>
+<tr><td>前後処理</td><td>@BeforeEach/@AfterEach</td><td>ヘルパ関数 + <code>t.Cleanup</code></td><td><code>beforeEach</code> / <code>afterEach</code></td></tr>
+<tr><td>モック</td><td>Mockito / unittest.mock</td><td>インターフェースを満たす自作 struct(§4.3 の <code>mockService</code>)</td><td><code>vi.fn()</code> / <code>vi.mock()</code></td></tr>
+<tr><td>DB テスト</td><td>H2 / Testcontainers</td><td><code>dbtest.Setup(t)</code>(使い捨て実 SQLite・テンプレート複製 = §3.1)</td><td>—(API はモック)</td></tr>
+<tr><td>パラメタライズ</td><td>@ParameterizedTest</td><td>テーブル駆動(struct スライス + t.Run)</td><td><code>it.each</code>(このリポジトリではループで代用)</td></tr>
+<tr><td>実行</td><td>mvn test / pytest</td><td><code>go test ./...</code></td><td><code>pnpm test</code></td></tr>
+</table>
+</div>
+
+<h2>7. 自分で試す</h2>
+
+<div class="note">
+<span class="boxtitle">課題</span>
+<ol>
+<li><code>go test ./internal/service/tag/ -v</code> を実行し、19 テストの名前と実行時間を眺める。次に <code>-run VAL_T01</code> を付けて 1 本だけ実行してみる</li>
+<li><code>service.go</code> の <code>validateName</code> をわざと壊し(<code>return nil</code> に変え)、どのテストがどんなメッセージで落ちるか観察 → 戻す</li>
+<li><code>cd web &amp;&amp; pnpm test useTagFormDialog</code> でフックテストだけ実行してみる</li>
+<li>「編集時に他タグと同名へ変更すると 409」のテスト(<code>TestUpdateTag_VAL_T01_DuplicateWithOther</code>、service_test.go:167-179)を読み、<strong>自分自身と同名への変更(実質無変更)が許される理由</strong>を service.go:92 の条件 <code>t.ID != tagID</code> から説明する</li>
+<li><code>go test ./internal/testutil/dbtest/ -v</code> を実行し、<code>TestTemplate_BuiltOnlyOnce</code> がなぜ「速度」ではなく <code>MigrationRunCount()</code> の回数を主張するのかを、dbtest.go 冒頭のコメント(:8-20)と §3.1 で確認する</li>
+</ol>
+</div>
+
+<footer>
+<span><a href="tag-walkthrough.html">← タグ管理ウォークスルー</a></span>
+<span>生成日 2026-07-22 / 更新日 2026-09-08(M27〜M29 時点のコードへ突合)</span>
+<span><a href="combo-walkthrough.html">次: コンボ CRUD ウォークスルー →</a></span>
+</footer>
+</div>
+</body>
+</html>

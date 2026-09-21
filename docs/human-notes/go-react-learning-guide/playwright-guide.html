@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playwright E2E シナリオガイド — Tacpendium で学ぶ Go / React</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; background:#f8fafc; color:#1e293b; font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; line-height:1.9; }
+.topnav { background:#0f172a; color:#cbd5e1; padding:10px 20px; font-size:13px; }
+.topnav a { color:#93c5fd; text-decoration:none; margin-right:14px; }
+.topnav a:hover { text-decoration:underline; }
+.wrap { max-width:920px; margin:0 auto; padding:28px 20px 90px; }
+h1 { font-size:26px; border-left:6px solid #0891b2; padding-left:12px; line-height:1.5; }
+h2 { font-size:21px; margin-top:48px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+h3 { font-size:17px; margin-top:32px; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; font-size:.9em; font-family:Consolas,"SF Mono",Menlo,monospace; }
+.codebox { margin:16px 0; border-radius:8px; overflow:hidden; border:1px solid #334155; }
+.codebox .path { background:#1e293b; color:#93c5fd; font:12px Consolas,Menlo,monospace; padding:6px 12px; border-bottom:1px solid #334155; }
+.codebox pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow-x:auto; font:13px/1.7 Consolas,Menlo,monospace; }
+.codebox pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+.codebox b { color:#fbbf24; font-weight:600; }
+.codebox .cm { color:#7dd3fc; opacity:.65; }
+.note,.compare,.warn { border-radius:8px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+.note { background:#eff6ff; border:1px solid #bfdbfe; }
+.compare { background:#fffbeb; border:1px solid #fde68a; }
+.warn { background:#fef2f2; border:1px solid #fecaca; }
+.boxtitle { display:block; font-weight:700; font-size:12px; letter-spacing:.08em; margin-bottom:6px; color:#475569; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#fff; }
+th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; white-space:nowrap; }
+.flow { list-style:none; counter-reset:step; padding:0; margin:16px 0; }
+.flow li { position:relative; margin:0 0 10px; padding:10px 14px 10px 52px; background:#fff; border:1px solid #cbd5e1; border-radius:8px; font-size:14.5px; }
+.flow li::before { counter-increment:step; content:counter(step); position:absolute; left:12px; top:12px; width:26px; height:26px; background:#0891b2; color:#fff; border-radius:50%; text-align:center; line-height:26px; font-weight:700; font-size:13px; }
+footer { margin-top:64px; padding-top:16px; border-top:1px solid #cbd5e1; font-size:13.5px; color:#64748b; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+footer a { color:#2563eb; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">目次</a>
+  <a href="go-lang-primer.html">Go 言語プライマー</a>
+  <a href="react-ts-primer.html">React/TS プライマー</a>
+  <a href="tag-walkthrough.html">タグ管理ウォークスルー</a>
+  <a href="tag-tests.html">タグのテスト</a>
+  <a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+  <a href="combo-tests.html">コンボのテスト + E2E</a>
+  <a href="playwright-guide.html">Playwright ガイド</a>
+  <a href="shadcn-tailwind-guide.html">shadcn/Tailwind</a>
+  <a href="game-update-walkthrough.html">ゲーム更新影響判定</a>
+  <a href="shell-guardrails-guide.html">シェル検査とフック</a>
+</nav>
+<div class="wrap">
+
+<h1>Playwright E2E シナリオガイド<br>— 基盤の仕組みと「シナリオの書き方」を体系的に学ぶ</h1>
+
+<p><a href="combo-tests.html">コンボのテスト + E2E</a> では combo-crud.spec.ts を 1 本だけ逐行で読みました。このページはその続編で、<strong>E2E 基盤がどう動いているか(実行の仕組み)</strong>と、<strong>65 本の実 spec から抽出したシナリオ設計パターン</strong>、そして<strong>自分で新しい spec を書く手順</strong>までを体系的に扱います。</p>
+
+<div class="note">
+<span class="boxtitle">このリポジトリの E2E の全体像</span>
+spec は <code>web/e2e/*.spec.ts</code> に 65 本(本ガイド初版の 2026-07-22 時点では 20 本でした)。共通の「下ごしらえ」は <code>web/e2e/support/</code> 配下の共有ヘルパ 12 ファイルに集約されています(§5.6)。実行は全数が <code>make e2e</code>、絞り込みが <code>make e2e-only P=&lt;パターン&gt;</code>(§2.2。<strong>playwright を直接叩かないのが規約</strong>)。設定は <code>web/playwright.config.ts</code>(184 行)にすべて集約されています。導入経緯は指示書 <code>docs/instructions/phase2/M8-02-e2e-playwright-foundation.md</code>(段階導入方針: 全シナリオの spec 化や全要素への testid 付与は「やらない」と明記)にあります。
+</div>
+
+<h2>1. E2E テストとは何が違うのか(再整理)</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th></th><th>Vitest(コンポーネント/フック)</th><th>Playwright(E2E)</th></tr>
+<tr><td>実行環境</td><td>jsdom(ブラウザの模造品)</td><td>本物の Chromium</td></tr>
+<tr><td>バックエンド</td><td>vi.mock で偽物</td><td>本物の Go バイナリ(<code>go run</code>)</td></tr>
+<tr><td>DB</td><td>なし</td><td>本物の SQLite(使い捨て)</td></tr>
+<tr><td>検証できること</td><td>部品単体の分岐・表示</td><td><strong>全部つないだとき本当に使えるか</strong>(ルーティング・プロキシ・JSON 契約・DB 永続化の統合)</td></tr>
+<tr><td>速度</td><td>ミリ秒〜秒</td><td>1 spec 数秒〜数十秒</td></tr>
+<tr><td>書く量の方針</td><td>厚く</td><td>少数精鋭(高価値フロー + 非回帰の釘付け)</td></tr>
+</table>
+</div>
+
+<div class="compare">
+<span class="boxtitle">Flask / Spring 経験者向け</span>
+Selenium でのブラウザテストを書いたことがあれば、Playwright は「Selenium の設計上の弱点(明示 wait 地獄・flaky)を自動待機と Locator 設計で解決した後継」と捉えてください。Selenium 経験がなければ「MockMvc / test_client のブラウザ完全版」です。最大の違いは後述の<strong>自動待機(auto-waiting)</strong>で、<code>sleep()</code> をほぼ書かずに済みます。
+</div>
+
+<h2>2. 実行の仕組み — make e2e で何が起きるか</h2>
+
+<ol class="flow">
+<li><code>make e2e</code>(Makefile:147-149)が Chromium を確保(プリインストール版があれば <code>PW_EXECUTABLE_PATH</code> で指し、なければ <code>pnpm exec playwright install chromium</code>。Makefile:123-145 の共通変数)→ <code>pnpm e2e</code> を実行。<code>pnpm e2e</code> = <code>playwright test</code>(web/package.json:13)</li>
+<li>Playwright が <code>web/playwright.config.ts</code> を読み、<strong>webServer 2 本を自動起動</strong>する(下記)</li>
+<li>webServer①: バックエンド。<code>rm -rf web/e2e/.tmp</code> → <code>mkdir</code> → <code>cp config.toml.example</code>(<strong>E2E 専用の設定ファイル</strong>を使い捨て DB と同じ寿命で作る)→ <code>go run <b>-tags=debug</b> ./cmd/tacpendium</code>。環境変数 <code>TACPENDIUM_DB_PATH</code> / <code>TACPENDIUM_CONFIG_PATH</code> / <code>TACPENDIUM_PORT</code> で DB を <code>web/e2e/.tmp/tacpendium-e2e.db</code> に、設定を専用 toml に、ポートを E2E 専用(基準 47390)に向ける。起動時にマイグレーション + seed が自動適用されるので<strong>毎回クリーンな seed 済み DB</strong> になる(debug タグの意味は §5.8)</li>
+<li>webServer②: <code>pnpm build</code> でフロントを本番ビルドし、<strong>Vite preview</strong>(ビルド済み dist の配信)を E2E 専用ポート(基準 5273、<code>--strictPort</code>)で起動、<code>VITE_API_PORT</code> で API プロキシ先を E2E バックエンドへ向ける(dev サーバから preview へ移行した理由は下記 note)</li>
+<li>両ポートの応答を確認後、<code>web/e2e/</code> の全 spec を Chromium(headless)で直列実行(<code>fullyParallel: false</code> + <code><b>workers: 1</b></code>。後者が要る理由は下記 note)。失敗した spec は 1 回だけ再試行(<code>retries: 1</code>)し、再試行時は実行トレースを記録(<code>trace: "on-first-retry"</code>)</li>
+<li>終了後、Playwright が webServer 2 本を落とす。dev 環境(通常ポート・dev DB・dev の config.toml)には一切影響しない</li>
+</ol>
+
+<div class="codebox">
+<div class="path">web/playwright.config.ts:66-183(設定の本体・抜粋。長大な理由コメントは省略)</div>
+<pre><code>export default defineConfig({
+  testDir: "./e2e",
+  <b>fullyParallel: false,</b>              <span class="cm">// 1 ファイル内の test を直列実行</span>
+  <b>workers: 1,</b>                        <span class="cm">// ★spec ファイル同士の並列も止める(M24-09c。下記 note)</span>
+  <b>retries: 1,</b>                        <span class="cm">// 失敗したら 1 回だけ再試行</span>
+  reporter: "list",
+  use: {
+    headless: true,
+    <b>baseURL: `http://localhost:${E2E_VITE_PORT}`,</b>  <span class="cm">// page.goto("/combos") の基準 URL</span>
+    <b>trace: "on-first-retry",</b>         <span class="cm">// 再試行時だけ全操作のトレースを録画(失敗調査用)</span>
+  },
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"],
+    <span class="cm">/* PW_EXECUTABLE_PATH があれば launchOptions.executablePath に流す(§2.2) */</span> } }],
+  webServer: [
+    {
+      <span class="cm">// ★専用 config は rm -rf の「後」に作る(先に作ると消される)</span>
+      command:
+        "(cd .. &amp;&amp; <b>rm -rf web/e2e/.tmp</b> &amp;&amp; mkdir -p web/e2e/.tmp" +
+        ` &amp;&amp; cp config.toml.example ${E2E_CONFIG_PATH_FROM_REPO_ROOT}` +
+        " &amp;&amp; go run <b>-tags=debug</b> ./cmd/tacpendium)",  <span class="cm">// debug 書き込み口(§5.8)</span>
+      env: {
+        <b>TACPENDIUM_DB_PATH</b>: E2E_DB_PATH_FROM_REPO_ROOT,       <span class="cm">// 使い捨て DB へ</span>
+        <b>TACPENDIUM_CONFIG_PATH</b>: E2E_CONFIG_PATH_FROM_REPO_ROOT, <span class="cm">// 専用設定へ</span>
+        <b>TACPENDIUM_PORT</b>: String(E2E_BACKEND_PORT),            <span class="cm">// 専用ポートへ</span>
+      },
+      port: E2E_BACKEND_PORT,
+      reuseExistingServer: false,     <span class="cm">// 既存プロセスの誤再利用を防ぐ</span>
+      timeout: 60_000,
+    },
+    {
+      <span class="cm">// ★dev サーバではなく「ビルド + preview」で配る(CHANGE-135。下記 note)</span>
+      command: `<b>pnpm build</b> &amp;&amp; pnpm exec <b>vite preview</b> --port ${E2E_VITE_PORT} --strictPort`,
+      env: { <b>VITE_API_PORT</b>: String(E2E_BACKEND_PORT) },  <span class="cm">// プロキシ先も E2E バックエンドへ</span>
+      port: E2E_VITE_PORT,
+      reuseExistingServer: false,
+      timeout: 300_000,               <span class="cm">// ビルド込みなので既定 60 秒では足りない</span>
+    },
+  ],
+});</code></pre>
+</div>
+
+<div class="note">
+<span class="boxtitle">2026-07-22 の初版以降に入った 3 つの大きな基盤変更</span>
+<ul style="margin:6px 0 0; padding-left:20px;">
+<li><strong><code>workers: 1</code> への固定(M24-09c)</strong>: <code>fullyParallel: false</code> が直列化するのは「1 ファイルの中」だけで、<strong>spec ファイル同士は worker 数だけ並列に走る</strong>——ところが E2E スタックはバックエンド 1 本・DB 1 個の共有資源。プリセット総数(上限 8 件)の奪い合いなど「組み合わせでしか出ない」落ち方が実測され、worker を 1 に固定した。代償は実行時間約 1.5 倍。<code>aa-interference-probe-{a,b}.spec.ts</code> の 2 本は<strong>この設定を守るための「検出器」</strong>で、ファイル名を aa- で始めて必ず先頭 2 本に置き、workers&gt;=2 なら必ず赤・workers=1 なら必ず緑になるよう設計されている(誰かが workers: 1 を消すと赤くなって検出される)</li>
+<li><strong>debug ビルドでの起動(M28-02c)</strong>: <code>go run -tags=debug</code> で、本番バイナリには存在しない <code>/api/debug/*</code> の書き込み口が生える。詳細は §5.8</li>
+<li><strong>E2E 専用 config + preview 配信(M24-09c 追補 / CHANGE-135)</strong>: 以前は dev と同じ <code>config.toml</code> を読んでいたため、<strong>開発者が設定画面で既定キャラを変えた瞬間に「リュウが出ること」前提の spec が 35 件まとめて落ちた</strong>。専用 toml(<code>[defaults]</code> なし)で縁を切り、キャラが要る spec は自分で明示する(§5.6 の character.ts)。またフロントは dev サーバでなく <code>pnpm build</code> + <code>vite preview</code> で配る——dev サーバは ESM を 1 モジュールずつ配るため、テストごとに新規コンテキスト(=キャッシュ空)の Playwright では毎回数百リクエストの固定費を払う。実測で 402 秒 → 223〜253 秒。<code>pnpm build</code> を Makefile でなく config 側に置くのは「どの経路から起動しても古い dist を検査しない」ため</li>
+</ul>
+</div>
+
+<h3>2.1 ポートが「導出」される理由(worktree 並行対応)</h3>
+
+<p>config.ts:35-53 は E2E ポートを固定値ではなく <code>config.toml</code> の dev ポートからのオフセットで計算します。このリポジトリは git worktree で複数の作業ツリーを並行運用しており(各 worktree に固有の dev ポートが割当てられる)、E2E ポートも worktree ごとにずらすことで <strong>複数 worktree での <code>make e2e</code> 同時実行が衝突しない</strong>ようにしています。ルートの標準構成ではオフセット 0 で 47390 / 5273 のままです。読めなければ基準値へフォールバックするので、CI や単独環境では意識不要です。</p>
+
+<div class="warn">
+<span class="boxtitle">config コメントに刻まれた実際の事故(config.ts:19-22)</span>
+「使い捨て DB の破棄をモジュールスコープで行ってはならない」— config.ts は Playwright の<strong>ワーカープロセスでも再ロード</strong>されるため、トップレベルに <code>rm -rf</code> 相当を書くとテスト実行中に稼働中バックエンドの DB が消え、全 API が "no such table" の 500 になります。だから破棄は webServer の起動コマンド内(1 回だけ実行される場所)にあります。「設定ファイルが何回・どのプロセスで評価されるか」を意識する必要がある、という教訓が本番のコメントとして残されています。
+</div>
+
+<h3>2.2 絞り込み実行は make e2e-only — playwright を直接叩かない</h3>
+
+<div class="codebox">
+<div class="path">絞り込み実行の正しい入口(Makefile:171-179)</div>
+<pre><code>make e2e-only P=combo-crud                          <span class="cm"># ファイル名パターンで絞る</span>
+make e2e-only P="m24-13 -g 保存"                    <span class="cm"># さらにテスト名(-g)でも絞る</span>
+make e2e-only P="--repeat-each=3 aa-interference-probe-a"  <span class="cm"># flaky 調査で反復</span></code></pre>
+</div>
+
+<p><code>cd web &amp;&amp; pnpm exec playwright test combo-crud</code> のように playwright を直接叩いては<strong>いけません</strong>。Makefile が設定する <code>PW_EXECUTABLE_PATH</code>(プリインストール Chromium の場所)が渡らず、UI を使う spec が <code>Executable doesn't exist ...</code> で全滅します。<strong>全数実行(<code>make e2e</code>)では起きず、絞り込みのときだけ落ちる</strong>罠で、実際に M24-13 の作業者が踏んで 1 回分の実行を捨てました(D-599)。この対策として <code>e2e-only</code> ターゲットが新設され、<code>e2e</code> と<strong>同じ環境変数・同じ Chromium 解決を 1 か所(Makefile:123-145)で共有</strong>しています。<code>P=</code> を省略すると「絞ったつもりの全数実行」を防ぐため usage を出して止まります。ここにある設計思想——<strong>「注意書きを文書に足す」のではなく「正しい入口をターゲットとして提供し機械で守る」</strong>——はこのリポジトリ全体に一貫する型です。</p>
+
+<h2>3. Playwright の基本文法</h2>
+
+<h3>3.1 test / describe / fixture</h3>
+
+<div class="codebox">
+<div class="path">spec の基本骨格(combo-crud.spec.ts:1-15 の形)</div>
+<pre><code>import { test, expect } from "@playwright/test";
+
+test.describe("コンボ CRUD スモーク", () =&gt; {          <span class="cm">// グループ(Vitest の describe と同じ)</span>
+  test("コンボ登録 → 詳細確認 → 編集 → 削除", async (<b>{ page }</b>) =&gt; {
+    <span class="cm">// page がブラウザタブ。テストごとに新しいタブ+新しい文脈が渡される</span>
+  });
+});</code></pre>
+</div>
+
+<p><code>async ({ page })</code> の分割代入が Playwright の <strong>fixture 注入</strong>です。テスト関数の引数に欲しいものを書くと、フレームワークが用意して渡してくれます(pytest の fixture と同じ発想)。<code>page</code>(ブラウザタブ)のほか、ブラウザなしで HTTP を叩く <code>request</code> fixture もあります(§5.4)。</p>
+
+<h3>3.2 Locator と自動待機 — Playwright 最大の発明</h3>
+
+<p><code>page.getByRole("button", { name: "保存" })</code> が返すのは「今見つけた DOM 要素」では<strong>ありません</strong>。「保存ボタンの探し方」を記述した <strong>Locator</strong> オブジェクトで、実際の探索は <code>.click()</code> や <code>expect(...).toBeVisible()</code> の瞬間に行われ、しかも<strong>条件が満たされるまで自動で待ちます</strong>(既定タイムアウト付き)。</p>
+
+<div class="tablewrap">
+<table>
+<tr><th>書いたコード</th><th>実際の意味</th></tr>
+<tr><td><code>await locator.click()</code></td><td>要素が「存在し・可視で・安定し・クリック可能」になるまで待ってからクリック</td></tr>
+<tr><td><code>await expect(locator).toBeVisible()</code></td><td>可視に<strong>なるまで</strong>待つ(なった瞬間に成功)</td></tr>
+<tr><td><code>await expect(page).toHaveURL(/\/combos\/\d+$/)</code></td><td>URL がパターンに一致する<strong>まで</strong>待つ(SPA の画面遷移待ちはこれで書く)</td></tr>
+</table>
+</div>
+
+<p>だからこのリポジトリの spec は原則 <code>sleep</code> / <code>waitForTimeout</code> を使いません(例外は m21-05 / m21-07 のリアルタイム入力系のみ——「一定時間の窓の中で入力が確定する」という<strong>時間そのものが仕様</strong>のため、待ち時間が検証対象になっています)。「保存 → API 往復 → invalidate → 再取得 → 再描画」という非同期の連鎖を、<strong>「最終的にこう見えるはず」という宣言(expect)だけで待つ</strong>のが Playwright 流です。React の宣言的 UI(状態→画面)とちょうど対になる、宣言的なテスト(期待→待機)と覚えてください。</p>
+
+<h3>3.3 expect のマッチャ(このリポジトリで使われているもの)</h3>
+
+<div class="tablewrap">
+<table>
+<tr><th>マッチャ</th><th>用途</th><th>実例</th></tr>
+<tr><td><code>toHaveURL(re)</code></td><td>画面遷移の完了確認</td><td>combo-crud:55 <code>/\/combos\/\d+$/</code></td></tr>
+<tr><td><code>toBeVisible()</code> / <code>.not.toBeVisible()</code></td><td>表示・非表示</td><td>combo-crud:41, 60</td></tr>
+<tr><td><code>toHaveText(s)</code></td><td>要素の文言一致</td><td>m17-05b:64-66「2 件をエクスポート」</td></tr>
+<tr><td><code>toHaveCount(n)</code></td><td>該当要素の個数(0 = 消えた)</td><td>m17-05b:93 ダイアログ自動クローズ</td></tr>
+<tr><td><code>toBeDisabled()</code> / <code>not.toBeDisabled()</code></td><td>ボタンの活性状態</td><td>m17-05b:146-147</td></tr>
+<tr><td><code>expect.poll(fn)</code></td><td>任意の値が条件を満たすまで再評価</td><td>m17-05b:81 ダウンロード完了待ち(§5.5)</td></tr>
+<tr><td><code>expect(値).toBe / toBeTruthy / toMatch</code></td><td>非 Locator の普通のアサーション(待機なし)</td><td>m17-02:33-45 API レスポンス検証</td></tr>
+</table>
+</div>
+
+<h2>4. セレクタ戦略 — 「どう要素を掴むか」は規約で決まっている</h2>
+
+<p>このリポジトリには専用の設計書 <code>docs/design/testid-convention.md</code> があり、優先順位が明文化されています(:42-49):</p>
+
+<ol class="flow">
+<li><code>getByRole</code> + アクセシブル名 — 例: <code>getByRole("button", { name: "保存" })</code>。HTML の意味論(role)とユーザーに見える名前で選ぶ。最優先</li>
+<li><code>getByLabel</code> — フォームの <code>&lt;label&gt;</code> 関連付けで選ぶ</li>
+<li><code>getByPlaceholder</code> / <code>getByText</code> — 例: メモ欄はラベルがないので <code>getByPlaceholder("このコンボに関するメモ(任意)")</code></li>
+<li><code>getByTestId</code> — 上記で一意に取れない場合の<strong>最後の手段</strong>。命名は <code>{feature}-{element}</code> の kebab-case(例 <code>combo-editor-draft-checkbox</code>)で、付与したら必ず convention の「付与済み一覧」(:58-82)に登録する</li>
+</ol>
+
+<p>「testid を最後の手段にする」理由は 2 つ: (1) role/名前で書かれたテストは<strong>ユーザーに見える振る舞いの仕様</strong>になり、内部実装のリファクタで壊れない。(2) アクセシビリティの検証を兼ねる(role と名前が取れない UI はスクリーンリーダーにも読めない)。</p>
+
+<h3>4.1 testid が必要になる典型例 — Radix Checkbox</h3>
+
+<p>convention(:30-32)が挙げる代表例: shadcn/ui の土台の Radix Checkbox は <code>&lt;button role="checkbox"&gt;</code> としてレンダリングされ、label で囲んでもアクセシブル名が自動設定されません。だから仮登録チェックボックスは <code>combo-editor-draft-checkbox</code> という testid を持ちます。<strong>「UI ライブラリの実装都合でセレクタ戦略が変わる」</strong>ことの具体例です。逆に「保存」ボタンや「編集」リンクは素の要素なので testid 不要(:34-40)。</p>
+
+<h3>4.2 「文言で判定しない」の強化 — 可変文言は testid + 構造で掴む(M29-01)</h3>
+
+<p>優先順位の原則(role + 見える名前が最優先)は変わっていませんが、2026-09 の M29-01(CHANGE-161)で<strong>「可変の値を含む案内・バッジは文言で判定しない」</strong>方針が明文化され、そのための testid が追加されました:</p>
+
+<ul>
+<li><code>export-truncation-confirm</code>(M29-02): 書出が上限で切り捨てるときの確認 UI。<strong>件数は可変であり、文面での照合は語を直すたびに壊れる</strong>——だから「確認が出ていること」は testid で掴み、件数の中身を見たいときだけその要素の中を見る</li>
+<li><code>combo-recipe-steps-empty</code> / <code>setup-recipe-steps-empty</code>: 空ステップの案内。「まだステップがありません」等の文言一致でなく構造で掴む</li>
+<li><code>import-issue</code>: CSV 取込の課題バッジ</li>
+</ul>
+
+<p>使い分けの軸はこうです——<strong>ボタン名・リンク名のように「その文言自体がユーザーに見える仕様」であるものは従来どおり文言(role + name)で</strong>。一方、件数・エラー詳細のように<strong>「文言の細部は仕様でなく、その要素が出ている/出ていないことが仕様」であるものは testid で</strong>。なお、m27-02b の必須欄エラーのように「理由が画面に<em>届いている</em>こと」自体を主張したい場合は、あえて <code>toContainText("ダメージ")</code> と文言側で見ます(「止まる」だけでは利用者は直せない、という検証意図があるため)。</p>
+
+<p>convention にはもう 1 つ新ルールが刻まれました(:84-88): <strong>同じ testid を面ごとに分けるかは「同時に画面へ出うるか」で決める</strong>。上記の空ステップ案内が 2 名に分かれているのは、<code>SetupInputRow</code> が <code>SetupRecipeEditor</code> を描くためコンボエディタでは両方が同時に存在し、共通名 1 本だと Playwright の strict モード(Locator が複数要素に当たるとエラー)で落ちるからです。<strong>「別の画面だから衝突しない」は、部品の入れ子で崩れる</strong>——共通名を付ける前に包含関係を 1 度たどる、という教訓です。</p>
+
+<h3>4.3 実戦テクニック</h3>
+
+<div class="tablewrap">
+<table>
+<tr><th>テクニック</th><th>実例</th><th>意味</th></tr>
+<tr><td><code>exact: true</code></td><td>combo-crud:45 <code>getByRole("link", { name: "編集", exact: true })</code></td><td>既定は部分一致。ヘッダーの「技編集」ナビと衝突するため完全一致を指定。combo-crud:41 では「メモの 1 行目がレシピ上にも出る(同じ文字列が 1 画面 2 か所)」を exact 一致で捌く例もある</td></tr>
+<tr><td>動的なアクセシブル名</td><td>m17-05b:60 <code>getByRole("checkbox", { name: `コンボ #${idA} を選択` })</code></td><td>UI 側が aria-label に ID を含めているので、行を ID で一意選択できる</td></tr>
+<tr><td>スコープの絞り込み</td><td>m17-05b:69-79 <code>const dialog = page.getByRole("dialog")</code> → <code>dialog.getByRole("button", ...)</code></td><td>Locator は連鎖できる。「ダイアログの中の実行ボタン」と画面背後の同名ボタンを区別</td></tr>
+<tr><td>テーブル行の特定</td><td>m17-05b:176-177 <code>page.locator("tr", { hasText: memo })</code> → <code>row.getByRole("combobox")</code></td><td>「このメモを含む行」を掴んでから行内を検索。※備考列は 30 文字超で省略表示されるため memo を短く保つ、という UI 仕様への配慮コメント付き(:160)</td></tr>
+<tr><td>日本語での特定</td><td>全域</td><td>アクセシブル名・placeholder は画面の実文言(日本語)。<strong>文言変更はテスト修正を伴う</strong>という結合を受け入れる設計判断</td></tr>
+</table>
+</div>
+
+<div class="warn">
+<span class="boxtitle">設計書の古い記述に注意</span>
+<code>testid-convention.md</code> の「spec 実行前の環境前提」節(:51-56)には「ポート 47318/5173・<code>reuseExistingServer: true</code>」とありますが、これは E2E 基盤導入時(M8-02)の旧構成です。現行の <code>playwright.config.ts</code> は §2 のとおり専用ポート 47390/5273・<code>reuseExistingServer: false</code>・使い捨て DB へ移行済みで、この節だけ追随していません(2026-09 時点でもそのまま)。一部の spec 冒頭コメント(m12-06 等の「:47318/:5173 が起動していること」)や <code>/add_e2e_spec</code> スキルのテンプレコメント(:91)も同様に旧記述です。<strong>迷ったら設計書やコメントより playwright.config.ts(実装)を正とする</strong> — ドキュメントとコードの乖離は起きるものであり、一次情報がどれかを知っておくことが実務では重要です。
+</div>
+
+<h2>5. シナリオ設計パターン集 — 65 本の spec から抽出</h2>
+
+<h3>5.1 スモーク型: 1 機能の一生を 1 本で通す</h3>
+
+<p><code>combo-crud.spec.ts</code>(<a href="combo-tests.html">前章 §4.2</a> で逐行解説)の「登録 → 詳細 → 編集 → 削除」がテンプレートです。<code>/add_e2e_spec</code> スキルも「まず combo-crud を読め」と指示しています。要素は 3 つ:</p>
+<ul>
+<li><strong>ユニーク値</strong>: <code>const memo = `e2e-smoke-${Date.now()}`</code> — 再実行・並行 worktree でもデータが衝突しない。作った行を後で <code>getByText(memo)</code> で同定する鍵にもなる</li>
+<li><strong>仮登録(draft)の活用</strong>: 仮登録モードで、テストの関心(CRUD 動線)に無関係なメタデータ入力を省く。★ただし M24-13(CHANGE-139)で<strong>「仮登録でもレシピ 1 ステップ以上必須」</strong>に変わったため(VAL-C09)、いまは共有ヘルパ <code>addMinimalRecipeStep(page)</code> で非技ステップを 1 本置いてから保存する(§5.7)</li>
+<li><strong>自己後始末</strong>: 最後に自分が作ったデータを自分で消す。spec 冒頭コメント「既存コンボ件数に依存しない」(combo-crud:10)が設計宣言</li>
+</ul>
+
+<h3>5.2 非回帰(regression pin)型: 直したバグを釘付けにする</h3>
+
+<p>combo-crud の 2 本目(:77-125)「メモのみ編集しても custom_states が温存される」は、過去に実際に起きた「1 項目だけ編集すると触っていないメタデータが消える」バグ(E-1)の再発防止テストです。E2E の最重要用途のひとつで、<strong>テスト名とコメントに「何の回帰を防ぐか」(E-1 / M11-02)を必ず書く</strong>のがこのリポジトリの流儀です。半年後に「このテスト消していい?」と迷わないための投資です。</p>
+
+<h3>5.3 ハイブリッド型: fixture は API、操作は UI、検証は API</h3>
+
+<p>E-1 の完全版 <code>m12-06-presence-detection.spec.ts</code> は、方式そのものを冒頭コメントで宣言しています:</p>
+
+<div class="codebox">
+<div class="path">web/e2e/m12-06-presence-detection.spec.ts:11-15, 72-79(抜粋)</div>
+<pre><code><span class="cm">// 方式(実装方式非依存・指示書 §10-2):
+//   - fixture 作成 = API(全 nullable 項目を確実に設定。FE への新規 test-id 付与=スコープ逸脱を回避)。
+//   - 1 項目編集 = UI(editor が GET から全項目をロードし buildPatchPayload が全キーを再送するかを実検証)。
+//   - アサート = API GET(= 指示書 §4.1「再取得」。DOM 非依存)。</span>
+
+async function createFixtureCombo(page: Page, memo: string): Promise&lt;number&gt; {
+  const characterId = await ryuCharacterId(page);
+  const res = await <b>page.request.post("/api/combos"</b>, {
+    data: fixturePayload(characterId, memo),      <span class="cm">// damage/ゲージ/起き攻め…全項目入り</span>
+  });
+  expect(res.ok(), `fixture 作成失敗: ${res.status()} ${await res.text()}`).toBeTruthy();
+  return (await res.json()).id as number;
+}</code></pre>
+</div>
+
+<p>UI で全項目を入力すると、テストが長く・遅く・UI 変更に弱くなります。そこで<strong>テストの関心でない部分(前提データ作成・結果確認)は API で直行し、関心の中心(「UI から 1 項目編集する」という操作)だけ UI を通す</strong>。E2E の実行時間と壊れやすさを制御する最重要テクニックです。</p>
+
+<h3>5.4 純 API 型: ブラウザを開かない E2E</h3>
+
+<div class="codebox">
+<div class="path">web/e2e/m17-02-command-index-api.spec.ts:30-45(抜粋)</div>
+<pre><code>const ryuRes = await page.request.get(`/api/characters/${idOf("ryu")}/command-index`);
+expect(ryuRes.status()).toBe(200);
+const ryu = (await ryuRes.json()) as { characterId: number; entries: Record&lt;string, string&gt; };
+expect(ryu.entries["2MP"]).toBe("crouching_medium_punch");   <span class="cm">// seed 実データで検証</span>
+expect(ryu.entries["236LP"]).toBeUndefined();                <span class="cm">// 「入っていてはいけない」も検証</span>
+for (const key of Object.keys(ryu.entries)) {
+  expect(key, `段階2 形状外のキーが混入: ${key}`).toMatch(STAGE2_KEY_PATTERN);
+}</code></pre>
+</div>
+
+<p>UI が無い(または後続マイルストーンで作る)API の疎通を、seed 済み実 DB に対して検証する spec です。Go の httptest との違いは<strong>「本物のマイグレーション + seed データ」で検証できる</strong>こと。「seed の実データが仕様どおりか」はユニットテストでは書きにくい種類の検証です。expect の第 2 引数にメッセージを渡せる(<code>expect(key, "…混入: ...")</code>)ことも覚えておくと失敗調査が楽になります。</p>
+
+<h3>5.5 ダウンロード検証: イベントを待つ 2 つの方法</h3>
+
+<div class="codebox">
+<div class="path">web/e2e/m17-05b-export-flow.spec.ts:76-89(複数ファイル)と :186-187(単一ファイル)</div>
+<pre><code><span class="cm">// 方法① 複数ダウンロード: イベントを配列に集めて、件数が揃うまで poll</span>
+const downloads: import("@playwright/test").Download[] = [];
+<b>page.on("download", (d) =&gt; downloads.push(d));</b>
+await dialog.getByRole("button", { name: "エクスポート実行" }).click();
+await <b>expect.poll(() =&gt; downloads.length, { timeout: 15_000 }).toBe(2)</b>;
+const filenames = downloads.map((d) =&gt; d.suggestedFilename()).sort();
+const zip = filenames.find((f) =&gt; f.endsWith(".zip"));
+expectExportFilename(zip!, { extension: "zip", count: 2 });  <span class="cm">// support/combo-io.ts の共有アサート</span>
+                                                             <span class="cm">// (拡張子だけでなく自動命名の形と件数まで見る)</span>
+
+<span class="cm">// 方法② 単一ダウンロード: 先にイベント待ちの Promise を作ってからクリック</span>
+const downloadPromise = <b>page.waitForEvent("download")</b>;
+await page.getByTestId("export-open-button").click();</code></pre>
+</div>
+
+<p>方法②で「クリックの<strong>前に</strong> waitForEvent を仕掛ける」順序が重要です(クリック後に待ち始めるとイベントを取り逃がす競合がある)。CSV+PDF 同時のような複数件は、件数を <code>expect.poll</code>(任意の式を再評価し続ける汎用待機)で待つ方法①に切り替える — 「1 件なら waitForEvent、複数なら on + poll」と使い分けを覚えてください。</p>
+
+<h3>5.6 共有ヘルパ support/ — 「3 spec 以上で必要になったら共有化」が実際に起きた</h3>
+
+<p>本ガイド初版(2026-07)の時点では共有ヘルパファイルが無く、「各 spec が自己完結する。同じヘルパが 3 spec 以上で必要になったら共有化を検討」という温度感でした。その後、<strong>仕様変更・環境変更が「ほぼ全 spec の下ごしらえ」に波及する</strong>事態が続き、共通の下ごしらえは <code>web/e2e/support/</code>(12 ファイル)へ集約されました(判断基準は D-553「同じ数行を複数 spec へ複製しない」)。予告どおりの進化が起きた形で、いつ共有化へ倒すかの生きた実例です。代表的なもの:</p>
+
+<div class="tablewrap">
+<table>
+<tr><th>ヘルパ</th><th>何を吸収するか</th></tr>
+<tr><td><code>character.ts</code><br>(<code>gotoNewComboFor</code> / <code>characterIdOf</code>)</td><td><strong>画面が出す既定キャラを仮定しない</strong>。キャラ id は直書きせず seed の code から解決し、URL(<code>?character=</code>)で明示して開く。背景: 開発者が設定画面で既定キャラを juri に変えたら 53 spec 中 15 本・180 テスト中 35 件が落ちた(M24-09c)。§2 の専用 config(段 1)+ 本ヘルパ(段 2)の二段構えで再発を構造的に防ぐ</td></tr>
+<tr><td><code>new-combo.ts</code><br>(<code>saveNewComboAndOpenDetail</code>)</td><td>M24-01 で新規保存後の遷移先が「詳細」→「一覧」に変わり、URL から combo id が取れなくなった。<strong>「一覧の一番新しい行」で代用してはいけない</strong>(spec ファイルは DB を共有し、他ファイルが作った行を掴む)——POST /api/combos の応答そのものから id を取る</td></tr>
+<tr><td><code>draft-combo.ts</code> / <code>editor-input.ts</code></td><td>バリデーション強化(M24-13 / M27-02b)の下ごしらえ(§5.7)</td></tr>
+<tr><td><code>tags.ts</code></td><td>タグ fixture の API 作成・削除。呼び出し側が固有の判定キー(STAMP)を名前へ含める方式</td></tr>
+<tr><td><code>game-update.ts</code></td><td>debug ビルド専用の書き込み口(§5.8)</td></tr>
+<tr><td><code>combo-io.ts</code></td><td>CSV ヘッダ定義・エクスポートファイル名のアサート(<code>expectExportFilename</code>)</td></tr>
+<tr><td><code>interference-probe.ts</code></td><td>§2 の note で触れた「並列実行の検出器」の本体</td></tr>
+</table>
+</div>
+
+<p>細かいが重要な作法: support のファイル名は <code>*.spec.ts</code> / <code>*.test.ts</code> 以外にしてあります(Playwright の既定 <code>testMatch</code> に拾われて spec として実行されるのを防ぐ)。各ファイル冒頭には「★本ファイルは spec ではない」と明記されています。「spec 1 ファイルで全部読める」教材的利点は薄れましたが、<strong>仕様変更 1 件で 65 spec を書き換えない</strong>利点が上回った、と読んでください。</p>
+
+<h3>5.7 下ごしらえヘルパ: バリデーション強化を「spec の関心」から切り離す</h3>
+
+<p>2026-08〜09 に入力仕様が 2 段階で厳しくなりました: M24-13(CHANGE-139)で<strong>仮登録でもレシピ 1 ステップ以上が必須</strong>に(VAL-C09)、M27-02b(P4M-009 / VAL-C15)で<strong>本登録は必須 4 欄(ダメージ・有利フレーム・消費ゲージ 2 欄)が必須</strong>に。どちらも「UI から保存する」spec 全部に波及する変更です。これを各 spec に数行ずつ書き足すのではなく、意図が名前になったヘルパへ寄せました:</p>
+
+<div class="codebox">
+<div class="path">web/e2e/support/editor-input.ts:50-57, 196-203(抜粋)</div>
+<pre><code><span class="cm">// 本登録で保存する spec 用。必須は 4 欄だが、埋めるのは 2 欄だけでよい</span>
+<span class="cm">// (消費ゲージ 2 欄は新規登録の既定値 "0" が入っている)。</span>
+export async function <b>fillRequiredComboFields</b>(page: Page): Promise&lt;void&gt; {
+  const damage = page.getByTestId("combo-editor-damage");
+  if (!(await damage.isVisible())) {
+    await switchEditorTab(page, "basic");   <span class="cm">// 欄が隠れていれば先にタブを切り替える</span>
+  }
+  await page.getByTestId("combo-editor-damage").fill("1500");
+  await page.getByTestId("combo-editor-knockdown-advantage").fill("30");
+}
+
+<span class="cm">// 仮登録で保存する spec 用。非技ステップ(パリィドライブラッシュ)を 1 本置く —</span>
+<span class="cm">// 技を選ばないため move の解決が要らず、始動技も決まらないので VAL-C03 の警告も出ない。</span>
+export async function <b>addMinimalRecipeStep</b>(
+  page: Page,
+  returnTo: "basic" | "recipe" = "basic",
+): Promise&lt;void&gt; {
+  await openRecipeTab(page);
+  await addNonMoveRecipeStep(page);
+  await switchEditorTab(page, returnTo);
+}</code></pre>
+</div>
+
+<p>効果は diff の読みやすさに出ます。仕様変更時に各 spec へ入った変更は「<code>await addMinimalRecipeStep(page);</code> の 1 行 + 理由コメント」だけで、<strong>その spec が何を検証しているか(関心)は 1 文字も変わっていない</strong>ことがレビューで一目で分かる。逐語のステップ操作を 65 spec へ複製していたら、この保証は得られませんでした。「テストの関心でない入力は、意図を名前にしたヘルパへ」——§5.3 の「fixture は API で」と同じ思想の UI 版です。</p>
+
+<h3>5.8 debug ビルドの書き込み口: 本番では作れない状態を E2E から作る</h3>
+
+<p>M28-02c(ゲーム更新への追従・FR702)の E2E は新しい問題に直面しました。「影響コンボあり」の判定は <code>moves.last_changed_game_version</code> が非 NULL であることを要求しますが、<strong>このマーカーを立てる経路は本番では DML マイグレーションしか無く、HTTP からは作れません</strong>。しかも初回は必ず 0 件(既存コンボの基準は最新)なので、「画面を開いたら何も出なかった。正しい」は<strong>検証したことの証拠にならない</strong>——何も出ない画面は、機能が壊れていても同じ見た目だからです。</p>
+
+<p>採られた解決が <strong>Go のビルドタグ</strong>です。バックエンドを <code>go run -tags=debug</code> で起動し(§2 の config)、debug ビルドにだけ存在する <code>/api/debug/*</code> の 5 ルート(<code>internal/api/debug/</code>)から人工的に「古い基準」を作ってから画面を確かめます:</p>
+
+<div class="codebox">
+<div class="path">web/e2e/support/game-update.ts:21-34(抜粋)</div>
+<pre><code><span class="cm">// 技にマーカーを立てる(配信者の DML マイグレを模す)。</span>
+export async function setMoveGameVersion(
+  request: APIRequestContext,
+  moveId: number,
+  version: string | null,
+): Promise&lt;void&gt; {
+  const res = await request.post(<b>`/api/debug/moves/${moveId}/game-version`</b>, {
+    data: { lastChangedGameVersion: version ?? "" },
+  });
+  expect(
+    res.ok(),
+    `マーカーの設定に失敗: ${res.status()} ${await res.text()}` +
+      "(★E2E バックエンドが -tags=debug で起動しているか確かめること)",
+  ).toBeTruthy();
+}</code></pre>
+</div>
+
+<p>学びどころは 3 つ。(1) <strong>テスト専用の口はビルドタグで隔離する</strong>——本番バイナリには「1 バイトも出ない」ため、テスト都合が製品を汚さない(代償として「E2E が検査するのは debug ビルド」になるが、差分は debug 5 ルートの登録だけ)。(2) <strong>「0 件で何も出ない」は成功の証拠にならない</strong>——観測したい状態を人工的に作ってから確かめる。(3) 延期の記録のような<strong>共有状態は明示的に復元する</strong>(<code>clearGameUpdatePostpone</code>)——起動時の <code>rm -rf .tmp</code> が救ってくれるのは run をまたぐ残渣だけで、同一 run 内の後続 spec は救えない。</p>
+
+<h3>5.9 サーバ状態を 1 バイトも書き換えない spec: page.route でスタブする</h3>
+
+<p>M29-02(書出の切り捨て確認ダイアログ)の E2E は、また別の型の問題でした。このダイアログは「一覧が上限(100 件)で切れている」ときにだけ出ます。素直にやるとコンボを 101 件投入することになりますが、それは<strong>共有 DB を 100 件で埋め、一覧を見る他ファイルの spec を道連れ</strong>にします。これは「同じ資源を奪い合う」型(→ 同一ファイルへ寄せれば解ける)ではなく<strong>「全 spec に影響する状態」型であり、寄せても解けません</strong>(D-466)。</p>
+
+<p>解決は <code>page.route()</code>: <code>GET /api/combos</code> の応答だけを<strong>そのブラウザコンテキスト内で</strong>差し替え、「loaded 100 件 / total 250 件」の一覧を偽装します(<code>total &gt; items</code> が「上限で切り捨てた」の観測。対照として <code>100 / 100</code> = 切り捨て無しのケースも同じスタブで作る)。サーバにもDB にも一切触れないため、他 spec への影響はゼロで、<strong>復元も不要</strong>です。M22-01 が認証の ON/OFF を確かめたときに採ったのと同じ形です。使い分けの判定の問いは「<strong>この spec が落ちたら、他のファイルのテストも道連れになるか</strong>」——ならない spec は資源を取り合っていない、です。fixture を本物の API で作る §5.3 とは逆方向のテクニックですが、動機は同じ「E2E の壊れやすさと実行コストの制御」で、<strong>本物を使うのは検証対象の経路だけ、それ以外は最短の手段で</strong>という一貫した方針に収まります。</p>
+
+<h2>6. 新しい spec を書く手順 — /add_e2e_spec スキル</h2>
+
+<p>spec 追加は手順化されており、Claude Code のスラッシュコマンド <code>/add_e2e_spec タグ作成・編集・削除</code> のように使います(<code>.claude/commands/add_e2e_spec.md</code>)。手で書く場合も同じ手順をなぞるのが安全です:</p>
+
+<ol class="flow">
+<li><strong>Stage 0 — 規約とテンプレートの読込</strong>: <code>testid-convention.md</code>(セレクタ優先順位・付与済み testid 一覧)と <code>combo-crud.spec.ts</code>(構造テンプレート)を読み、<code>ls web/e2e/</code> で命名重複を確認</li>
+<li><strong>Stage 1 — 対象フィーチャーの調査</strong>: 対象ページ・コンポーネントを読み、URL / 操作フロー / セレクタ候補を洗い出す。<strong>getByRole 等で取れない操作要素だけ</strong>が testid 追加候補</li>
+<li><strong>Stage 2 — 設計提示と承認待ち</strong>: ファイル名 <code>web/e2e/{feature}-{operation}.spec.ts</code>、手順(ステップ番号付き)、必要 testid、不確定要素を提示し、<strong>実装前に開発者の承認を得る</strong>(スキルはここで一時停止する設計)</li>
+<li><strong>Stage 3 — 実装</strong>: (3-1) 必要最小限の testid 付与 → (3-2) spec 作成(Date.now ユニーク化・draft 活用・自己後始末・コメントはフェーズ区切りのみ)→ (3-3) <code>testid-convention.md</code> の付与済み一覧を更新 → <code>make e2e</code> で実行検証</li>
+</ol>
+
+<div class="note">
+<span class="boxtitle">spec を書くときの制約(スキル :103-160 の要約。運用で得た教訓が大幅に増えた)</span>
+<ul style="margin:6px 0 0; padding-left:20px;">
+<li>セレクタ優先順位(role → label → placeholder/text → testid)を厳守</li>
+<li>ユニーク識別子でデータ衝突を避ける——<code>fullyParallel: false</code> が直列化するのはファイル内だけで、<strong>設定次第でファイル同士は並列に走る</strong>前提で書く(現在は workers: 1 だが、それに甘えない)</li>
+<li><strong>総数に上限のあるグローバル資源</strong>(プリセット 8 件等)を触る spec は、資源ごとに 1 ファイルへ寄せる(D-362。別ファイルに分けたら上限テストが「組み合わせでだけ」落ちた実例あり)。ただし適用単位は「画面」でなく「書き換える共有資源」であり、サーバ状態を書き換えない <code>page.route</code> 型の spec は別ファイルでよい。認証 ON/OFF のような「全 spec に影響する状態」は寄せても解けない——<code>page.route</code> へ倒す(D-466、§5.9)</li>
+<li><strong>破壊確認を回す</strong>: 不具合を復元したら本当に赤くなるかを確かめる(D-375)。実例: <code>page.keyboard.down()</code> は自動でキーリピートを送らないため、初版 spec は不具合を復元しても緑のままだった</li>
+<li>「抑止される/効かない」ことを見る spec には<strong>対照実験</strong>(対象外なら従来どおり動く)を添える——全部を抑止していても緑になるのを防ぐ</li>
+<li>「〜が残っていない」を主張する走査型テストは、走査の前に<strong>「対象が実際に描画されたこと」を 1 行アサート</strong>する(E-217。描画されていなければ走査は常に真を返す)</li>
+<li>ウィザード完了済み DB を前提とし、DB リセット・初期化ロジックを spec 内に書かない(それは基盤=config の仕事)</li>
+<li>コメントは「環境前提」と「フェーズ区切り(── 登録 ── 等)」のみ。実装説明コメントは書かない</li>
+</ul>
+</div>
+
+<p>ちなみに<a href="tag-walkthrough.html">タグ管理</a>まわりは、タグフィルタ・タグ管理画面の検索(m24-02)と API での fixture 作成(<code>support/tags.ts</code>)まで整いましたが、<strong>UI からの「タグ作成 → 一覧確認 → 編集 → 使用中削除の 409 → force 削除」を通す CRUD spec は依然として存在しません</strong>。この手順の<strong>練習題材として最適</strong>な状況は変わっていません(§8 の課題 4)。</p>
+
+<h2>7. 落とし穴と運用知見</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>落とし穴</th><th>このリポジトリの対策 / 教訓</th></tr>
+<tr><td>flaky(たまに落ちる)</td><td>最大要因は「環境の共有」と「時間待ち」。対策 = 使い捨て DB・専用ポート(環境の独立)+ 自動待機の expect(時間でなく条件で待つ)+ Date.now ユニーク化(データの独立)</td></tr>
+<tr><td>失敗の原因調査が難しい</td><td><code>retries: 1</code> + <code>trace: "on-first-retry"</code>: 初回失敗の再試行時に全操作・DOM スナップショット・ネットワークが録画される。<code>pnpm exec playwright show-trace &lt;trace.zip&gt;</code> で時系列を再生できる</td></tr>
+<tr><td>UI 文言変更でテストが壊れる</td><td>アクセシブル名ベースのセレクタは文言に結合する。これは「ユーザーに見える仕様が変わったらテストも変わるべき」という意図的な選択。無関係な壊れ方を避けたい要素だけ testid に逃がす。件数など<strong>可変の値を含む文言はそもそも文言で判定しない</strong>(§4.2、M29-01)</td></tr>
+<tr><td>テストが遅くなる</td><td>UI 操作は関心の中心だけに絞り、fixture・検証は API 直行(§5.3)。E2E の本数自体を絞る(下層テストで保証済みのことを繰り返さない)。フロントは dev サーバでなくビルド + preview で配る(§2 の note。実測で約 4 割短縮)</td></tr>
+<tr><td>設定ファイルの多重評価</td><td>config はワーカーでも再ロードされる → 副作用(DB 破棄)をトップレベルに書かない(§2 の warn)</td></tr>
+<tr><td>絞り込み実行で UI spec が全滅</td><td><code>pnpm exec playwright test</code> の直叩きは <code>PW_EXECUTABLE_PATH</code> が渡らない。必ず <code>make e2e-only P=</code> を使う(§2.2)。全数実行では起きないため気づきにくい</td></tr>
+<tr><td>「直列のつもり」のファイル間並列干渉</td><td><code>fullyParallel: false</code> はファイル内しか直列化しない → <code>workers: 1</code> に固定 + 検出器 spec(aa-interference-probe 2 本)が設定を守る(§2 の note)。後片付けを足しても直らない——並行実行中は「まだ消していない時間」が必ず在る(E-232)</td></tr>
+<tr><td>環境の既定値(既定キャラ等)への暗黙依存</td><td>E2E 専用 config で dev 設定と縁を切り、キャラが要る spec は <code>support/character.ts</code> で自分から明示する(§5.6)。「初期表示は ryu」の仮定は、設定を変えた環境でだけ落ちた</td></tr>
+<tr><td><code>uncheck()</code> が「正しくガードされた」チェックボックスで落ちる</td><td><code>check()</code>/<code>uncheck()</code> は「押した結果 state が変わること」を前提の API。<strong>変わらないのが正解</strong>(確認ダイアログを挟むガード等)の検証では素の <code>click()</code> で押し、変わらないことを自前の expect で確かめる(m27-02b:237-241 のコメントに実例)</td></tr>
+<tr><td>ドキュメントの陳腐化</td><td>testid-convention の旧ポート記述(§4 の warn)。実装(config.ts)を正とし、気づいたら設計書側の追随を開発フローに乗せる</td></tr>
+</table>
+</div>
+
+<h2>8. 自分で試す(理解度チェック)</h2>
+
+<div class="note">
+<span class="boxtitle">課題</span>
+<ol>
+<li><code>make e2e</code> を通しで実行し、コンソールで webServer 2 本の起動(フロントのビルドを含む)→ 65 spec の直列(workers: 1)実行 → 終了を観察する。実行中に <code>web/e2e/.tmp/tacpendium-e2e.db</code> と <code>tacpendium-e2e.toml</code> が存在すること、通常の dev DB と別物であることを確認</li>
+<li>1 spec だけ実行: <code>make e2e-only P=combo-crud</code>(★<code>pnpm exec playwright test</code> を直接叩かないこと=§2.2)。さらに <code>make e2e-only P="combo-crud --headed"</code> で実ブラウザが動く様子を目視する</li>
+<li><code>combo-crud.spec.ts</code> の期待文言を 1 か所わざと変えて実行し、(a) 失敗 → 再試行 → trace 生成の流れ、(b) <code>show-trace</code> での失敗時点の DOM を確認 → 戻す</li>
+<li><strong>タグ管理の E2E spec を設計してみる</strong>: §6 の Stage 0〜2 を自分でなぞり、「tag-crud.spec.ts の手順書(ステップ列挙 + 使うセレクタ + 必要 testid の有無)」を書き出す。TagFormDialog は <code>getByLabelText(/タグ名/)</code> 相当が効くか、色スウォッチは testid(<code>tag-color-swatch-red</code>)が既にあるか、を実コンポーネントで確認。fixture の作成・後始末には既存の <code>support/tags.ts</code> が使える(実装まで進める場合は /add_e2e_spec 経由で)</li>
+<li>m12-06-presence-detection.spec.ts を通読し、「なぜ fixture の数値項目を UI でなく API で設定するのか」を testid-convention の「既知のセレクタ・ギャップ」(:90-98)と §5.3 の方式宣言から説明する。あわせて同ギャップ表の記述(「数値項目に testid 無し」)が、M27-02b 以降の実装(<code>combo-editor-damage</code> 等)とずれ始めていることにも気づけるとよい——ドキュメントとコードの乖離を見つける練習として</li>
+</ol>
+</div>
+
+<footer>
+<span><a href="combo-tests.html">← コンボのテスト + E2E</a></span>
+<span>生成日 2026-07-22 / 更新日 2026-09-08(65 spec 時点の作業ツリーと突合済み)</span>
+<span><a href="shadcn-tailwind-guide.html">次: shadcn/ui + Tailwind スタイリングガイド →</a></span>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIオーケストレーション開発 — 手法の説明</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #fafaf8;
+    --surface: #ffffff;
+    --border: #e4e2dc;
+    --border-strong: #d0cdc4;
+    --text: #2a2925;
+    --text-dim: #6b6862;
+    --text-faint: #9a968d;
+    --accent: #3d6b5e;
+    --accent-soft: #eef3f1;
+    --human: #b5763a;
+    --human-soft: #f7efe5;
+    --ai: #3d6b5e;
+    --ai-soft: #eef3f1;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    line-height: 1.8;
+    font-size: 15px;
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+
+  header {
+    padding: 64px 0 36px;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 1.85rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+  .summary {
+    color: var(--text-dim);
+    font-size: 1rem;
+  }
+  .summary strong { color: var(--text); font-weight: 500; }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .sub { color: var(--text-faint); font-size: 0.85rem; margin-bottom: 22px; }
+  p { margin-bottom: 14px; color: var(--text-dim); }
+  p strong { color: var(--text); font-weight: 500; }
+
+  /* one-line definition */
+  .definition {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 18px 22px;
+    border-radius: 0 6px 6px 0;
+    margin: 24px 0;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+  .definition .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  /* role cards */
+  .roles { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+  .role {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    background: var(--surface);
+  }
+  .role-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .role-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.64rem;
+    padding: 3px 9px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .role-tag.human { background: var(--human-soft); color: var(--human); border: 1px solid #e8d5bf; }
+  .role-tag.ai { background: var(--ai-soft); color: var(--ai); border: 1px solid #cfe0d9; }
+  .role-name { font-weight: 700; font-size: 1rem; }
+  .role-body { color: var(--text-dim); font-size: 0.92rem; }
+  .role-body ul { list-style: none; margin-top: 6px; }
+  .role-body li { padding: 2px 0 2px 16px; position: relative; }
+  .role-body li::before { content: '–'; position: absolute; left: 0; color: var(--text-faint); }
+
+  /* layered list */
+  .layers { margin-top: 8px; }
+  .layer {
+    display: flex;
+    gap: 16px;
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+    align-items: baseline;
+  }
+  .layer:first-child { border-top: none; }
+  .layer-name {
+    font-weight: 700;
+    min-width: 130px;
+    font-size: 0.95rem;
+  }
+  .layer-name .en {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.64rem;
+    color: var(--text-faint);
+    font-weight: 400;
+    letter-spacing: 0.03em;
+  }
+  .layer-desc { color: var(--text-dim); font-size: 0.92rem; flex: 1; }
+
+  /* origin table */
+  .origins { margin-top: 10px; }
+  .origin {
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+  }
+  .origin:first-child { border-top: none; }
+  .origin-name { font-weight: 500; color: var(--text); font-size: 0.95rem; }
+  .origin-desc { color: var(--text-dim); font-size: 0.88rem; }
+
+  /* distinctive */
+  .distinct {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin-bottom: 14px;
+  }
+  .distinct-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .distinct-title { font-weight: 700; margin-bottom: 8px; }
+  .distinct-body { color: var(--text-dim); font-size: 0.92rem; }
+
+  .contrast {
+    display: flex;
+    gap: 14px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .contrast-item {
+    flex: 1;
+    min-width: 220px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  .contrast-item.is { background: var(--ai-soft); border-color: #cfe0d9; }
+  .contrast-item.isnot { background: #faf3f0; border-color: #e8d0c6; }
+  .contrast-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.64rem;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .contrast-item.is .contrast-label { color: var(--accent); }
+  .contrast-item.isnot .contrast-label { color: #b5613a; }
+  .contrast-item p { margin: 0; font-size: 0.88rem; }
+
+  footer {
+    padding: 32px 0 56px;
+    color: var(--text-faint);
+    font-size: 0.82rem;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+  }
+
+  @media (max-width: 560px) {
+    h1 { font-size: 1.5rem; }
+    .layer { flex-direction: column; gap: 4px; }
+    .layer-name { min-width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Development Methodology</div>
+    <h1>人間がオーケストレーターを務める<br>スペック駆動のマルチエージェント開発</h1>
+    <p class="summary">個人開発で実践している、AIを活用した開発手法の説明。<strong>コードはAIが書くが、何を・どう作るかは人間が完全に握る</strong>。複数のAIエージェントに役割を分担させ、人間が全体を指揮する体制。</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>一言でいうと</h2>
+    <div class="definition">
+      <span class="label">DEFINITION</span>
+      人間が「何を作るか」を握り、設計・実装・改善を担う複数のAIエージェントを指揮する。AIに任せきりにする開発（Vibe Coding）の対極にある、人間主導・仕様先行のスタイル。
+    </div>
+    <p>単一の既存手法ではなく、確立されたソフトウェア工学の手法（反復型開発・ドメイン駆動・継続的改善など）を、<strong>AI時代向けに組み合わせ直したもの</strong>。</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>役割分担</h2>
+    <p class="sub">人間1人と、役割の異なる複数のAIエージェントで構成する。</p>
+    <div class="roles">
+
+      <div class="role">
+        <div class="role-head">
+          <span class="role-tag human">人間</span>
+          <span class="role-name">オーケストレーター（指揮者）</span>
+        </div>
+        <div class="role-body">
+          ドメイン知識・ゴール・「何を作るべきか」を握る中心。AIには委ねない。
+          <ul>
+            <li>プロダクトの方向性とゴール設定</li>
+            <li>成果物のチェックと品質強化</li>
+            <li>AI開発手法そのものの学習と、工程改善の評価・判断</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="role">
+        <div class="role-head">
+          <span class="role-tag ai">AI – 設計担当</span>
+          <span class="role-name">設計・指示書・知見管理</span>
+        </div>
+        <div class="role-body">
+          上流を担当。実装の前段を固める。
+          <ul>
+            <li>設計と製造指示書の作成</li>
+            <li>残課題・失敗から得た教訓の評価と記録</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="role">
+        <div class="role-head">
+          <span class="role-tag ai">AI – 実装担当</span>
+          <span class="role-name">実装・テスト・レビュー・工程改善</span>
+        </div>
+        <div class="role-body">
+          下流を担当。指示書を受けて形にする。
+          <ul>
+            <li>実装、ユニットテスト、コードレビュー</li>
+            <li>開発工程の改善（カスタムコマンド作成など）</li>
+            <li>ドキュメント整理（重複削除・要約版作成）</li>
+            <li>次の設計担当の開始用プロンプト作成</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>作業の分割構造</h2>
+    <p class="sub">3階層に分けて進める。分割の理由が階層ごとに異なる。</p>
+    <div class="layers">
+      <div class="layer">
+        <div class="layer-name">フェーズ<span class="en">PHASE</span></div>
+        <div class="layer-desc">アプリの完成度の段階（MVP → 仕上げ → 拡張など）。リリースの大きな区切り。</div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">マイルストーン<span class="en">MILESTONE</span></div>
+        <div class="layer-desc">大きな機能単位。一つのまとまった価値を実現する区切り。</div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">サブマイルストーン<span class="en">SUB-MILESTONE</span></div>
+        <div class="layer-desc">さらに細かい分割。<strong>大きすぎる指示でAIの成果物品質が落ちるのを防ぐため</strong>の粒度調整。従来の「人間の認知限界」ではなく「AIの出力品質」を基準にした、この手法に特有の分割。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>学習と自己改善のループ</h2>
+    <p class="sub">プロジェクトが進むほど、開発体制自体が良くなっていく仕組み。</p>
+    <p><strong>失敗の記憶</strong>：失敗や教訓をファイルに記録し、AIが参照して同じ失敗を繰り返さないようにする。一方で<strong>陳腐化した教訓は整理</strong>し、AIのコンテキスト（作業領域）の圧迫を防ぐ。</p>
+    <p><strong>プロセス自体の改善</strong>：効率化・品質強化できそうな箇所を見つけたら、プロジェクトに導入可能か評価したうえで、<strong>工程改善専用のAIを立てて相談しながら改善する</strong>。開発するAIとは別に、開発プロセスを良くするためのAIを用意する、メタな構造。</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>これは何で、何ではないか</h2>
+    <div class="contrast">
+      <div class="contrast-item is">
+        <div class="contrast-label">これである</div>
+        <p>人間主導・仕様先行。何を作るかは人間が握り、設計を固めてからAIに実装させる。AIは強力な実行者。</p>
+      </div>
+      <div class="contrast-item isnot">
+        <div class="contrast-label">これではない</div>
+        <p>AI丸投げ（Vibe Coding）。雰囲気でAIに任せ、出てきたものを受け入れるスタイルとは正反対。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>下敷きになっている既存の考え方</h2>
+    <p class="sub">新しく見えるが、確立された手法の組み合わせ。</p>
+    <div class="origins">
+      <div class="origin">
+        <div class="origin-name">反復型・段階的開発</div>
+        <div class="origin-desc">フェーズ／マイルストーンの階層分割。少しずつ作って完成度を上げる。</div>
+      </div>
+      <div class="origin">
+        <div class="origin-name">ドメイン駆動の発想</div>
+        <div class="origin-desc">ドメイン知識を持つ人間が主導する、という根本姿勢。</div>
+      </div>
+      <div class="origin">
+        <div class="origin-name">継続的改善（カイゼン）／振り返り</div>
+        <div class="origin-desc">失敗・教訓の記録と、プロセスそのものの継続的な見直し。</div>
+      </div>
+      <div class="origin">
+        <div class="origin-name">マルチエージェント・オーケストレーション</div>
+        <div class="origin-desc">複数のAIに役割を分け、人間が指揮する構造。この手法で最も新しい部分。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>この手法に特有の工夫</h2>
+    <div class="distinct">
+      <div class="distinct-num">01</div>
+      <div class="distinct-title">AIの品質特性を、分割の設計原理にしている</div>
+      <div class="distinct-body">従来の作業分割は「人間の認知や見積もり精度」が基準。この手法では「指示が大きすぎるとAIの出力品質が落ちる」という、AI固有の性質を分割の基準にしている。</div>
+    </div>
+    <div class="distinct">
+      <div class="distinct-num">02</div>
+      <div class="distinct-title">プロセス改善を、専用のAIに委ねている</div>
+      <div class="distinct-body">アプリを開発するAIとは別に、開発プロセス自体を改善するAIを立てる。大企業の「プロセス改善チーム」を、個人がAIで再現しているような構造。</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Human-orchestrated, spec-driven, multi-agent development
+  </div>
+</footer>
+
+</body>
+</html>

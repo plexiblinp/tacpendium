@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tacpendium — 性能改善の方針</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #0b0e10;
+    --bg-raised: #141a1d;
+    --bg-card: #181f23;
+    --border: #283238;
+    --border-bright: #3a4850;
+    --text: #e8eef0;
+    --text-dim: #93a3aa;
+    --text-faint: #5a6970;
+    --accent: #4fc3d4;
+    --warn: #ffb454;
+    --danger: #ff6b6b;
+    --good: #57d99a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 85% 8%, rgba(79,195,212,0.06), transparent 40%),
+      radial-gradient(circle at 10% 90%, rgba(87,217,154,0.04), transparent 42%);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    line-height: 1.72; min-height: 100vh; padding-bottom: 80px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 22px; }
+
+  header { border-bottom: 1px solid var(--border); padding: 52px 0 30px; }
+  .kicker {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent);
+    margin-bottom: 15px; display: flex; align-items: center; gap: 10px;
+  }
+  .kicker::before { content: ''; width: 28px; height: 1px; background: var(--accent); }
+  h1 { font-size: 2.15rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.18; margin-bottom: 13px; }
+  h1 .mono { font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+  .lead { color: var(--text-dim); font-size: 0.97rem; max-width: 700px; }
+  .lead strong { color: var(--text); }
+  .draft-note { font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-top:15px; padding-left:13px; border-left:2px solid var(--border-bright); }
+
+  .toc { display:flex; gap:9px; flex-wrap:wrap; margin:26px 0 8px; }
+  .toc a { font-family:'JetBrains Mono',monospace; font-size:0.73rem; text-decoration:none; color:var(--text-dim); border:1px solid var(--border); padding:7px 13px; border-radius:20px; transition:all 0.18s; }
+  .toc a:hover { border-color:var(--accent); color:var(--accent); }
+
+  section { margin-top:46px; scroll-margin-top:18px; }
+  .sec-head { display:flex; align-items:baseline; gap:12px; margin-bottom:6px; }
+  .sec-num { font-family:'JetBrains Mono',monospace; color:var(--accent); font-size:0.85rem; font-weight:700; }
+  .sec-head h2 { font-size:1.4rem; font-weight:900; letter-spacing:-0.01em; }
+  .sec-desc { color:var(--text-dim); font-size:0.89rem; margin-bottom:20px; padding-bottom:14px; border-bottom:1px dashed var(--border); }
+
+  table { width:100%; border-collapse:collapse; margin:14px 0; font-size:0.86rem; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th { font-family:'JetBrains Mono',monospace; font-size:0.66rem; letter-spacing:0.06em; color:var(--text-faint); text-transform:uppercase; font-weight:700; }
+  td { color:var(--text-dim); }
+  td strong { color:var(--text); font-weight:500; }
+  tr:last-child td { border-bottom:none; }
+
+  .callout { border-radius:10px; padding:16px 20px; margin:16px 0; font-size:0.88rem; }
+  .callout.accent { background:rgba(79,195,212,0.07); border:1px solid rgba(79,195,212,0.25); color:var(--text-dim); }
+  .callout.warn { background:rgba(255,180,84,0.07); border:1px solid rgba(255,180,84,0.3); color:var(--text-dim); }
+  .callout.good { background:rgba(87,217,154,0.07); border:1px solid rgba(87,217,154,0.3); color:var(--text-dim); }
+  .callout.danger { background:rgba(255,107,107,0.07); border:1px solid rgba(255,107,107,0.3); color:var(--text-dim); }
+  .callout strong { color:var(--text); }
+  .callout .ct { font-family:'JetBrains Mono',monospace; font-size:0.66rem; letter-spacing:0.1em; display:block; margin-bottom:6px; }
+  .callout.accent .ct { color:var(--accent); }
+  .callout.warn .ct { color:var(--warn); }
+  .callout.good .ct { color:var(--good); }
+  .callout.danger .ct { color:var(--danger); }
+
+  .pill { font-family:'JetBrains Mono',monospace; font-size:0.6rem; font-weight:700; padding:2px 8px; border-radius:4px; }
+  .pill.yes { background:rgba(87,217,154,0.15); color:var(--good); border:1px solid rgba(87,217,154,0.3); }
+  .pill.no { background:rgba(255,107,107,0.15); color:var(--danger); border:1px solid rgba(255,107,107,0.3); }
+  .pill.maybe { background:rgba(255,180,84,0.15); color:var(--warn); border:1px solid rgba(255,180,84,0.3); }
+
+  .steps { background:var(--bg-raised); border:1px solid var(--border); border-radius:12px; padding:22px 26px; margin-top:14px; }
+  .step { display:flex; gap:14px; padding:11px 0; border-top:1px dashed var(--border); }
+  .step:first-child { border-top:none; }
+  .step .sn { font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--bg); background:var(--accent); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.8rem; }
+  .step .stext { font-size:0.89rem; } .step .stext strong { color:var(--text); } .step .stext span { color:var(--text-dim); }
+
+  .principle-box { background:var(--bg-raised); border:1px solid var(--border); border-radius:12px; padding:22px 26px; margin-top:14px; }
+  .pr { display:flex; gap:13px; padding:10px 0; border-top:1px dashed var(--border); }
+  .pr:first-child { border-top:none; }
+  .pr .pn { font-family:'JetBrains Mono',monospace; color:var(--accent); font-weight:700; flex-shrink:0; }
+  .pr .pt { font-size:0.88rem; } .pr .pt strong { color:var(--text); } .pr .pt span { color:var(--text-dim); }
+
+  code { font-family:'JetBrains Mono',monospace; font-size:0.82em; background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:4px; color:var(--accent); }
+
+  footer { margin-top:48px; padding-top:24px; border-top:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--text-faint); text-align:center; line-height:2; }
+
+  @media (max-width:600px){ h1{font-size:1.6rem;} table{font-size:0.8rem;} th,td{padding:8px;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Performance Strategy</div>
+    <h1><span class="mono">Tacpendium</span> 性能改善の方針</h1>
+    <p class="lead">「コンマ秒でも速くしたい」に応えるための考え方。結論は明快で、<strong>推測で最適化せず、まず計測する</strong>。そして基盤（言語・DB）を変えるのでなく、ボトルネックを特定して直す。</p>
+    <p class="draft-note">DRAFT / 現状でも十分速い前提。これは「さらに詰めたくなった時」のための指針。優先度は機能完成より低い。</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="toc">
+    <a href="#golden">大原則</a>
+    <a href="#measure">計測</a>
+    <a href="#bottleneck">ボトルネックの所在</a>
+    <a href="#db">DB・SQLite</a>
+    <a href="#order">最適化の順序</a>
+    <a href="#tradeoff">速さと見た目</a>
+    <a href="#dont">やらないこと</a>
+  </div>
+
+  <!-- GOLDEN -->
+  <section id="golden">
+    <div class="sec-head"><span class="sec-num">01</span><h2>大原則：推測するな、計測せよ</h2></div>
+    <p class="sec-desc">性能改善の最重要原則。これを外すと、すべての労力が空振りする。</p>
+    <div class="callout accent"><span class="ct">GOLDEN RULE</span>人間（とAI）の「ここが遅いはず」という直感は<strong>高い確率で外れる</strong>。実際のボトルネックは予想外の場所にあることが多い。計測せずに最適化すると、体感が変わらない箇所を必死に直して時間を溶かす。<strong>コンマ秒を追うなら、どこで何ミリ秒使っているかをデータで把握することが絶対の出発点。</strong></div>
+    <div class="callout warn"><span class="ct">早すぎる最適化は諸悪の根源</span>機能が固まる前に性能を作り込むのは早すぎる。機能が変われば最適化が無駄になる。<strong>まず機能を完成させ、性能改善は計測に基づいてフェーズ3以降にまとめてやる</strong>。</div>
+  </section>
+
+  <!-- MEASURE -->
+  <section id="measure">
+    <div class="sec-head"><span class="sec-num">02</span><h2>計測の手段</h2></div>
+    <p class="sec-desc">バックエンドとフロントエンドで手段が分かれる。基本思想は両方とも「測りたい箇所にログを仕込む」。</p>
+    <table>
+      <thead><tr><th>対象</th><th>手段</th><th>備考</th></tr></thead>
+      <tbody>
+        <tr><td>バックエンド処理</td><td><strong>Goのpprof</strong> / 処理時間のログ</td><td>「どの関数で何ミリ秒」を可視化。コンマ秒を追う最強の武器</td></tr>
+        <tr><td>DBクエリ</td><td><strong>EXPLAIN QUERY PLAN</strong> / 実行時間計測</td><td>フルスキャンしているクエリを特定できる</td></tr>
+        <tr><td>フロント（特定処理）</td><td><strong><code>console.time</code> / <code>timeEnd</code></strong></td><td>最も手軽。バックエンドのログ計測と同じ感覚で処理を囲んで測る</td></tr>
+        <tr><td>フロント（レンダリング）</td><td><strong>React <code>&lt;Profiler&gt;</code> API</strong></td><td>コンポーネントのレンダリング時間をコードで仕込んで計測</td></tr>
+        <tr><td>フロント（総合診断）</td><td><strong>Lighthouse</strong></td><td>自動で改善点を指摘。CI連携でリリース前チェックにも</td></tr>
+        <tr><td>フロント（再描画の原因）</td><td>React DevTools「なぜ描画したか」記録</td><td>設定（歯車→記録オプション）で有効化すると使いやすい</td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ct">開発者ツールが使いにくい場合</span>GUIが合わないなら、<strong>コードに計測を仕込む方式</strong>（<code>console.time</code> / <code>&lt;Profiler&gt;</code>）が、バックエンドのログ計測と同じ思考で扱えて直感的。「バックエンドはログを仕込めばいい」と同じことをフロントでもやる。</div>
+    <div class="callout warn"><span class="ct">過剰なツールは不要</span>Datadog/Sentry/LogRocket等の有償RUMツールは<strong>本番クラウドサービス・チーム向け</strong>。ローカルアプリの開発中計測には過剰で、軽量・前提ソフト不要のDNAにも合わない。当面不要。</div>
+  </section>
+
+  <!-- BOTTLENECK -->
+  <section id="bottleneck">
+    <div class="sec-head"><span class="sec-num">03</span><h2>ボトルネックの所在を見極める</h2></div>
+    <p class="sec-desc">「遅さ」の原因は言語ではないことが多い。Webアプリの体感速度の大半はフロントで発生する。</p>
+    <table>
+      <thead><tr><th>遅さの原因</th><th>どこの問題か</th><th>対処</th></tr></thead>
+      <tbody>
+        <tr><td>フロントのレンダリング・再描画</td><td>React/ブラウザ</td><td><strong>体感速度の大半はここ</strong>。再レンダリング削減・仮想化</td></tr>
+        <tr><td>非効率なDBクエリ</td><td>SQLite（使い方）</td><td>インデックス・クエリ見直し</td></tr>
+        <tr><td>データの取得方法</td><td>設計</td><td>一度に大量取得していないか、N+1問題はないか</td></tr>
+        <tr><td>バックエンド計算</td><td>Go</td><td>ここが重いケースは稀。並行処理・キャッシュ</td></tr>
+        <tr><td>起動・ページ読み込み</td><td>構成</td><td>遅延読み込み等</td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ct">重要な事実</span>Webアプリの「もっさり感」の大半は<strong>フロントエンド（React/ブラウザ）側</strong>で発生する。バックエンドの言語を変えても、ここは変わらない。だから「遅い→言語を変える」は筋が違い、「遅い→原因を測る→その箇所を直す」が正道。</div>
+  </section>
+
+  <!-- DB -->
+  <section id="db">
+    <div class="sec-head"><span class="sec-num">04</span><h2>DB：SQLiteは変えない、インデックスで直す</h2></div>
+    <p class="sec-desc">クエリが遅い場合の話。結論は「SQLiteの限界でもDB選択でもなく、インデックスとクエリ・設計の問題」。</p>
+    <table>
+      <thead><tr><th>問い</th><th>答え</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr><td>SQLiteに速度の限界は？</td><td><span class="pill no">遠い</span></td><td>限界は超大量データ・高頻度同時書き込みで初めて問題に。Tacpendiumの規模はSQLiteの得意領域のど真ん中</td></tr>
+        <tr><td>他のDBの方が速い？</td><td><span class="pill no">否</span></td><td>ローカル単一ユーザーではSQLite（同プロセス・ネットワーク往復ゼロ）が最速の部類。サーバー型はオーバーヘッドで逆に遅くなりうる＆DNA違反</td></tr>
+        <tr><td>インデックスで爆速に？</td><td><span class="pill yes">可能性大</span></td><td>クエリが遅い原因の大半はインデックス不足。10〜100倍変わることも。<strong>これが本命の改善手段</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="callout good"><span class="ct">インデックスが効く箇所</span>タグ/キャラ/状態での絞り込み、コンボと技の関連を辿る、全文検索（FTS5）、ソート、一人SNS方式のスレッド辿り（親投稿ID参照）。Tacpendiumは「絞る・辿る」操作が多く、これらの列のインデックス有無で速度が激変する。</div>
+    <div class="callout warn"><span class="ct">インデックスの注意</span>貼りすぎは書き込みを遅くする（読み書きのバランス）／クエリの書き方次第で使われないことがある／<code>EXPLAIN QUERY PLAN</code>で実際に使われているか確認。「貼れば自動で爆速」ではなく「計測→遅いクエリ特定→効くインデックス→確認」の手順が必要。</div>
+  </section>
+
+  <!-- ORDER -->
+  <section id="order">
+    <div class="sec-head"><span class="sec-num">05</span><h2>最適化の正しい順序</h2></div>
+    <p class="sec-desc">「どの手段で速くするか」の前に「どこが遅いか測る」。その上で、軽い改善から順に。</p>
+    <div class="steps">
+      <div class="step"><span class="sn">0</span><span class="stext"><strong>計測</strong> <span>pprof / EXPLAIN / console.time / Profiler で、どこで何ミリ秒かを特定。推測しない。</span></span></div>
+      <div class="step"><span class="sn">1</span><span class="stext"><strong>機能完成を優先</strong> <span>性能はまだ追わない。早すぎる最適化を避ける。</span></span></div>
+      <div class="step"><span class="sn">2</span><span class="stext"><strong>フェーズ3以降に性能改善をまとめて</strong> <span>専用マイルストーンとして。計測でボトルネックが見つかったら着手。</span></span></div>
+      <div class="step"><span class="sn">3</span><span class="stext"><strong>見た目を犠牲にしない最適化を尽くす</strong> <span>再レンダリング削減・仮想化・遅延読み込み・クエリ最適化。多くはこれで十分。</span></span></div>
+      <div class="step"><span class="sn">4</span><span class="stext"><strong>静的解析で候補出し（補助）</strong> <span>性能アンチパターンを拾う。ただし本当に遅いかは計測で確認。</span></span></div>
+      <div class="step"><span class="sn">5</span><span class="stext"><strong>ボトルネックの領域を学んで直す</strong> <span>計測が示した領域をピンポイントで学習（AI+自分）。漠然と勉強しない。</span></span></div>
+      <div class="step"><span class="sn">6</span><span class="stext"><strong>最後の手段：見た目とのトレードオフ</strong> <span>ここまでで足りなければ、アニメ削減等を検討。</span></span></div>
+    </div>
+    <div class="callout accent"><span class="ct">性能改善担当Claude</span>毎マイルストーンで常時設けるのは時期尚早・労力過剰。<strong>フェーズ3以降に専用マイルストーンとして設ける</strong>のが妥当。ただし「計測でボトルネックが特定できたら」が条件。</div>
+  </section>
+
+  <!-- TRADEOFF -->
+  <section id="tradeoff">
+    <div class="sec-head"><span class="sec-num">06</span><h2>速さと見た目：必ずしもトレードオフではない</h2></div>
+    <p class="sec-desc">「エクスプローラ並みの速さは見た目との引き換えか？」への答え。多くは見た目を犠牲にせず速くできる。</p>
+    <table>
+      <thead><tr><th>速くする手段</th><th>見た目への影響</th></tr></thead>
+      <tbody>
+        <tr><td>再レンダリング削減（React最適化）</td><td><span class="pill yes">影響なし</span> 内部効率だけ改善</td></tr>
+        <tr><td>仮想化（見える分だけ描画）</td><td><span class="pill yes">影響なし</span> 見た目そのままで大量データを高速表示</td></tr>
+        <tr><td>遅延読み込み</td><td><span class="pill yes">影響なし</span> 見た目同じ、初期表示が速い</td></tr>
+        <tr><td>DBクエリ最適化</td><td><span class="pill yes">無関係</span></td></tr>
+        <tr><td>アニメーション・トランジション削減</td><td><span class="pill maybe">トレードオフ</span> 滑らかさは減る</td></tr>
+        <tr><td>大量画像・複雑なレイアウト・影の削減</td><td><span class="pill maybe">トレードオフ</span></td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ct">順序が答え</span>①まず見た目を犠牲にしない最適化を尽くす（多くはこれで十分速くなる）→ ②それでも足りなければ見た目とのトレードオフを検討。見た目を削るのは最後の手段。</div>
+    <div class="callout warn"><span class="ct">構造的な壁</span>Webアプリである以上、ネイティブアプリ（エクスプローラ等）の瞬間性には原理的に届きにくい部分がある。ただし<strong>「十分速い・引っかからない」と体感されるレベルは、見た目そのままで到達可能</strong>。完全同等を目標にするのは高すぎるかも。</div>
+  </section>
+
+  <!-- DONT -->
+  <section id="dont">
+    <div class="sec-head"><span class="sec-num">07</span><h2>やらないこと・戒め</h2></div>
+    <div class="principle-box">
+      <div class="pr"><span class="pn">✗</span><span class="pt"><strong>Rust版を別途作る。</strong> <span>労力対効果が最悪。体感速度の大半はフロント（Rust化で変わらない）。CRUD中心ではGo/Rustの速度差は体感困難。2バージョン保守・学習コスト・一貫性喪失で、得るものより失うものが大きい。「やらないことを決める」対象。</span></span></div>
+      <div class="pr"><span class="pn">✗</span><span class="pt"><strong>DBをサーバー型に変える。</strong> <span>ローカル用途では逆に遅くなりうる。前提ソフト不要のDNA違反。</span></span></div>
+      <div class="pr"><span class="pn">✗</span><span class="pt"><strong>計測せずに最適化する。</strong> <span>直感は外れる。空振りで時間を溶かす。</span></span></div>
+      <div class="pr"><span class="pn">✗</span><span class="pt"><strong>機能完成前に性能を作り込む。</strong> <span>早すぎる最適化。機能が変われば無駄になる。</span></span></div>
+      <div class="pr"><span class="pn">?</span><span class="pt"><strong>体感できないコンマ秒を追う。</strong> <span>人間が速さを体感する閾値は約100ms。それ以下の改善はユーザーに分からず自己満足になりうる。「遅くて困る操作」は直す価値があるが、「十分速いものをさらに」は優先度を厳しく問う。</span></span></div>
+    </div>
+  </section>
+
+  <footer>
+    Tacpendium Performance Strategy (DRAFT)<br>
+    推測するな、計測せよ。基盤を変えず、ボトルネックを直す。体感されない速さは追わない。
+  </footer>
+
+</div>
+
+</body>
+</html>

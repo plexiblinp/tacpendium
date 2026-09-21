@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>シェル検査とフック — 規約を機械化する — Tacpendium で学ぶ Go / React</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; background:#f8fafc; color:#1e293b; font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; line-height:1.9; }
+.topnav { background:#0f172a; color:#cbd5e1; padding:10px 20px; font-size:13px; }
+.topnav a { color:#93c5fd; text-decoration:none; margin-right:14px; }
+.topnav a:hover { text-decoration:underline; }
+.wrap { max-width:920px; margin:0 auto; padding:28px 20px 90px; }
+h1 { font-size:26px; border-left:6px solid #2563eb; padding-left:12px; line-height:1.5; }
+h2 { font-size:21px; margin-top:48px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+h3 { font-size:17px; margin-top:32px; }
+h4 { font-size:15px; margin-top:24px; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; font-size:.9em; font-family:Consolas,"SF Mono",Menlo,monospace; }
+.codebox { margin:16px 0; border-radius:8px; overflow:hidden; border:1px solid #334155; }
+.codebox .path { background:#1e293b; color:#93c5fd; font:12px Consolas,Menlo,monospace; padding:6px 12px; border-bottom:1px solid #334155; }
+.codebox pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow-x:auto; font:13px/1.7 Consolas,Menlo,monospace; }
+.codebox pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+.codebox b { color:#fbbf24; font-weight:600; }
+.codebox .cm { color:#7dd3fc; opacity:.65; }
+.note,.compare,.warn { border-radius:8px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+.note { background:#eff6ff; border:1px solid #bfdbfe; }
+.compare { background:#fffbeb; border:1px solid #fde68a; }
+.warn { background:#fef2f2; border:1px solid #fecaca; }
+.boxtitle { display:block; font-weight:700; font-size:12px; letter-spacing:.08em; margin-bottom:6px; color:#475569; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#fff; }
+th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; white-space:nowrap; }
+.flow { list-style:none; counter-reset:step; padding:0; margin:16px 0; }
+.flow li { position:relative; margin:0 0 10px; padding:10px 14px 10px 52px; background:#fff; border:1px solid #cbd5e1; border-radius:8px; font-size:14.5px; }
+.flow li::before { counter-increment:step; content:counter(step); position:absolute; left:12px; top:12px; width:26px; height:26px; background:#2563eb; color:#fff; border-radius:50%; text-align:center; line-height:26px; font-weight:700; font-size:13px; }
+.lane { display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; margin:16px 0; }
+.lane .box { flex:1 1 120px; min-width:110px; background:#fff; border:2px solid #2563eb; border-radius:8px; padding:8px 10px; text-align:center; font-size:13px; }
+.lane .box small { color:#64748b; display:block; font-size:11.5px; line-height:1.5; }
+.lane .arr { align-self:center; color:#2563eb; font-weight:700; font-size:18px; }
+.lane .box.db { border-color:#b45309; }
+footer { margin-top:64px; padding-top:16px; border-top:1px solid #cbd5e1; font-size:13.5px; color:#64748b; }
+footer a { color:#2563eb; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">目次</a>
+  <a href="go-lang-primer.html">Go 言語プライマー</a>
+  <a href="react-ts-primer.html">React/TS プライマー</a>
+  <a href="tag-walkthrough.html">タグ管理ウォークスルー</a>
+  <a href="tag-tests.html">タグのテスト</a>
+  <a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+  <a href="combo-tests.html">コンボのテスト + E2E</a>
+  <a href="playwright-guide.html">Playwright ガイド</a>
+  <a href="shadcn-tailwind-guide.html">shadcn/Tailwind</a>
+  <a href="game-update-walkthrough.html">ゲーム更新影響判定</a>
+  <a href="shell-guardrails-guide.html">シェル検査とフック</a>
+</nav>
+<div class="wrap">
+
+<h1>シェル検査とフック<br>— 規約を「散文」ではなく「機械」で守らせる</h1>
+
+<p>これまでの資料は Go と React、つまり<strong>アプリのコード</strong>を扱ってきました。この資料が扱うのは、その周りにある <code>scripts/</code>(シェル 24 本・約 8,000 行)と <code>.claude/hooks/</code>(6 本)です。アプリの動作には 1 行も関与しませんが、<strong>このリポジトリの品質を実際に支えているのはこの層です</strong>。</p>
+
+<div class="note">
+<span class="boxtitle">なぜこれが教材になるのか</span>
+どんなプロジェクトにも「規約」があります。import の順番、命名、ログの出し方。そして<strong>そのほとんどは守られません</strong>——悪意があるからではなく、<strong>破っても何も起きないから</strong>です。このリポジトリは、その問題に対して「規約文書をもっと丁寧に書く」ではなく「<strong>破ったら赤くなる仕組みを自分で書く</strong>」という答えを出しています。しかも、その仕組みが正しく動いているかを確かめる仕組みまであります。Bash の書き方そのものより、<strong>その設計判断</strong>が本資料の主題です。
+</div>
+
+<h2>1. 全体像 — 性質の違う 2 つの層</h2>
+
+<p>まず「自分で回す検査」と「勝手に走る網」を区別してください。両者は<strong>目的も、失敗したときの振る舞いも違います</strong>。</p>
+
+<div class="tablewrap">
+<table>
+<tr><th></th><th><code>scripts/</code></th><th><code>.claude/hooks/</code></th></tr>
+<tr><td>起動</td><td><strong>人 / AI が明示的に叩く</strong>(<code>bash scripts/check-xxx.sh</code>)</td><td><strong>自動</strong>。セッション開始時・ツール実行前後・応答完了時</td></tr>
+<tr><td>主な役割</td><td>規約違反の検出、派生資料の生成、監査</td><td>危険操作のブロック、編集後の即時検査、環境整備</td></tr>
+<tr><td>失敗時</td><td>非ゼロ終了で「赤」を返すだけ</td><td><strong>作業そのものを止められる</strong>(exit 2 でツール実行を拒否)</td></tr>
+<tr><td>Flask / Spring での近いもの</td><td><code>pre-commit</code> のフック本体、Checkstyle / SpotBugs のカスタムルール</td><td>Git の <code>pre-push</code>、Husky、IDE の保存時アクション</td></tr>
+</table>
+</div>
+
+<p>配線は <code>.claude/settings.json</code> の <code>hooks</code> ブロックが持っています。イベント名でどのスクリプトを走らせるかを宣言するだけの、素直な構造です。</p>
+
+<div class="codebox">
+<div class="path">.claude/settings.json(hooks ブロックの抜粋)</div>
+<pre><code>{
+  "SessionStart": [{ "matcher": "startup|resume",
+    "hooks": [{ "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",
+                "timeout": 660 }] }],
+  "PreToolUse":  [{ "matcher": "Bash",
+    "hooks": [{ "command": "... /pre-push-guard.sh",    "timeout": 10 },
+              { "command": "... /design-desk-guard.sh", "timeout": 10 }] }],
+  "PostToolUse": [{ "matcher": "Write|Edit|MultiEdit",
+    "hooks": [{ "command": "... /post-edit-check.sh",   "timeout": 90 }] }],
+  "Stop":        [{ "hooks": [{ "command": "... /stop-test.sh",   "timeout": 300 }] },
+                  { "hooks": [{ "command": "... /notify-bell.sh", "timeout": 5 }] }]
+}</code></pre>
+</div>
+
+<ul>
+<li><code>matcher</code> — どのツールに反応するか。<code>"Bash"</code> なら Bash ツールの実行前、<code>"Write|Edit|MultiEdit"</code> ならファイル編集後</li>
+<li><code>timeout</code> — 秒。<strong>この値と、スクリプト内部のステップ上限は整合させる必要があります</strong>(§4.4)</li>
+<li><code>$CLAUDE_PROJECT_DIR</code> — リポジトリルート。フックはカレントディレクトリを仮定できないので、必ずこの変数を経由します</li>
+</ul>
+
+<h2>2. Bash の最小限の読み方</h2>
+
+<p>Python や Java から来ると、シェルは「文法が無いように見える」言語です。ここでは<strong>このリポジトリのスクリプトを読むのに必要な分だけ</strong>を押さえます。</p>
+
+<h3>2.1 <code>set</code> の 3 文字 — そして検査スクリプトが <code>-e</code> を使わない理由</h3>
+
+<div class="codebox">
+<div class="path">2 つの流儀が併存している</div>
+<pre><code>set -euo pipefail    <span class="cm"># pre-push-guard.sh:14 — ガード系</span>
+set -uo pipefail     <span class="cm"># check-*.sh / hooks の多く — 検査系(★ -e が無い)</span></code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<tr><th>文字</th><th>意味</th><th>外すとどうなるか</th></tr>
+<tr><td><code>-e</code></td><td>コマンドが失敗(非ゼロ終了)したら<strong>即座にスクリプトを終える</strong></td><td>失敗しても次の行へ進む</td></tr>
+<tr><td><code>-u</code></td><td>未定義変数を参照したらエラー</td><td>typo した変数が<strong>空文字として通る</strong>(<code>rm -rf "$PREFIX/"</code> が <code>rm -rf /</code> になる古典的事故)</td></tr>
+<tr><td><code>-o pipefail</code></td><td>パイプの<strong>途中</strong>が失敗したら全体を失敗にする</td><td><code>false | tee log</code> の終了コードが <code>tee</code> のもの(=成功)になる</td></tr>
+</table>
+</div>
+
+<div class="warn">
+<span class="boxtitle">★なぜ検査スクリプトは <code>-e</code> を外すのか</span>
+検査スクリプトは<strong>「失敗を数える」のが仕事</strong>です。<code>grep</code> は「1 件も見つからない」とき非ゼロで終わりますが、検査にとってそれは<strong>正常な結果</strong>(違反 0 件)です。<code>-e</code> を付けると、その正常な結果でスクリプトが即死します。<code>session-start.sh:12</code> はもっと直接的な理由を書いています——「<code>set -e</code> は使わない。<strong>1 つの失敗で残りのステップが飛ぶのを防ぐため</strong>」。<strong>「途中まで動く」ことに価値がある処理では、<code>-e</code> はむしろ害になります。</strong>
+</div>
+
+<h3>2.2 <code>$( )</code> と終了コード — このリポジトリで実際に事故が起きた場所</h3>
+
+<p><code>$(コマンド)</code> はコマンドの<strong>出力</strong>を文字列として取り出す記法です(Python の <code>subprocess.check_output()</code> に相当)。重要なのは、<strong>これはサブシェル、つまり別プロセスで実行される</strong>ことです。</p>
+
+<div class="codebox">
+<div class="path">代入の直後なら $? は取れる(post-edit-check.sh:23-24 の形)</div>
+<pre><code>vet_out="$(cd "$ROOT" &amp;&amp; go vet "./$pkg" 2&gt;&amp;1)"
+[ $? -ne 0 ] &amp;&amp; findings+="go vet (./$pkg):"$'\n'"$vet_out"$'\n'
+<span class="cm">#  ↑ 代入文の終了コードは、右辺のコマンド置換の終了コードになる。ここは正しい</span></code></pre>
+</div>
+
+<p>ところが、<strong>サブシェルの中で <code>exit 2</code> しても、親スクリプトはそれを「文字列を受け取っただけ」として素通りできます</strong>。この落とし穴で、実際に検査が壊れました。</p>
+
+<div class="warn">
+<span class="boxtitle">★★実在した欠陥: 「未実行」が「違反なし」の顔をして、しかも基準の破棄を勧めた</span>
+<code>check-md-emphasis.sh</code> は Python の markdown ライブラリに依存します。それが入っていない環境で、内部関数は正しく <code>exit 2</code>(未実行)を返していました。<strong>しかしその呼び出しが <code>$(...)</code> の中だったため、終了コードはサブシェルとともに消え</strong>、親は「検出 0 件」を受け取って——<br><br>
+<strong>(1) 「結果: 違反なし」を <code>exit 0</code> で出力し、(2) さらに『ベースラインが 375 行も余っているので <code>BASELINE_BROKEN</code> を 0 へ下げましょう』と勧めた。</strong><br><br>
+<strong>⇒ 助言に従っていたら、基準そのものが消えていました。</strong> 「ライブラリが無くて検査できなかった」が「完璧です、基準を厳しくしましょう」に化けたわけです。現在この経路は、後述する自己検査の<strong>陽性対照 2</strong> として恒久的に固定されています(<code>check-md-emphasis.sh:214-222</code>)。
+</div>
+
+<h3>2.3 その他、頻出する記法</h3>
+
+<div class="tablewrap">
+<table>
+<tr><th>記法</th><th>意味</th></tr>
+<tr><td><code>[ -n "$x" ]</code> / <code>[ -z "$x" ]</code></td><td>文字列が非空 / 空。<code>[</code> はコマンド名(<code>test</code> の別名)なので<strong>前後の空白が必須</strong></td></tr>
+<tr><td><code>A &amp;&amp; B</code> / <code>A || B</code></td><td>A が成功したら B / A が失敗したら B。<code>if</code> を書かずに済ませる定型</td></tr>
+<tr><td><code>printf '%s' "$x"</code></td><td><code>echo</code> の代わり。<strong><code>echo</code> は先頭が <code>-n</code> の文字列などを解釈してしまう</strong>ため、変数を出すときは <code>printf</code> が安全</td></tr>
+<tr><td><code>grep -qE '...'</code></td><td><code>-q</code>=出力せず終了コードだけ返す、<code>-E</code>=拡張正規表現。<strong>判定だけしたいときの定型</strong></td></tr>
+<tr><td><code>mktemp -d</code> + <code>trap "rm -rf '$tmp'" EXIT</code></td><td>一時ディレクトリを作り、<strong>どう終了しても必ず消す</strong>。Java の try-with-resources / Python の <code>finally</code> に相当</td></tr>
+<tr><td><code>"${VAR:-既定値}"</code></td><td>未設定なら既定値。<code>-u</code> と組み合わせて「任意の環境変数」を安全に読む</td></tr>
+</table>
+</div>
+
+<h2>3. 検査スクリプトの 7 つの規律</h2>
+
+<p>ここからが本題です。<code>scripts/check-*.sh</code> の 14 本は、<strong>ばらばらに書かれた寄せ集めではなく、共通の規律を持っています</strong>。</p>
+
+<h3>3.1 終了コードは 2 値ではなく 3 値 —「未実行」を「問題なし」と同じ顔で出さない</h3>
+
+<p>ほぼ全てのスクリプトが、ヘッダに同じ形の宣言を持ちます。</p>
+
+<div class="codebox">
+<div class="path">終了コードの規約(各スクリプトのヘッダより)</div>
+<pre><code>check-import-order.sh:33       0=ベースラインから増えていない / 1=増えた・自己検査に不合格 / <b>2=実行できなかった</b>
+check-migration-license.sh:35  0=違反なし / 1=違反あり(または自己検査 不合格) / <b>2=実行エラー(未実行。緑ではない)</b>
+check-public-snapshot.sh:30    0=違反なし / 1=違反あり(または自己検査 不合格) / <b>2=実行エラー(未実行。緑ではない)</b></code></pre>
+</div>
+
+<p><strong>3 番目の終了コードが要点です。</strong> 依存が入っていない、対象が見つからない、git リポジトリの外だった——こうしたときに <code>0</code> を返してはいけません。<code>check-import-order.sh:40-41</code> がその理由を書いています。</p>
+
+<div class="codebox">
+<div class="path">scripts/check-import-order.sh:40-41</div>
+<pre><code><span class="cm"># 依存: python3 のみ(標準ライブラリ)。**未導入なら exit 2 で「未実行」を返す。**</span>
+<span class="cm">#   緑を返さないのは、検査していないことを「問題なし」と同じ顔で出さないため(教訓 `E-84`)。</span></code></pre>
+</div>
+
+<div class="compare">
+<span class="boxtitle">Flask / Spring 経験者向け: CI が「緑」の意味</span>
+Maven や pytest でも同じ問題が起きます。<strong>「テストが 0 件だったので成功」</strong>と <strong>「テストが 120 件通ったので成功」</strong>は、CI のバッジ上ではどちらも緑です。設定ミスでテストが 1 件も収集されなくなったのに気づかず数週間走り続ける、というのは典型的な事故です。<strong>「実行できなかった」を独立した状態として持つ</strong>だけで、この種の事故はほぼ消えます。
+</div>
+
+<h3>3.2 ベースライン固定型 — <strong>0 を目指さない</strong>検査</h3>
+
+<p>既存の違反が大量にある規約に、あとから検査を入れるとどうなるか。素直に書くと <strong>101 件の違反で真っ赤</strong>になり、誰も見なくなります。このリポジトリの答えは「<strong>件数ではなく、ベースラインから増えたかを見る</strong>」です。</p>
+
+<div class="codebox">
+<div class="path">実際のベースライン値(定数として直書きされている)</div>
+<pre><code>scripts/check-import-order.sh:70        BASELINE=101
+scripts/check-md-emphasis.sh:113        BASELINE_BROKEN=247
+scripts/check-enum-sync.sh:58           BASELINE_SCATTER=28
+scripts/check-instruction-format.sh:138 BASELINE_FORBIDDEN=78</code></pre>
+</div>
+
+<div class="codebox">
+<div class="path">scripts/check-import-order.sh:43-47(運用ルールがコメントとして同居している)</div>
+<pre><code><span class="cm"># ベースライン固定型:</span>
+<span class="cm">#   既存の違反が多いため、**件数そのものではなく「ベースラインから増えたか」を見る**。</span>
+<span class="cm">#   ★既存分を機械的に並べ替えない。副作用 import(`import "./x.css"`)の順序を動かすと</span>
+<span class="cm">#     評価順が変わり、**静かに壊れうる**。書いた本人が触るときに直していく。</span>
+<span class="cm">#   <b>減ったら BASELINE を下げること。増える方向の更新はしない。</b></span></code></pre>
+</div>
+
+<p>最後の一行が運用の要です。<strong>ベースラインは一方向にしか動かせません。</strong> 「赤くなったからベースラインを上げる」を許すと、検査は存在しないのと同じになります。</p>
+
+<div class="note">
+<span class="boxtitle">なぜ既存分を一括で直さないのか</span>
+「101 件くらい機械的に並べ替えればいい」と思うところですが、コメントが理由を挙げています——<strong>副作用 import(<code>import "./x.css"</code> のように、読み込むこと自体が目的の import)は順序を動かすと評価順が変わり、静かに壊れうる</strong>。一括整形は「差分は大きいがリスクは無い」と思われがちですが、<strong>この種の例外が 1 件混ざっているだけで事故になります</strong>。だから「書いた本人が、その箇所を触るときに直す」という漸進的な方式を採っています。
+</div>
+
+<h3>3.3 <code>--self-test</code> — 検査を「陽性対照・陰性対照」で検査する</h3>
+
+<p><strong>検査が緑であることは、検査が機能していることの証拠になりません。</strong> 判定式を壊してしまえば、何も検出せずに永遠に緑を返します。そこで全ての検査が <code>--self-test</code> を持ち、<strong>わざと違反したファイル(陽性対照)と、正しいファイル(陰性対照)</strong>を一時ディレクトリに作って、自分自身を判定させます。</p>
+
+<div class="codebox">
+<div class="path">scripts/check-md-emphasis.sh:183-196(自己検査の冒頭)</div>
+<pre><code>self_test() {
+  local tmp st_fail=0 out
+  tmp="$(mktemp -d)" || { echo "ERROR: mktemp 失敗" &gt;&amp;2; exit 2; }
+  trap "rm -rf '$tmp'" EXIT              <span class="cm"># どう終了しても片付ける</span>
+
+  <span class="cm"># 陽性対照: 閉じ ** の直前が全角約物・直後が文字 → 検出されなければならない</span>
+  printf '**D-1〜D-259（256 行）**は退避した。\n' &gt; "$tmp/positive.md"
+  <span class="cm"># 陰性対照 A: 約物を強調の外へ出した正しい形 → 検出してはならない</span>
+  printf '**D-1〜D-259**（256 行）は退避した。\n' &gt; "$tmp/negative-ok.md"
+  <span class="cm"># 陰性対照 B: コードスパン内のリテラル ** → 誤検出してはならない</span>
+  printf '`**` の個数を数える検査は足りない。\n' &gt; "$tmp/negative-code.md"</code></pre>
+</div>
+
+<p><strong>陰性対照(false positive を出さないこと)を必ず置いている</strong>のが良いところです。「違反を検出できる」だけなら「全部を違反と判定する」でも達成できてしまいます。両方向を固定して初めて、判定が意味を持ちます。</p>
+
+<div class="codebox">
+<div class="path">実行結果(2026-09-09 実測)</div>
+<pre><code>$ bash scripts/check-import-order.sh --self-test
+OK  陰性対照(規約どおりの並び) → 緑
+OK  陽性対照(相対パスの後ろに @/) → 赤
+OK  陽性対照(サードパーティの後ろに React) → 赤
+OK  陽性対照(多行 import をまたぐ後退) → 赤
+OK  陰性対照(副作用 import・type import を含む正しい並び) → 緑
+OK  テストファイルを本番と別に数える
+自己検査: 合格(陽性は赤・陰性は緑)</code></pre>
+</div>
+
+<h3>3.4 実在した欠陥を、恒久的な対照として残す</h3>
+
+<p>§2.2 で触れた「<code>$( )</code> が <code>exit 2</code> を飲んだ」欠陥は、修正して終わりにせず、<strong>4 番目の対照としてスクリプトに埋め込まれています</strong>。</p>
+
+<div class="codebox">
+<div class="path">scripts/check-md-emphasis.sh:214-222</div>
+<pre><code><span class="cm"># 陽性対照 2: 依存欠落(未実行)の経路。**緑を返さないこと**が主張である</span>
+<span class="cm">#   2026-08-13 実在した欠陥の回帰検査。run_check の exit 2 が $(...) のサブシェルで</span>
+<span class="cm">#   死に、親は CUR=0 のまま「ベースラインから 375 行減少・違反なし」を exit 0 で返していた。</span>
+out=$(<b>MD_EMPHASIS_FORCE_NO_DEP=1</b> bash "$0" 2&gt;&amp;1); rc=$?
+if [ "$rc" -ne 0 ] &amp;&amp; ! printf '%s' "$out" | grep -q '結果: 違反なし'; then
+  echo "OK  陽性対照(依存欠落) → 未実行として非ゼロ終了・緑を返さない"
+else
+  echo "NG  依存欠落でも緑を返した(rc=$rc)。<b>未実行と 0 件が同じ顔になっている</b>"; st_fail=1
+fi</code></pre>
+</div>
+
+<p><code>MD_EMPHASIS_FORCE_NO_DEP=1</code> という<strong>テスト専用の環境変数で、依存が無い状態を人工的に再現している</strong>のがポイントです(注入点は同ファイル <code>:166</code>)。これは Go のテストでモックを差し込むのと同じ発想で、<strong>「壊れた環境」を再現可能にするための注入口</strong>です。</p>
+
+<div class="compare">
+<span class="boxtitle">JUnit / pytest 経験者向け</span>
+やっていることは<strong>回帰テスト</strong>そのものです。違うのは、テスト対象がアプリではなく<strong>検査ツール自身</strong>で、テストフレームワークを使わず <code>--self-test</code> というサブコマンドとして本体に同梱している点です。ツールが 300 行程度なら、この形は理にかなっています——<strong>テストが本体と同じファイルにあるので、片方だけコピーされて対照を失う事故が起きません。</strong>
+</div>
+
+<h3>3.5 「止める検査」と「知らせるだけの検査」を分ける</h3>
+
+<p>全ての検査が赤で止まるべきではありません。<strong>誤検出率が高い検査を blocking にすると、人は検査そのものを無視するようになります。</strong></p>
+
+<div class="tablewrap">
+<table>
+<tr><th>スクリプト</th><th>終了コード</th><th>理由</th></tr>
+<tr><td><code>check-enum-sync.sh</code></td><td><strong>既定は常に 0</strong>(<code>--strict</code> で 1)</td><td>汎用英単語(<code>normal</code> / <code>system</code> / <code>throw</code>)による誤検出が多く、<strong>誤検出率を測る前に blocking へ昇格させない</strong></td></tr>
+<tr><td><code>check-doc-inventory.sh</code></td><td><strong>常に 0</strong>(情報提供型)</td><td>出力は違反の宣言ではなく「新種のファイルが増えた」通知。<strong>型に合っている ≠ 置いてよい</strong></td></tr>
+<tr><td><code>check-derived-docs.sh</code></td><td><strong>常に 0</strong></td><td>陳腐化の有無はレポート本文で人が判断する</td></tr>
+<tr><td>その他 11 本</td><td>0 / 1 / 2</td><td>判定が決定論的で誤検出が少ない</td></tr>
+</table>
+</div>
+
+<div class="note">
+<span class="boxtitle">★情報提供型の落とし穴と、その対処</span>
+「常に 0」の検査は、放っておくと誰も読まなくなります。<code>check-doc-inventory.sh</code> はその対策として<strong>例外表(EXCEPT)へ足して黙らせることを明示的に禁じています</strong>——「検査を通すために足すと、本検査は存在しないのと同じになる」。<strong>抑制の手段を用意しつつ、その手段を使ってよい条件を同じ場所に書いておく</strong>。これは blocking にしない検査を生かし続けるための必須のセットです。
+</div>
+
+<h3>3.6 「限界」を、検査自身に書く</h3>
+
+<p>このリポジトリのスクリプトには、ほぼ必ず <strong>限界(重要・過信しないこと)</strong> という節がヘッダにあります。特に印象的なのが <code>check-import-order.sh</code> の自己申告です。</p>
+
+<div class="codebox">
+<div class="path">scripts/check-import-order.sh:54-58(限界の節より)</div>
+<pre><code><span class="cm">#   - <b>★★違反を「ファイル単位」で数える。⇒ 既にベースラインに入っているファイルの中へ</b></span>
+<span class="cm">#     <b>新しい違反を足しても検出されない</b>(2026-09-01 クリーンルームレビュー B-3 で実証。</span>
+<span class="cm">#     `App.test.tsx` へ注入しても 101 のまま緑)。<b>本検査の動機である `M24-08` 型の</b></span>
+<span class="cm">#     <b>一括挿入も、既存 101 ファイルへ及んだぶんは見えない。</b></span>
+<span class="cm">#   - <b>床であって証明ではない。</b> 順序が規約どおりでも、その import が要るかは見ていない。</span></code></pre>
+</div>
+
+<p><strong>「この検査は、それを作る動機になった事故の一部を検出できない」と本人が書いている</strong>わけです。しかも実際に注入して確かめた記録つきで。これは自虐ではなく、<strong>次に読む人が検査を過信しないための情報</strong>です。「緑だから大丈夫」と言える範囲を、検査自身が限定しています。</p>
+
+<h3>3.7 メタ検査 — <strong>検査の緑を信じない</strong>ための 1 本</h3>
+
+<p>ここまでの規律(自己検査を持つ・生成物が壊れていない)を、<strong>横断的に確かめる検査</strong>があります。CLAUDE.md §8 が「★1 本目に回す」と指定している <code>check-artifact-integrity.sh</code> です。</p>
+
+<div class="codebox">
+<div class="path">scripts/check-artifact-integrity.sh:4-10(なぜ要るか)</div>
+<pre><code><span class="cm"># 背景: ... 同 §4.1 の原則はこうである——</span>
+<span class="cm">#   <b>ツールの成功メッセージ、AI の「変更した」という文章、画面上の完了表示は証拠ではない。</b></span>
+<span class="cm">#</span>
+<span class="cm">#   本検査を書く過程で、その原則の実例が出た。引き継ぎ書は「常設の検査機構は</span>
+<span class="cm">#   <b>すべて --self-test を持つ</b>」と書いていたが、<b>実際に走らせたら 1 本は持っていなかった</b></span>
+<span class="cm">#   (`check-enum-sync.sh`。本コミットで追加した)。<b>資料の記述は証拠ではない。</b></span></code></pre>
+</div>
+
+<p>検査するのは 2 つです。<strong>(1) <code>scripts/check-*.sh</code> が <code>--self-test</code> を持ち、それが実際に通ること。(2) 生成物(<code>code-facts.md</code> 等)が実在し、非空で、行数がベースラインから激減していないこと。</strong></p>
+
+<div class="codebox">
+<div class="path">実行結果(2026-09-09 実測)</div>
+<pre><code>$ bash scripts/check-artifact-integrity.sh
+OK  design-desk-guard.sh の自己検査が通る
+OK  archive-resolved.sh の自己検査が通る
+   ... (中略・14 件すべて OK) ...
+  検査 14 件 / ALLOW 除外 1 件
+
+## 2. 生成物の健全性
+OK  docs/handover/code-facts.md
+OK  docs/handover/docs-map.md
+OK  docs/handover/retrospective-digest.md
+OK  docs/human-notes/custom-commands.md
+
+結果: 違反なし</code></pre>
+</div>
+
+<p>免除は 1 件だけで、<strong>免除の理由がコードに書かれています</strong>(<code>:44-46</code>)——「<code>check-derived-docs.sh</code> :: 判定が git のコミット時刻の大小比較のみで、対照を作っても比較演算子を確かめるだけになる」。<strong>免除リストに理由を併記させる</strong>のは、リストが「面倒なものを入れる場所」に堕ちるのを防ぐ良い設計です。</p>
+
+<div class="note">
+<span class="boxtitle">生成物の「激減だけ」を見る(<code>:49-51</code>)</span>
+生成物のベースラインは<strong>実測値のおよそ半分</strong>に設定され、<strong>下方向にしか判定しません</strong>。生成器が <code>exit 0</code> でも中身が空、というのはよくある壊れ方だからです。ただしここにも限界の自己申告があります——「<strong>行数の激減は捕まえるが、内容が意味的に壊れている(例: 全行が同じ文字列)ことは検出しない</strong>」。
+</div>
+
+<h2>4. フック — 作業そのものを止める層</h2>
+
+<p>フックは <strong>stdin から JSON を受け取り、終了コードで結果を返す</strong>だけのプログラムです。言語は問いません(このリポジトリは全て Bash)。</p>
+
+<div class="lane">
+  <div class="box">イベント発生<small>Bash 実行前<br>ファイル編集後 等</small></div>
+  <div class="arr">→</div>
+  <div class="box">JSON を stdin へ<small>tool_input<br>file_path 等</small></div>
+  <div class="arr">→</div>
+  <div class="box">フック本体<small>bash スクリプト</small></div>
+  <div class="arr">→</div>
+  <div class="box db">終了コード<small>0=通す<br><b>2=ブロック</b></small></div>
+</div>
+
+<div class="codebox">
+<div class="path">入力の取り出し(全フック共通の定型)</div>
+<pre><code>input="$(cat)"                                        <span class="cm"># stdin を丸ごと読む</span>
+cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"    <span class="cm"># Bash なら実行予定のコマンド</span>
+file="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')" <span class="cm"># 編集系なら対象ファイル</span></code></pre>
+</div>
+
+<h3>4.1 <code>pre-push-guard.sh</code> — 許可リストで push を 1 形だけに絞る</h3>
+
+<p>このリポジトリでは <code>push</code> が原則禁止で、例外として <code>claude/</code> 名前空間のブランチだけが許されています。それを機械的に強制するのがこのフックです。</p>
+
+<div class="codebox">
+<div class="path">.claude/hooks/pre-push-guard.sh:32-42(判定の全体)</div>
+<pre><code><span class="cm"># 「押し出す操作」を含まないコマンドは対象外</span>
+if ! printf '%s' "$cmd" | grep -qE '(^|[;&amp;|[:space:]])git[[:space:]]+p…h([[:space:]]|$)'; then
+  exit 0
+fi
+
+<span class="cm"># 許可される唯一の形: origin の claude/&lt;branch&gt; 宛(前後空白のみ許容)</span>
+if printf '%s' "$cmd" | grep -qE <b>'^[[:space:]]*git[[:space:]]+p…h[[:space:]]+origin[[:space:]]+claude/[A-Za-z0-9._-][A-Za-z0-9._/-]*[[:space:]]*$'</b>; then
+  exit 0
+fi
+
+echo "pre-push-guard: ブロックしました。..." &gt;&amp;2
+<b>exit 2</b></code></pre>
+</div>
+
+<div class="warn">
+<span class="boxtitle">★上の引用で <code>p…h</code> と伏せ字にしてある理由(実話)</span>
+本資料を書いているときに、<strong>この HTML を生成するシェルコマンド自体がこのフックにブロックされました。</strong> 原因は単純で、フックは <strong>コマンド文字列の中に当該の語が現れるかどうか</strong>しか見ないため、<strong>ヒアドキュメントの中に書かれた「解説のための文字列」も本物の操作と区別できない</strong>のです。<br><br>
+そのため本資料はファイル書き込み用の別ツールで作成し、引用中の語は<strong>意図的に伏せてあります</strong>(伏せないと、この資料を Bash 経由で編集するたびにブロックされ続けます)。<br><br>
+<strong>★これは欠陥ではなく、設計どおりの過剰ブロックです。</strong> 次節の原則がそのまま当てはまります——<strong>「過剰ブロックは可視で直せるが、取りこぼしは silent である」</strong>。実際、私は即座に気づいて回避できました。逆に「文字列リテラルの中は無視する」よう賢くしようとすると、<strong>本物の操作を文字列に見せかける抜け道</strong>を作ることになります。<strong>判定を賢くするより、鈍いまま安全側に倒すほうが正しい場面がある</strong>という実例です。
+</div>
+
+<p>正規表現が <code>^</code> で始まり <code>$</code> で終わっているのが要点です。<strong>「その操作を含む」ではなく「その操作だけからなる」ことを要求している</strong>ので、末尾に <code>; echo done</code> を付けた複合コマンドも、<code>--force</code> のようなフラグも通りません。ヘッダはこの設計を選んだ理由を書いています。</p>
+
+<div class="codebox">
+<div class="path">.claude/hooks/pre-push-guard.sh:5-11(なぜ settings.json の deny では足りないか)</div>
+<pre><code><span class="cm">#   settings.json の allow/deny は<b>プレフィックス一致</b>のため、refspec 形・</span>
+<span class="cm">#   フラグ並べ替え・複合コマンドで漏れうる。また Claude Code on the web では</span>
+<span class="cm">#   パーミッションの都度確認(ask)が<b>実質機能せず</b>、プラットフォームのブランチ制限も</span>
+<span class="cm">#   「デフォルトブランチ保護」止まりで任意ブランチが通ることを<b>実測済み</b>。</span>
+<span class="cm">#   本フックは<b>リポジトリからコミット配布される</b>ため devContainer・クラウドの両方で発火する。</span></code></pre>
+</div>
+
+<h4>fail-safe なパース</h4>
+
+<div class="codebox">
+<div class="path">.claude/hooks/pre-push-guard.sh:18-29</div>
+<pre><code>if command -v jq &gt;/dev/null 2&gt;&amp;1; then      <span class="cm"># ① jq があれば jq</span>
+  cmd="$(... jq -r '.tool_input.command // empty' ...)"
+fi
+if [ -z "$cmd" ] &amp;&amp; command -v python3 ...; then   <span class="cm"># ② 無ければ python3</span>
+  cmd="$(... python3 -c 'import json,sys; ...' ...)"
+fi
+<span class="cm"># 解析不能時は安全側: 生入力全体を判定対象にする</span>
+if [ -z "$cmd" ]; then <b>cmd="$input"</b>; fi        <span class="cm"># ③ どちらも駄目なら入力全体を見る</span></code></pre>
+</div>
+
+<p>③ が <strong>fail-safe(安全側に倒す)</strong> の実装です。JSON を解釈できなかったとき、<code>cmd</code> が空のままだと <code>grep</code> が何もマッチせず<strong>「対象外」と判定して通してしまいます</strong>。そこで生の入力全体を判定対象にすることで、<strong>解釈できないときは通さない方向へ倒しています</strong>。§3.1 の「未実行を緑にしない」と同じ思想が、フック層にも一貫して現れています。</p>
+
+<h3>4.2 <code>design-desk-guard.sh</code> — 許可リスト方式の教科書</h3>
+
+<p>このリポジトリには「設計卓」という役割があり、その作業中は<strong>実装ソースを読ませない</strong>という運用をしています(設計判断が実装に引きずられるのを防ぐため)。実現は 2 層構造です。</p>
+
+<ol class="flow">
+<li><strong>物理排除</strong> — <code>scripts/design-desk-arm.sh</code> が git の sparse-checkout で、<code>docs/</code> <code>.claude/</code> <code>scripts/</code> 以外を作業ツリーから消す。<strong>ファイルが存在しないので <code>cat</code> も <code>grep</code> も空振りする</strong></li>
+<li><strong>残る穴を塞ぐ</strong> — 消えても git のオブジェクトデータベースには残っているので、<code>git show HEAD:internal/...</code> で読めてしまう。<strong>この経路だけをフックが塞ぐ</strong></li>
+</ol>
+
+<div class="warn">
+<span class="boxtitle">★★なぜ「禁止する動詞を並べる」ではなく「安全な動詞を許可する」なのか</span>
+<code>design-desk-guard.sh:10-14</code> の逐語:<br><br>
+「<strong>列挙方式は必ず取りこぼす</strong>(show / log -p / diff &lt;rev&gt; / grep / blame / cat-file / archive / format-patch / bundle / read-tree / checkout-index ...)。<strong>許可リスト方式なら集合が閉じる。過剰ブロックは可視で直せるが、取りこぼしは silent である。</strong>」<br><br>
+最後の一文が、セキュリティ設計で最も重要な非対称性です。<strong>許可リストが厳しすぎれば「ブロックされた」と目に見えて、その場で直せます。禁止リストに穴があっても、誰も気づきません。</strong> 同じ理由で、Web アプリの入力検証も「危険な文字を弾く」より「許される文字だけ通す」が原則になります。
+</div>
+
+<div class="codebox">
+<div class="path">.claude/hooks/design-desk-guard.sh:70-74(許可する動詞の列挙)</div>
+<pre><code>case "$verb" in
+  <span class="cm"># --- 内容を出さない: 無条件で通す ---</span>
+  status|add|commit|branch|remote|rev-parse|ls-files|ls-tree|shortlog|describe|…|init)
+    continue ;;
+  <span class="cm"># --- パッチ指定があるときだけ内容が出る ---</span>
+  ...</code></pre>
+</div>
+
+<p>分類の軸が「危険かどうか」ではなく <strong>「ファイルの中身が出るかどうか」</strong> になっているのが上手いところです。<code>git log</code> は通るが <code>git log -p</code> は(パスを限定しない限り)止まる。<strong>守りたいものは「実装の中身を読ませないこと」なので、判定軸をそこに合わせています。</strong></p>
+
+<p>さらに、このフックは<strong>マーカーファイルが存在するときだけ発火します</strong>(<code>tmp/.design-desk-armed</code>)。通常の開発セッションには一切影響しません。そして<strong>マーカー自体に触れようとするコマンドもブロックします</strong>(<code>:50-52</code>)——ガード自身を無効化する経路を塞いでおかないと、ガードは意味を持ちません。</p>
+
+<h3>4.3 <code>post-edit-check.sh</code> / <code>stop-test.sh</code> — 止めない側のフック</h3>
+
+<p>ガード 2 本と違い、この 2 本は<strong>絶対に作業を止めません</strong>(常に <code>exit 0</code>)。結果は JSON で「伝える」だけです。</p>
+
+<div class="codebox">
+<div class="path">.claude/hooks/post-edit-check.sh:35-39(結果の返し方)</div>
+<pre><code>if [ -n "$findings" ]; then
+  jq -n --arg ctx "[品質フック] $rel の編集後チェックで指摘:"$'\n'"$findings" \
+    '{hookSpecificOutput: {hookEventName: "PostToolUse", <b>additionalContext</b>: $ctx}}'
+fi
+exit 0</code></pre>
+</div>
+
+<p><code>additionalContext</code> は AI の文脈へ差し込まれ、<code>systemMessage</code>(<code>stop-test.sh</code> が使用)は開発者への警告として表示されます。<strong>「ブロックする」以外の返し方を持っている</strong>のがフック機構の要点です。</p>
+
+<h4>差分ゲート — 変わった側だけ回す</h4>
+
+<div class="codebox">
+<div class="path">.claude/hooks/stop-test.sh:16-22</div>
+<pre><code>changed="$( { git diff --name-only HEAD; git ls-files --others --exclude-standard; } 2&gt;/dev/null )"
+[ -z "$changed" ] &amp;&amp; exit 0            <span class="cm"># 変更が無ければ即終了</span>
+
+printf '%s\n' "$changed" | grep -Eq '\.go$' &amp;&amp; go_changed=1
+printf '%s\n' "$changed" | grep -Eq '^migrations/.*\.sql$' &amp;&amp; <b>go_changed=1</b>
+printf '%s\n' "$changed" | grep -Eq '^web/.*\.(ts|tsx)$' &amp;&amp; web_changed=1</code></pre>
+</div>
+
+<p><strong>マイグレーションの変更で Go テストを回す</strong>のが面白い判断です。理由がヘッダ(<code>:4-6</code>)にあります——「<code>dbtest.Setup</code> が全マイグレを適用するため <strong>go テストがマイグレーションの実質的な回帰テストになっている</strong>」。<a href="tag-tests.html">タグのテスト</a>で見たテンプレート方式の DB が、ここで別の役割を果たしているわけです。</p>
+
+<div class="warn">
+<span class="boxtitle">★無限ループを防ぐ 1 行</span>
+<code>stop-test.sh:13</code>: <code>[ "$(... jq -r '.stop_hook_active // false')" = "true" ] &amp;&amp; exit 0</code><br><br>
+Stop フックは「応答が完了したとき」に走ります。<strong>そのフックの出力が新しい応答を誘発すると、また Stop フックが走る</strong>——という無限ループが起こりえます。<code>stop_hook_active</code> は「いま Stop フック起因の応答中である」ことを示すフラグで、それを見て即座に降りています。<strong>自分の出力が自分を再起動しうる仕組みでは、必ず再入判定が要ります。</strong>
+</div>
+
+<h3>4.4 <code>session-start.sh</code> — 環境を直す、ただし絶対に止めない</h3>
+
+<p>クローン直後の環境では、検査に必要な <code>markdown-it-py</code> も <code>web/node_modules</code> も無く、検査が最初から赤になります。このフックはそれを整えます。</p>
+
+<div class="codebox">
+<div class="path">.claude/hooks/session-start.sh:9-20(設計方針が全て書いてある)</div>
+<pre><code><span class="cm"># <b>★直すのは環境であって検査ではない。</b>検査スクリプトは 1 行も緩めていない。</span>
+<span class="cm">#</span>
+<span class="cm"># ★★本スクリプトは<b>絶対にセッションを止めないこと</b>。</span>
+<span class="cm">#   - `set -e` は使わない。1 つの失敗で残りのステップが飛ぶのを防ぐため。</span>
+<span class="cm">#   - 各ステップの失敗は警告 1 行に留め、末尾で無条件に exit 0 する。</span>
+<span class="cm">#   - <b>環境整備が転けたせいで作業ができなくなるのが最悪である。</b></span>
+<span class="cm">#</span>
+<span class="cm"># ★<b>冪等であること</b>。既に入っているものは触らない ⇒ 2 回目以降は無音で即終了する。</span>
+<span class="cm">#</span>
+<span class="cm"># ★出力はすべて stderr へ出す。<b>SessionStart の stdout は Claude の文脈へ注入される</b>ため、</span>
+<span class="cm">#   毎セッション数行が積まれると本当に見るべき出力が埋もれる。何もしなければ 1 バイトも出さない。</span></code></pre>
+</div>
+
+<p>4 つの規律が並んでいます。とくに <strong>「直すのは環境であって検査ではない」</strong> は重要で、<strong>「検査が赤い」への対処として検査を緩めるのは最も安易で最も損な選択</strong>です。ここでは代わりに、赤くなる原因(依存の不在)を消しています。</p>
+
+<div class="note">
+<span class="boxtitle">タイムアウトの配分(<code>:37-40</code>)</span>
+「★配分は <code>settings.json</code> の hook timeout と整合させること。3 ステップの上限の合計 <strong>120 + 240 + 240 = 600 秒 &lt; hook timeout 660 秒</strong>」。<strong>内側の上限の合計が、外側の上限を超えないようにする</strong>——超えていると、内側のタイムアウト処理に到達する前に外側から強制終了され、後片付けもログも残りません。HTTP クライアントのタイムアウトとサーバ側のタイムアウトを設計するときと同じ考え方です。
+</div>
+
+<h3>4.5 ★フックはパーミッション層をバイパスする</h3>
+
+<p>最後に、フックを書くときに最も注意すべき性質です。<code>post-edit-check.sh:5-7</code> と <code>stop-test.sh:7-9</code> が同じ注記を持っています。</p>
+
+<div class="codebox">
+<div class="path">.claude/hooks/stop-test.sh:7-9</div>
+<pre><code><span class="cm"># 注: <b>フックはパーミッション層をバイパスして実行される。</b>本スクリプトは git の読み取り</span>
+<span class="cm">#     (diff/ls-files)とテスト実行のみで構成し、<b>ソース改変・git 書込・ネットワーク</b></span>
+<span class="cm">#     <b>アクセスを行わない</b>(CLAUDE.md §10 の趣旨に整合)。</span></code></pre>
+</div>
+
+<p>AI が直接実行するコマンドは許可・拒否のリストで制御されますが、<strong>フックはその外側で走ります</strong>。つまり<strong>フックに書いた処理は、パーミッション設定を素通りして実行される</strong>ということです。だから 2 本とも「読み取りとテスト実行だけ」と自己制限を宣言し、その旨をコードに書き残しています。<strong>「便利だから」とフックに書き込み処理を足すと、そこが制御の抜け穴になります。</strong></p>
+
+<h2>5. Flask / Spring の世界との対応</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>知っているもの</th><th>このリポジトリでの対応</th><th>違い</th></tr>
+<tr><td>pre-commit フレームワーク</td><td><code>scripts/check-*.sh</code> を手動 / フックから起動</td><td>依存を足さず自作。<strong>ESLint を入れなかった理由が実測で残っている</strong>(下記)</td></tr>
+<tr><td>Checkstyle / SpotBugs</td><td>同上(ただし対象は Go / TS / <strong>Markdown / 設計書</strong>まで)</td><td><strong>ドキュメントの規約まで機械検査している</strong>のが特徴的</td></tr>
+<tr><td>ベースライン抑制(SpotBugs の exclude filter)</td><td><code>BASELINE=101</code> 等の定数</td><td>抑制ではなく<strong>「増えたか」の判定</strong>。減ったら下げるという一方向の運用</td></tr>
+<tr><td>Git の <code>pre-push</code> フック</td><td><code>.claude/hooks/pre-push-guard.sh</code></td><td><strong>リポジトリからコミット配布される</strong>ので、clone した全環境で自動的に効く(<code>.git/hooks/</code> は配布されない)</td></tr>
+<tr><td>CI(GitHub Actions)</td><td>—</td><td>ここで挙げた検査は<strong>全てローカルで完結</strong>する。個人 OSS なのでフィードバックが速い方を選んでいる</td></tr>
+</table>
+</div>
+
+<div class="compare">
+<span class="boxtitle">「ESLint を入れない」という判断の残し方</span>
+<code>check-import-order.sh:18-31</code> は、ESLint を採らなかった理由を<strong>実測値付きで</strong>書いています——ESLint の射程に入る規約を全数調査したところ、import 順以外の実違反は合計 1 件だった(<code>any</code>=1 / <code>console.log</code> 本番残置=0 / class コンポーネント=0 / <code>fmt.Println</code> 残置=0 …)。「<strong>依存 4〜5 個を増やす利得が無い</strong>ため、既存の自作検査 10 本と同じ型で自作した」。<br><br>
+そして最後にこう書いています——<strong>「★この判断は『ESLint は要らない』ではない。型情報が要るルール(<code>react-hooks/exhaustive-deps</code> 等)が §4 / §10 へ入ったら再考する。」</strong> <strong>判断が有効である条件まで書いてあるので、前提が変わったときに再検討できます。</strong> 技術選定の記録としてかなり良い形です。
+</div>
+
+<h2>6. 持ち帰り</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>原則</th><th>要点</th><th>§</th></tr>
+<tr><td><strong>「未実行」を「問題なし」にしない</strong></td><td>終了コードは 0 / 1 / <strong>2</strong> の三値。依存が無いなら赤でも緑でもなく「実行できなかった」</td><td>3.1</td></tr>
+<tr><td><strong>0 を目指さない検査を作る</strong></td><td>既存違反が多い規約には、ベースライン固定型。<strong>一方向にしか動かさない</strong>ことが規律の本体</td><td>3.2</td></tr>
+<tr><td><strong>検査を検査する</strong></td><td>陽性対照と<strong>陰性対照</strong>の両方。緑は「機能している」証拠にならない</td><td>3.3, 3.7</td></tr>
+<tr><td><strong>踏んだ欠陥を対照として残す</strong></td><td>直して終わりにせず、再現用の注入口ごとスクリプトへ埋める</td><td>3.4</td></tr>
+<tr><td><strong>止める検査と知らせる検査を分ける</strong></td><td>誤検出が多いものを blocking にすると、検査ごと無視される</td><td>3.5</td></tr>
+<tr><td><strong>限界を自分で書く</strong></td><td>「床であって証明ではない」。検出できない範囲を明示すると過信が防げる</td><td>3.6</td></tr>
+<tr><td><strong>許可リスト方式</strong></td><td><strong>過剰ブロックは可視で直せるが、取りこぼしは silent</strong>。禁止列挙は必ず漏れる</td><td>4.1, 4.2</td></tr>
+<tr><td><strong>解釈できないときは通さない</strong></td><td>パース失敗時に「対象外」へ倒すと、壊れた入力が素通りする</td><td>4.1</td></tr>
+<tr><td><strong>自動で走るものは絶対に止めない</strong></td><td>環境整備・通知系は常に <code>exit 0</code>・冪等・出力は stderr</td><td>4.4</td></tr>
+<tr><td><strong>検査が赤いとき、検査を緩めない</strong></td><td>直すのは環境か実装。<strong>基準を下げるのは最後の手段</strong></td><td>4.4</td></tr>
+</table>
+</div>
+
+<p>アプリのコードを読み終えたら、ぜひ <code>scripts/check-import-order.sh</code> のヘッダコメント(70 行ほど)を通しで読んでみてください。<strong>何を検出し、何を検出しないか、なぜその方式を選び、どういう条件で再考するか</strong>——一本の小さなシェルスクリプトに、設計判断の記録がどれだけ書けるかの見本になっています。</p>
+
+<footer>
+Tacpendium Go/React 学習ガイド — 生成日 2026-09-09(コードは同日時点の main 相当スナップショットに基づく)。<a href="index.html">目次へ戻る</a>
+</footer>
+</div>
+</body>
+</html>

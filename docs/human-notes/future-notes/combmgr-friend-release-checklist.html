@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>友人リリース 最低限チェックリスト</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#fafaf8;--surface:#ffffff;--border:#e4e2dc;--border-strong:#d0cdc4;
+    --text:#2a2925;--text-dim:#6b6862;--text-faint:#9a968d;
+    --accent:#3d6b5e;--accent-soft:#eef3f1;--human:#b5763a;--human-soft:#f7efe5;
+    --warn:#b5613a;--warn-soft:#faf3f0;--crit:#a8443a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Zen Kaku Gothic New',sans-serif;line-height:1.8;font-size:15px;}
+  .wrap{max-width:780px;margin:0 auto;padding:0 24px;}
+  header{padding:60px 0 30px;border-bottom:1px solid var(--border);}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;}
+  h1{font-size:1.7rem;font-weight:700;line-height:1.4;margin-bottom:14px;letter-spacing:-0.01em;}
+  .meta{color:var(--text-faint);font-size:0.8rem;font-family:'JetBrains Mono',monospace;}
+  .summary{color:var(--text-dim);font-size:1rem;margin-top:14px;}
+  .summary strong{color:var(--text);font-weight:500;}
+  section{padding:30px 0;border-bottom:1px solid var(--border);}
+  h2{font-size:1.18rem;font-weight:700;margin-bottom:14px;letter-spacing:-0.01em;display:flex;align-items:baseline;gap:10px;}
+  h2 .n{font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--accent);}
+  .definition{background:var(--accent-soft);border-left:3px solid var(--accent);padding:18px 22px;border-radius:0 6px 6px 0;margin:6px 0 4px;font-size:1.0rem;color:var(--text);}
+  .definition .label{font-family:'JetBrains Mono',monospace;font-size:0.66rem;letter-spacing:0.1em;color:var(--accent);display:block;margin-bottom:6px;}
+  ul.check{list-style:none;}
+  ul.check li{position:relative;padding:9px 0 9px 30px;border-top:1px solid var(--border);color:var(--text-dim);font-size:0.95rem;}
+  ul.check li:first-child{border-top:none;}
+  ul.check li input{position:absolute;left:0;top:13px;width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+  ul.check li .t{color:var(--text);font-weight:500;}
+  ul.check li .s{display:block;color:var(--text-faint);font-size:0.85rem;margin-top:2px;}
+  .tag{font-family:'JetBrains Mono',monospace;font-size:0.58rem;letter-spacing:0.04em;padding:2px 7px;border-radius:4px;margin-left:8px;vertical-align:middle;white-space:nowrap;}
+  .tag.crit{background:#f7e9e7;color:var(--crit);border:1px solid #e8cfca;}
+  .tag.rec{background:var(--accent-soft);color:var(--accent);border:1px solid #cfe0d9;}
+  .tag.opt{background:var(--human-soft);color:var(--human);border:1px solid #e8d5bf;}
+  .quote{background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:14px 18px;margin:12px 0;font-size:0.92rem;color:var(--text);}
+  .quote .label{font-family:'JetBrains Mono',monospace;font-size:0.6rem;letter-spacing:0.08em;color:var(--text-faint);display:block;margin-bottom:8px;}
+  .note{background:var(--accent-soft);border-radius:6px;padding:10px 14px;font-size:0.86rem;color:var(--text);margin-top:10px;}
+  .note b{font-weight:700;}
+  .skip{background:var(--warn-soft);border-left:3px solid var(--human);padding:16px 20px;border-radius:0 6px 6px 0;}
+  .skip .label{font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;color:var(--human);display:block;margin-bottom:8px;}
+  .skip ul{list-style:none;}
+  .skip li{padding:3px 0 3px 16px;position:relative;color:var(--text-dim);font-size:0.9rem;}
+  .skip li::before{content:'×';position:absolute;left:0;color:var(--human);}
+  footer{padding:28px 0 56px;color:var(--text-faint);font-size:0.8rem;font-family:'JetBrains Mono',monospace;text-align:center;}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Friend Release · Minimum Checklist</div>
+    <h1>友人リリース<br>最低限チェックリスト</h1>
+    <div class="meta">Tacpendium ／ 対象: 友人・LAN・少人数のお試し版 ／ 正式公開用 <code>combmgr-release-checklist.html</code> とは別</div>
+    <p class="summary">これは<strong>LAN内・少人数・善意の友人</strong>に渡すお試し版の最低限。正式公開で要るもの（法務文面の完全版・商標・規模対応 等）は今回は対象外。目的は2つだけ——<strong>①友人がちゃんと試せる ②友人のデータと善意を壊さない</strong>。</p>
+  </div>
+</header>
+<div class="wrap">
+
+<section>
+  <h2><span class="n">00</span>判断の物差し</h2>
+  <div class="definition">
+    <span class="label">LITMUS</span>
+    各項目は「<strong>これが無いと、友人が試せない／データが飛ぶ／公式と誤解される</strong>」のどれかに当たるか。当たるものだけ残し、当たらないものは友人リリースでは切ってよい。
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">01</span>動作・配布（友人が試せる）</h2>
+  <ul class="check">
+    <li><input type="checkbox"><span class="t">友人のメインキャラの seed データが入った状態で起動できる</span></li>
+    <li><input type="checkbox"><span class="t">渡し方の確定（LAN URL か実行ファイルか）＋ 30秒の起動手順メモ</span></li>
+    <li><input type="checkbox"><span class="t">別PC・別ブラウザでの素の起動確認</span><span class="s">自分のマシン依存（入っているもの・パス）が無いか</span></li>
+    <li><input type="checkbox"><span class="t">主要動線の煙テスト</span><span class="s">初回データ投入・コンボ登録・閲覧など、一通りが落ちずに動く</span></li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">02</span>データ保護（最重要）</h2>
+  <ul class="check">
+    <li><input type="checkbox"><span class="t">誤操作でデータが飛ばない仕組み<span class="tag crit">最優先</span></span><span class="s">ゴミ箱／復元（FR601相当）か、最低限のバックアップ手段のどちらか</span></li>
+    <li><input type="checkbox"><span class="t">複数同時操作で破綻しないかの軽い確認</span><span class="s">楽観排他・WAL 周りが、友人と自分が同時に触っても壊れないか</span></li>
+    <li><input type="checkbox"><span class="t">データ消失系の操作に確認ダイアログ</span></li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">03</span>データの永続性・移行（お試し版の扱い）</h2>
+  <p style="color:var(--text-dim);font-size:0.94rem;margin-bottom:10px;">今回はまだ正式版ではなくテーブル定義が変わり得る。移行の作り込みは正式版の宿題。今は<strong style="color:var(--text);">「対応」より「説明」</strong>で正しく処理する（説明7・対応3）。</p>
+  <div class="quote">
+    <span class="label">伝える文面（初回通知 or 渡すときの一言）· 草案</span>
+    これは<strong>お試し版</strong>です。今後アプリの内部構造が変わると、<strong>今入力したデータが引き継げない場合があります</strong>。大事なデータは、エクスポートでときどき手元に保存しておいてください。
+  </div>
+  <ul class="check">
+    <li><input type="checkbox"><span class="t">エクスポートを必ず用意する<span class="tag crit">最優先</span></span><span class="s">本体からコンボ／入力データを書き出せる＝スキーマが変わっても再取り込みで救える。実質的な移行保険（移行スクリプトより遥かに安い）</span></li>
+    <li><input type="checkbox"><span class="t">DBファイルのバックアップ手段を案内</span><span class="s">SQLite ならファイルをコピーしておく旨を一言。データ保護策とも重なる</span></li>
+    <li><input type="checkbox"><span class="t">「将来データ移行できない可能性」を Known issues に1行</span></li>
+  </ul>
+  <div class="note"><b>設計メモ（今やらなくてよい）</b>：エクスポート形式を<b>スキーマ非依存</b>に寄せておくと後が楽。生のテーブルダンプではなく、コンボを「始動技・レシピ・タグ」のような<b>意味のある単位</b>で書き出せれば、内部テーブルが変わっても再取り込みできる。正式版の移行戦略にもそのまま効く。</div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>最低限の表示（誤解・クレーム予防）</h2>
+  <ul class="check">
+    <li><input type="checkbox"><span class="t">初回通知の3点</span><span class="s">非公式／データは手入力＝誤りあり／ゲームを解析・改造しない</span></li>
+    <li><input type="checkbox"><span class="t">致命的な操作ミスを誘う導線がないか</span></li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">05</span>フィードバック（リリースの目的そのもの）</h2>
+  <ul class="check">
+    <li><input type="checkbox"><span class="t">感想・不具合の返却先を1本決める</span><span class="s">口頭・チャットでも可</span></li>
+    <li><input type="checkbox"><span class="t">既知の未完成・やらないことを一言伝える</span><span class="s">期待値合わせ。お試し版だと最初に言っておく</span></li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">06</span>意図的にやらないこと（今回はスコープ外）</h2>
+  <div class="skip">
+    <span class="label">正式公開用 release-checklist.html 側へ</span>
+    <ul>
+      <li>ライセンス／免責の完全文面・商標・カプコン関連の公開対応</li>
+      <li>自動更新・英語ロケール・認証・マルチユーザーの作り込み</li>
+      <li>本格的なマイグレーション機構・バージョン間データ移行</li>
+      <li>性能の作り込み（少人数なら不要）</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+<footer>
+  <div class="wrap">Tacpendium — Friend Release Minimum · 正式公開は combmgr-release-checklist.html を参照 ／ 本書は法的助言ではない</div>
+</footer>
+</body>
+</html>

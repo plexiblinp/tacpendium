@@ -1,0 +1,279 @@
+# nightly 検査(M24-09a / D-480、M24-09d / D-594)。
+# 目的(pr-checks.yml とは目的が違う): PR ごとの高速検査に載せられない検査を、
+# 1 日 1 回まとめて回す。★本ワークフローは job を 2 本持つ。
+#
+#   crossbuild —— DES-002 §11.3 の目的をそのまま保つ ——「macOS・Linux が非公式対応
+#     とはいえ、ビルドが通らなくなった時点で気づける体制を維持する」。
+#
+#   e2e —— ★★main の E2E が緑かを「観測」する唯一の経路である(M24-09d / D-594)。
+#     これが無いと、main の E2E が緑かを知る手段は人間が書いた完了報告の文言しかない。
+#     **報告は主張であって観測ではない。**
+#     ★PR ごとには載せない(pr-checks.yml 末尾の注記を参照)。workers: 1 のため 4〜5 分
+#       かかり、PR ごとに足すかは別の判断である(M24-09d §1.6-6)。
+#
+# ★本ワークフローは必須 check にしない(§11-2 の暫定案・2026-08-20 開発者確定)。
+#   nightly が赤いとき、壊れているのは当該 PR ではない場合がある。
+#   必須にすると無関係な PR が止まる。⇒ 赤は通知として扱い、followup へ 1 行足す運用。
+
+name: Nightly
+
+on:
+  # 推測: 実行時刻は UTC 18:00(= JST 翌 03:00)とした。開発者の作業時間帯を外し、
+  #       朝に結果を見られる位置に置いている。
+  #
+  # ★schedule は「リポジトリが 60 日間非アクティブだと GitHub が自動で無効化する」。
+  #   個人 OSS で長期の中断がありうる以上、いつの間にか nightly が止まっている状態は起きる。
+  #   ⇒ 久しぶりに再開したときは、まず Actions タブで本ワークフローが有効かを見ること。
+  #   (無効化されていても workflow_dispatch の手動起動は使える)
+  schedule:
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  crossbuild:
+    name: cross-build (windows / macos / linux)
+    # ═══════════════════════════════════════════════════════════════
+    # ★ubuntu ランナー 1 台で 3 OS 分を出す(2026-08-20 開発者確定)。
+    #
+    #   modernc.org/sqlite は純 Go 実装であり CGO を要さない。Makefile の
+    #   build-windows / build-darwin / build-linux はいずれも CGO_ENABLED=0 の
+    #   クロスコンパイルで、ホスト OS を問わず成立する。
+    #   ⇒ windows / macos ランナーを使う必要が無い。
+    #
+    #   本リポジトリは private であり、Actions の実行時間は macOS が 10 倍・
+    #   Windows が 2 倍で消費される。OS ランナー 3 台構成にすると概ね 13 倍になる。
+    #   ubuntu 1 台なら 1 倍で済み、DES-002 §11.3 の目的(ビルドが通らなくなった
+    #   時点で気づく)はそのまま満たす。
+    #
+    #   ★mattn/go-sqlite3 へのフォールバックは導入しない(指示書 §4.2-4)。
+    #     導入すると CGO 有効化が要り、クロスビルドが成立しなくなる。
+    # ═══════════════════════════════════════════════════════════════
+    runs-on: ubuntu-latest
+    # private リポジトリの Actions 分数を守るため既定の 360 分を使わない。
+    # ローカル実測は make build-all で 127 秒(フロント 3 回ビルドを含む)。
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Record start time
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      # make build-all を呼ぶ。ビルドフラグ(-tags=embed_web / CGO_ENABLED=0 /
+      # GOOS・GOARCH / 出力名)の正本を Makefile 側に一本化するため、
+      # ワークフローへ go build を書き写さない(書き写すと必ずずれる)。
+      #
+      # 既知の非効率: build-all は build-windows / build-darwin / build-linux を
+      # 順に呼び、各ターゲットが `pnpm build` を行うためフロントを 3 回ビルドする。
+      # nightly は 1 日 1 回であり実害が小さいため、Makefile 側の最適化は行わない
+      # (Makefile は指示書 §2.1 の対象外)。
+      - name: make build-all
+        run: make build-all
+
+      - name: Verify artifacts
+        run: |
+          set -eu
+          {
+            echo "### cross-build 成果物"
+            echo ""
+            echo "| ファイル | サイズ | file(1) |"
+            echo "| --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          # ★DES-002 §11.2 の配布物の「中身にあたるバイナリ」3 点。1 つでも欠けたら赤にする。
+          #
+          # ★誤読注意: §11.2 が定める配布物そのものではない。同節の配布物は
+          #     tacpendium-windows-amd64.zip
+          #     tacpendium-darwin-arm64.tar.gz   (★M38-03 で macos → darwin へ。D-893)
+          #     tacpendium-linux-amd64.tar.gz
+          #   というアーカイブ 3 点であり、名前・中身の正本は scripts/release-targets.sh
+          #   である(ここへ中身を写さない。CHANGE-213 / E-76)。
+          #   ⇒ **アーカイブ化と README.txt 等の同梱は `make release-archives` の手番であり、
+          #      本ワークフローの範囲外である**(指示書 §1.3-3)。
+          #   ★本 artifact をそのまま Releases へ上げてはいけない —— 同梱すべき README.txt
+          #     こそが、LAN の FW/AV トラブルシューティングの本体である(README.txt の
+          #     「■ スマホから接続できないとき(トラブルシューティング)」の節。★行番号で指さない)。
+          for f in \
+            dist/tacpendium-windows-amd64.exe \
+            dist/tacpendium-darwin-arm64 \
+            dist/tacpendium-linux-amd64
+          do
+            test -f "$f" || { echo "missing artifact: $f" >&2; exit 1; }
+            echo "| \`$f\` | $(du -h "$f" | cut -f1) | $(file -b "$f") |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          {
+            echo ""
+            echo "| 項目 | 値 |"
+            echo "| --- | --- |"
+            echo "| 所要 | $(( $(date +%s) - JOB_START )) 秒 |"
+            echo "| ランナー実コア数 | $(nproc) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ★GitHub Releases への添付は作らない(指示書 §1.3-3)。
+      #   DES-002 §11.3 は「CI でビルド成功したものを Releases に添付する」と書いているが、
+      #   公開の手番は人が持つ。本ワークフローは artifact として残すところまで。
+      # 推測: 保存期間は 14 日とした(既定 90 日)。private リポジトリの storage を
+      #       節約するため。nightly は毎日出るので古いものを長く持つ意味が薄い。
+      #       ★保存期間の正本はこの retention-days である。README は日数を書かず本欄を参照する
+      #         (両方に日数を書くと、片方を変えたときに必ずずれる)。
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tacpendium-crossbuild
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  # ════════════════════════════════════════════════════════════════════
+  # e2e —— Playwright スイートを nightly で回す(M24-09d / D-594)。
+  #
+  # ★★playwright.config.ts は 1 行も変えていない。意図である。
+  #   本 job の目的は「main の E2E が緑か」を観測することであり、ローカルの
+  #   `make e2e` と別条件で回すと、観測している対象がローカルと別物になる。
+  #   ⇒ workers: 1 / retries: 1 / reporter: list をそのまま使い、`make e2e` を呼ぶ。
+  #   ★workers: 1 は外さないこと(SUPP-001 §5.5 / CHANGE-135 / D-597)。
+  #     干渉検知のカナリア spec(aa-interference-probe-{a,b})が並列を前提に壊れる設計である。
+  #
+  # ★★使い捨て DB と専用ポートが CI で成立する根拠(M24-09d §3.3-10 の実査):
+  #   - DB: web/e2e/.tmp/tacpendium-e2e.db —— リポジトリ内の相対パス。ランナーで書ける。
+  #     (絶対パスは config.ValidateDataPath が拒否するため、この形でなければならない)
+  #   - ポート: 47390(バックエンド) / 5273(Vite)。ubuntu-latest で空いている。
+  #     ★config.toml が無いと playwright.config.ts の readDevBackendPort() が 47320 へ
+  #       フォールバックし、オフセット 0 = 基準ポートになる。CI には config.toml が
+  #       無いため、必ずこの経路を通る。
+  #   - フロントのビルドは playwright.config.ts の webServer が自分で走らせる
+  #     (`pnpm build && vite preview`)。★Makefile 側へ移さないこと(古い dist を緑で通す)。
+  #
+  # ★★「go build の事前ウォーム」は飾りではない。
+  #   バックエンド側の webServer は `go run ./cmd/tacpendium` であり、起動タイムアウトが
+  #   60 秒である(playwright.config.ts)。冷えた GOCACHE では初回コンパイルだけで
+  #   これを超えうる。⇒ 先にビルドしてキャッシュを温めてから make e2e を呼ぶ。
+  # ════════════════════════════════════════════════════════════════════
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # ローカル実測は 4〜5 分。CI はビルドとブラウザ取得の分だけ長い。
+    # private リポジトリの Actions 分数を守るため既定の 360 分を使わない。
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Record start time
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Restore and save Go build cache
+        id: gocache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: ${{ runner.os }}-go-
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      # --frozen-lockfile: pnpm-lock.yaml に差分を出さない(pr-checks.yml と同じ理由)。
+      # ★Makefile の ensure-web-deps も同じことをするが、あちらは「不在のときだけ」動く。
+      #   ここで先に入れておくと、次の playwright install が解決できる。
+      - name: pnpm install
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      # ★--with-deps が要る。Makefile のフォールバックは `playwright install chromium`
+      #   だけであり、ランナーに無い共有ライブラリを入れない。
+      #   ⇒ ここで先に入れる。make e2e 側の install は取得済みのため即返る。
+      - name: playwright install
+        working-directory: web
+        run: pnpm exec playwright install --with-deps chromium
+
+      # go run ./cmd/tacpendium の初回コンパイルを webServer の 60 秒枠の外で済ませる。
+      # -o /dev/null: 成果物は要らない。温めたいのは GOCACHE である。
+      - name: Warm Go build cache
+        run: go build -o /dev/null ./cmd/tacpendium
+
+      # ★★`make e2e` をそのまま呼ぶ。playwright を直接叩かない。
+      #   直接叩くと PW_EXECUTABLE_PATH の扱いが Makefile と割れる(M24-09d / E-76)。
+      # 件数を summary へ写すためログを残す(教訓 E-125)。
+      # 「件数が書かれていない報告は、そのテストが 1 件も走っていない可能性を排除できない」。
+      # tee でパイプするため pipefail が要る。
+      - name: make e2e
+        run: |
+          set -o pipefail
+          make e2e 2>&1 | tee e2e.log
+
+      # ★件数は「読めなかった」と「0 件だった」を区別して出す。
+      #   両方を空欄にすると、スイートが 1 件も走っていない事故が緑に見える(E-125)。
+      - name: Job summary
+        if: always()
+        run: |
+          PASSED=""; FAILED=""; FLAKY=""
+          if [ -f e2e.log ]; then
+            PASSED=$(grep -oE '[0-9]+ passed' e2e.log | tail -1 || true)
+            FAILED=$(grep -oE '[0-9]+ failed' e2e.log | tail -1 || true)
+            FLAKY=$(grep -oE '[0-9]+ flaky' e2e.log | tail -1 || true)
+          fi
+          {
+            echo "### E2E (Playwright)"
+            echo ""
+            echo "| 項目 | 値 |"
+            echo "| --- | --- |"
+            echo "| コマンド | \`make e2e\` |"
+            echo "| 所要(job 全体) | $(( $(date +%s) - JOB_START )) 秒 |"
+            if [ -f e2e.log ]; then
+              echo "| passed | ${PASSED:-**行が無い(読めなかった)**} |"
+              echo "| failed | ${FAILED:-行なし} |"
+              echo "| flaky | ${FLAKY:-行なし} |"
+            else
+              echo "| 件数 | **ログ不在(テスト到達前に失敗)** |"
+            fi
+            echo "| workers | 1 (SUPP-001 §5.5 / CHANGE-135。外さないこと) |"
+            echo "| ランナー実コア数 | $(nproc) |"
+            echo ""
+            echo "> **passed の件数が出ていなければ、スイートが 1 件も走っていない可能性を排除できない。**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # 赤のときだけ trace を残す(playwright.config.ts の trace: on-first-retry)。
+      # 緑のときは何も出ないため、保存しても storage を食うだけである。
+      - name: Upload Playwright artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-failure
+          path: |
+            web/test-results/
+            e2e.log
+          if-no-files-found: ignore
+          retention-days: 14

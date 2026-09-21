@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初回起動の注意事項・免責表示 — 設計レポート</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#fafaf8;--surface:#ffffff;--border:#e4e2dc;--border-strong:#d0cdc4;
+    --text:#2a2925;--text-dim:#6b6862;--text-faint:#9a968d;
+    --accent:#3d6b5e;--accent-soft:#eef3f1;--human:#b5763a;--human-soft:#f7efe5;
+    --warn:#b5613a;--warn-soft:#faf3f0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Zen Kaku Gothic New',sans-serif;line-height:1.85;font-size:15px;}
+  .wrap{max-width:780px;margin:0 auto;padding:0 24px;}
+  header{padding:64px 0 32px;border-bottom:1px solid var(--border);}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;}
+  h1{font-size:1.7rem;font-weight:700;line-height:1.4;margin-bottom:14px;letter-spacing:-0.01em;}
+  .meta{color:var(--text-faint);font-size:0.8rem;font-family:'JetBrains Mono',monospace;}
+  .summary{color:var(--text-dim);font-size:1rem;margin-top:14px;}
+  .summary strong{color:var(--text);font-weight:500;}
+  section{padding:36px 0;border-bottom:1px solid var(--border);}
+  h2{font-size:1.2rem;font-weight:700;margin-bottom:6px;letter-spacing:-0.01em;}
+  h2 .n{font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--accent);margin-right:10px;}
+  .sub{color:var(--text-faint);font-size:0.84rem;margin-bottom:20px;}
+  h3{font-size:1rem;font-weight:700;margin:20px 0 8px;}
+  p{margin-bottom:13px;color:var(--text-dim);}
+  p strong,li strong{color:var(--text);font-weight:500;}
+  ul{list-style:none;margin:6px 0 14px;}
+  li{padding:3px 0 3px 18px;position:relative;color:var(--text-dim);font-size:0.94rem;}
+  li::before{content:'–';position:absolute;left:0;color:var(--text-faint);}
+  .definition{background:var(--accent-soft);border-left:3px solid var(--accent);padding:18px 22px;border-radius:0 6px 6px 0;margin:22px 0;font-size:1.0rem;color:var(--text);}
+  .definition .label{font-family:'JetBrains Mono',monospace;font-size:0.66rem;letter-spacing:0.1em;color:var(--accent);display:block;margin-bottom:6px;}
+  .draft{background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:18px 20px;margin:14px 0;}
+  .draft .label{font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;color:var(--text-faint);display:block;margin-bottom:10px;}
+  .draft .ttl{font-weight:700;margin-bottom:8px;}
+  .draft ul{margin:0;}
+  .draft li{font-size:0.92rem;color:var(--text);}
+  .btnrow{margin-top:12px;}
+  .btn{display:inline-block;font-size:0.8rem;background:var(--accent);color:#fff;border-radius:6px;padding:5px 16px;font-family:'JetBrains Mono',monospace;}
+  .contrast{display:flex;gap:14px;margin:18px 0;flex-wrap:wrap;}
+  .ci{flex:1;min-width:240px;border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+  .ci.no{background:var(--warn-soft);border-color:#e8d0c6;}
+  .ci.ok{background:var(--accent-soft);border-color:#cfe0d9;}
+  .ci-label{font-family:'JetBrains Mono',monospace;font-size:0.64rem;letter-spacing:0.06em;margin-bottom:8px;}
+  .ci.no .ci-label{color:var(--warn);}
+  .ci.ok .ci-label{color:var(--accent);}
+  .ci p{margin:0;font-size:0.88rem;}
+  footer{padding:30px 0 56px;color:var(--text-faint);font-size:0.8rem;font-family:'JetBrains Mono',monospace;text-align:center;}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Design Report · Initial Notice &amp; Disclaimer</div>
+    <h1>初回起動の注意事項・免責表示<br>設計レポート</h1>
+    <div class="meta">Tacpendium ／ 種別: 設計検討（文面は草案）／ 本書は法的助言ではない</div>
+    <p class="summary">初回起動の注意事項は<strong>必要事項だけ・不安を煽らない</strong>を原則とする。立場（一般／配信者／権利者）で<strong>表示を出し分けるのではなく、内容を置き分ける</strong>。配信者向けに「カプコンに怒られたら飛び火するかも」式の警告は<strong>書かない</strong>（過剰・逆効果）。一方で「<strong>ゲームを解析・改造して隠し値や内部判定を覗くツールではない</strong>」ことは、最も嫌われる類型と線を引くため積極的に表明する。</p>
+  </div>
+</header>
+<div class="wrap">
+
+<section>
+  <h2><span class="n">01</span>基本方針</h2>
+  <div class="definition">
+    <span class="label">PRINCIPLE</span>
+    全員に出すのは<strong>最小限の初回通知1枚</strong>。立場別の内容は<strong>About（情報）画面に常設</strong>して「読みたい人が読める」状態にする。機能固有の注意は、その機能を<strong>初めて使う瞬間に出す（累進的開示）</strong>。
+  </div>
+  <ul>
+    <li><strong>煽らない</strong>：「WARNING／警告」ではなく「はじめに」。否定形を並べず、事実を淡々と置く。</li>
+    <li><strong>立場を選ばせない</strong>：初回に「あなたは誰？」と分類させない（検証できない・摩擦になる・カプコンの人が自己申告する状況も想定しにくい）。</li>
+    <li><strong>front-load しない</strong>：全部を初回に積まず、必要な時に必要な注意を出す。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">02</span>想定する立場（＝Aboutに置くセクション）</h2>
+  <ul>
+    <li><strong>一般利用者</strong> — 初回通知の対象はこれだけ。</li>
+    <li><strong>配信・動画で使う人</strong> — About に常設。</li>
+    <li><strong>権利者（カプコン）の方へ</strong> — About／README に常設。撤退ラインを“相手から見える形”にする＝善意の表明。</li>
+    <li><strong>開発者・コントリビューター</strong>（任意・優先度低） — README 側に。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">03</span>初回通知の文面案（草案）</h2>
+  <p class="sub">核は3点：「非公式」「データは手入力＝誤りあり」「ゲームを解析・改造しない」。残りは軽め。</p>
+  <p>答えるべき懸念は2層ある——<strong>出所の懸念</strong>（公式か・正確か → 「非公式・手入力」）と、<strong>手段の懸念</strong>（ゲームを解析して非公開情報を覗いていないか → 「解析・改造しない」）。後者は格ゲーで最も嫌われ、EULAも禁じる類型なので、<strong>やっていないことを積極的に言う</strong>のがクリーン路線の核心。出所の表明（引き算の安心）に、手段の表明（覗き見もしていないという別軸の安心）を足す。</p>
+  <div class="draft">
+    <span class="label">INITIAL NOTICE · DRAFT</span>
+    <div class="ttl">はじめに（このアプリについて）</div>
+    <ul>
+      <li>これは有志が作った<strong>非公式ツール</strong>です。カプコンとは関係ありません。</li>
+      <li>技・フレームなどのデータは<strong>手入力のため、誤りが含まれることがあります</strong>。大事な場面はゲーム内で確認してください。</li>
+      <li>このアプリは<strong>ゲームを解析・改造したり、メモリや通信を読み取ったりしません</strong>。扱うのはゲーム画面で確認できる情報を手で入力したものだけで、隠し値や内部の判定を覗くツールではありません。</li>
+      <li>データは<strong>お使いの端末内にのみ保存</strong>されます（アカウント不要）。</li>
+      <li>名称・商標はカプコンに帰属します。</li>
+      <li>間違いの指摘・不具合は［報告先］へ。詳しい利用条件・ライセンスは［詳しく］から。</li>
+    </ul>
+    <div class="btnrow"><span class="btn">わかりました</span></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>About内・立場別セクションの文面案（草案）</h2>
+
+  <div class="draft">
+    <span class="label">FOR STREAMERS · DRAFT</span>
+    <div class="ttl">配信・動画で使う方へ</div>
+    <p style="margin:0;">配信・動画での画面表示は歓迎です。ひとつだけ、視聴者に「公式ツール／公式データ」と誤解されないよう、<strong>非公式・データは有志の手入力</strong>とひとこと添えてください。視聴者の警戒（チート・解析ツールに見えること）を避けるため、<strong>ゲームを解析・改造するツールではない</strong>点も添えられます。ゲームのプレイ映像自体は、カプコンの動画／配信ガイドラインに従ってください。</p>
+  </div>
+
+  <div class="draft">
+    <span class="label">FOR RIGHTS HOLDERS · DRAFT</span>
+    <div class="ttl">権利者の方へ</div>
+    <p style="margin:0;">本ツールは個人による<strong>非営利のファンツール</strong>で、<strong>ゲームの解析・改造は行わず</strong>、扱うデータはゲーム画面で確認できる情報の手入力に限られます。掲載データや権利についてご懸念があれば［連絡先］までご連絡ください。<strong>ご連絡をいただければ、速やかに該当データの配信停止・修正、必要なら公開停止に対応します。</strong></p>
+  </div>
+
+  <p>権利者向けは、これまで決めてきた<strong>撤退ライン</strong>を相手から見える形にしたもの。連絡経路と善意を明示しておくこと自体が、エスカレーションの確率を下げる。</p>
+</section>
+
+<section>
+  <h2><span class="n">05</span>論点：配信者に「飛び火するかも」と書くべきか</h2>
+  <div class="definition">
+    <span class="label">DECISION</span>
+    <strong>書かない。</strong>「クリーンに作っているがカプコンに怒られる可能性があり、配信者に飛び火するかも」という趣旨の警告は、必要事項ではなく過剰。
+  </div>
+  <div class="contrast">
+    <div class="ci no">
+      <div class="ci-label">書かない理由</div>
+      <p>① リスクと不釣り合い：enforcement が動くならツール（配信停止・データ削除）が対象で、画面に映した配信者を追うのは想定しにくい。<br>② 逆効果：広めてくれる人に「使うと巻き込まれるかも」は可視性を自ら削ぐ。作者の不安が伝染し、かえって警戒を呼ぶ。<br>③ 筋が違う：Tacpendium はMOD／オーバーレイでなく独立した参照アプリ。配信者が守るべきは「ゲーム映像は公式ガイドラインに従う」という通常の話だけ。</p>
+    </div>
+    <div class="ci ok">
+      <div class="ci-label">代わりに置くもの</div>
+      <p>・全員向けの<strong>「非公式」表明</strong>（誰の目にも入る）。<br>・配信者には<strong>「視聴者に公式と誤解させないでね」というポジティブな依頼</strong>のみ。<br>・ツールの法的リスクという正直な開示は、<strong>権利者向けセクション＋全体の非公式表明</strong>で十分に果たせる。脅し文句は不要。</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>表示設計の勘どころ</h2>
+  <ul>
+    <li><strong>初回は1回だけ</strong>。設定からいつでも再表示できるように。</li>
+    <li><strong>全文は畳む</strong>：MITライセンス・プライバシー・免責の全文は「詳しく」の裏に。初回画面には出さない。</li>
+    <li><strong>累進的開示</strong>：AI機能を初めて有効化する時＝「自分のAPIキーで外部に送信される」旨。バトルログを初めて取り込む時＝「相手IDは外部共有しない」旨。これらは初回通知に混ぜない。</li>
+    <li><strong>自動判定はしない</strong>：立場は検出できない。出し分けは“内容の置き場所”で行う。</li>
+    <li><strong>「解析しない」の根拠はAboutに畳む</strong>：データはゲーム画面で確認できる情報の手入力（OCR／手動保存パース）であり、メモリ・通信の解析や改造をしない、という技術的説明は About に置く。初回通知は1行に留める。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">07</span>注意</h2>
+  <p>本書の文面はすべて<strong>草案</strong>。公開前に最終文言を固めること（特に［報告先］［連絡先］の実体と、ライセンス・免責全文）。本書は法的助言ではない（作成者は弁護士ではない）。</p>
+</section>
+
+</div>
+<footer>
+  <div class="wrap">Tacpendium — Initial Notice &amp; Disclaimer Design · Drafts</div>
+</footer>
+</body>
+</html>

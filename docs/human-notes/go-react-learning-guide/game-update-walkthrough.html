@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ゲーム更新影響判定 ウォークスルー — Tacpendium で学ぶ Go / React</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; background:#f8fafc; color:#1e293b; font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; line-height:1.9; }
+.topnav { background:#0f172a; color:#cbd5e1; padding:10px 20px; font-size:13px; }
+.topnav a { color:#93c5fd; text-decoration:none; margin-right:14px; }
+.topnav a:hover { text-decoration:underline; }
+.wrap { max-width:920px; margin:0 auto; padding:28px 20px 90px; }
+h1 { font-size:26px; border-left:6px solid #2563eb; padding-left:12px; line-height:1.5; }
+h2 { font-size:21px; margin-top:48px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+h3 { font-size:17px; margin-top:32px; }
+h4 { font-size:15px; margin-top:24px; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; font-size:.9em; font-family:Consolas,"SF Mono",Menlo,monospace; }
+.codebox { margin:16px 0; border-radius:8px; overflow:hidden; border:1px solid #334155; }
+.codebox .path { background:#1e293b; color:#93c5fd; font:12px Consolas,Menlo,monospace; padding:6px 12px; border-bottom:1px solid #334155; }
+.codebox pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow-x:auto; font:13px/1.7 Consolas,Menlo,monospace; }
+.codebox pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+.codebox b { color:#fbbf24; font-weight:600; }
+.codebox .cm { color:#7dd3fc; opacity:.65; }
+.note,.compare,.warn { border-radius:8px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+.note { background:#eff6ff; border:1px solid #bfdbfe; }
+.compare { background:#fffbeb; border:1px solid #fde68a; }
+.warn { background:#fef2f2; border:1px solid #fecaca; }
+.boxtitle { display:block; font-weight:700; font-size:12px; letter-spacing:.08em; margin-bottom:6px; color:#475569; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#fff; }
+th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; white-space:nowrap; }
+.flow { list-style:none; counter-reset:step; padding:0; margin:16px 0; }
+.flow li { position:relative; margin:0 0 10px; padding:10px 14px 10px 52px; background:#fff; border:1px solid #cbd5e1; border-radius:8px; font-size:14.5px; }
+.flow li::before { counter-increment:step; content:counter(step); position:absolute; left:12px; top:12px; width:26px; height:26px; background:#2563eb; color:#fff; border-radius:50%; text-align:center; line-height:26px; font-weight:700; font-size:13px; }
+footer { margin-top:64px; padding-top:16px; border-top:1px solid #cbd5e1; font-size:13.5px; color:#64748b; }
+footer a { color:#2563eb; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">目次</a>
+  <a href="go-lang-primer.html">Go 言語プライマー</a>
+  <a href="react-ts-primer.html">React/TS プライマー</a>
+  <a href="tag-walkthrough.html">タグ管理ウォークスルー</a>
+  <a href="tag-tests.html">タグのテスト</a>
+  <a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+  <a href="combo-tests.html">コンボのテスト + E2E</a>
+  <a href="playwright-guide.html">Playwright ガイド</a>
+  <a href="shadcn-tailwind-guide.html">shadcn/Tailwind</a>
+  <a href="game-update-walkthrough.html">ゲーム更新影響判定</a>
+  <a href="shell-guardrails-guide.html">シェル検査とフック</a>
+</nav>
+<div class="wrap">
+
+<h1>ゲーム更新影響判定 ウォークスルー<br>— 「保存せず導出する」機能を 1 本通しで読む</h1>
+
+<p>この資料は、2026 年 8〜9 月(M28-02a / M28-02c)に実装された<strong>ゲーム更新影響判定(FR702)</strong>を、DB スキーマ → SQL → Go → React → E2E まで通しで解説するものです。<a href="tag-walkthrough.html">タグ管理</a>・<a href="combo-walkthrough.html">コンボ CRUD</a> の両ウォークスルーを読み終えた人向けの「応用編」で、CRUD では出てこなかった実戦的な設計判断が凝縮されています:</p>
+
+<ul>
+<li><strong>導出(derived)か保存(materialized)か</strong> — 「影響コンボ」という概念をテーブルに持たない決断</li>
+<li><strong>ソート可能なバージョン文字列の設計</strong> — 固定幅ゼロ埋めだけで比較関数が 1 行になる</li>
+<li><strong>「静かに壊れる」制約を DB の CHECK で塞ぐ</strong> — プロジェクト方針の意図的例外</li>
+<li><strong>SQL 述語の一本化を「ソースを grep するテスト」で強制する</strong></li>
+<li><strong>失敗を 0 件として扱わない UI</strong>、<strong>複数利用者(LAN)を意識した抑止の分水嶺</strong></li>
+</ul>
+
+<div class="note">
+<span class="boxtitle">この機能が解く問題</span>
+SF6 は年に数回バランス調整が入り、技のダメージやフレームが変わります。すると登録済みコンボの一部は「もう繋がらないかもしれない」状態になりますが、どのコンボが該当するか手で調べるのは大変です。この機能は「<strong>あなたのコンボのうち、使っている技がアップデートで変わったものはこれです</strong>」と一覧で見せ、利用者が 1 件ずつ確認して「問題なし」を付けていける仕組みです。重要な思想として、アプリは<strong>「影響可能性あり」までしか言いません</strong>(FR307)。実際に繋がるかどうかの断定はせず、検証は利用者に委ねます。
+</div>
+
+<h2>1. 機能の全体像 — 4 つの画面部品と 2 つの API</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>部品</th><th>場所</th><th>役割</th></tr>
+<tr><td>告知バナー</td><td><code>web/src/features/game-update/GameUpdateBanner.tsx</code>(ホーム + コンボ一覧の 2 か所にマウント)</td><td>「影響の可能性があるコンボが N 件」を知らせ、専用画面への導線と「次の更新まで延期」を出す</td></tr>
+<tr><td>一覧のボタン</td><td><code>web/src/features/game-update/AffectedCombosButton.tsx</code></td><td>コンボ一覧に常設される専用画面への入口。延期しても消えない(§6.2)</td></tr>
+<tr><td>専用画面</td><td><code>web/src/pages/GameUpdateCombosPage.tsx</code>(<code>/game-update/combos</code>)</td><td>影響コンボをキャラ別に一覧し、「どの技が変わったか」を出し、行ごとに「問題なし」/「削除」できる</td></tr>
+<tr><td>詳細画面の基準行</td><td><code>web/src/features/combo/components/ComboDetailMetadata.tsx</code></td><td>コンボ詳細に「前提バージョン」と、影響時は変わった技の列挙 + 「問題なし」ボタンを出す</td></tr>
+<tr><td>告知 API</td><td><code>GET /api/notices/game-update</code> / <code>POST …/postpone</code>(<code>internal/api/notice/game_update.go</code>)</td><td>現在版・影響件数・延期状態を 1 本で返す / バナーを次の版まで延期する</td></tr>
+<tr><td>確認 API</td><td><code>POST /api/combos/:id/acknowledge-version</code>(<code>internal/api/combo/handler.go:538</code>)</td><td>そのコンボの基準版を現在版へ進める(=「見た」の記録)</td></tr>
+</table>
+</div>
+
+<p>データの流れを 1 周すると次のようになります。</p>
+
+<ol class="flow">
+<li>開発者がゲーム更新を反映するマイグレーションを配布し、変わった技の <code>moves.last_changed_game_version</code> と <code>games.current_data_version</code> を書く</li>
+<li>アプリ起動 → フロントが <code>GET /api/notices/game-update</code> を叩き、影響件数(全キャラ合計)と現在版を得る</li>
+<li>件数が 1 以上ならバナーと一覧ボタンが出る → 利用者が専用画面 <code>/game-update/combos</code> へ</li>
+<li>専用画面は <code>GET /api/combos?affected_by_game_update=true</code> で影響コンボを取り、「変わった技」列付きで表示</li>
+<li>利用者がコンボを確認 → 「問題なし」ボタン → <code>POST /api/combos/:id/acknowledge-version</code></li>
+<li>サーバがそのコンボの <code>baseline_version</code> を現在版へ進める → 判定が false になり、一覧から消えて件数が減る</li>
+</ol>
+
+<h2>2. データモデル — 列は 3 本だけ、「影響コンボ」テーブルは無い</h2>
+
+<h3>2.1 保存せず、導出する</h3>
+
+<p>この機能の最重要の設計判断は、マイグレーションファイルの冒頭コメントに書いてあります。</p>
+
+<div class="codebox">
+<div class="path">migrations/000104_add_game_update_tracking.up.sql(冒頭コメント抜粋)</div>
+<pre><code><span class="cm">-- 足す列は 3 本。</span>
+<span class="cm">--   1. moves.last_changed_game_version   … その move が最後に変わったゲームバージョン(マーカー)</span>
+<span class="cm">--   2. combos.baseline_version           … そのコンボが前提としているゲームバージョン(基準)</span>
+<span class="cm">--   3. games.current_data_version        … 現在のデータバージョン(基準へ書く値の出どころ)</span>
+<span class="cm">--</span>
+<span class="cm">-- ★★影響コンボは保存しない。導出する(checklist §5.1 確定事項 3)。</span>
+<span class="cm">--   ⇒ 本マイグレは中間表を作らない。判定は combo_steps 経由の EXISTS で毎回導出する。</span></code></pre>
+</div>
+
+<p>「影響コンボ」は<strong>マーカーと基準の比較結果</strong>にすぎないので、比較式さえあればいつでも計算できます。もし <code>affected_combos</code> のような中間テーブルに保存すると、コンボの編集・技の変更・確認操作のたびに同期処理が要り、同期漏れ = 「本当は影響があるのに出ない」という最悪の壊れ方をします。導出なら定義上ズレようがありません。</p>
+
+<div class="compare">
+<span class="boxtitle">Flask / Spring 経験者向け: 「非正規化するか」の判断と同じ</span>
+RDB 設計で「集計列を持つか、毎回 COUNT するか」を悩むのと同型です。原則は<strong>導出できるものは導出する</strong>(Single Source of Truth)で、パフォーマンスが立証されてから初めて materialize を検討します。このアプリは個人用 SQLite でコンボ数は高々数百件なので、EXISTS サブクエリの毎回評価で十分という判断です。
+</div>
+
+<h3>2.2 3 本目の列が要る理由 — MAX() で代用してはいけない</h3>
+
+<p>「現在版」は <code>MAX(moves.last_changed_game_version)</code> で求まりそうに見えますが、マイグレーションのコメントが明確に否定しています: <strong>技を 1 本も変えないアップデート</strong>(技以外の入力ミス訂正、機能追加で列が増えただけ、など)では MAX が動かず、「版が上がった」ことを表現できません。だから <code>games</code> テーブル(1 行だけ、コード <code>'sf6'</code>)に <code>current_data_version</code> を持ち、これが基準へ書く値の唯一の出どころになります。</p>
+
+<h3>2.3 バージョン文字列 `YYYY.MM.DD.NN` — 固定幅ゼロ埋めが全てを支える</h3>
+
+<p>バージョンは <code>2026.08.03.01</code> のような TEXT です。この形式の要は「<strong>全フィールドが固定幅のゼロ埋め</strong>」であること。それだけで辞書順 = 時系列順になり、順序用の数値列も専用の比較ロジックも不要になります。アプリ側の正本パッケージがこの割り切りを 1 行で表現しています:</p>
+
+<div class="codebox">
+<div class="path">internal/gameversion/gameversion.go:40-46</div>
+<pre><code><span class="cm">// Newer は a が b より新しいかを返す。</span>
+<span class="cm">//</span>
+<span class="cm">// ★★書式が正しい限り、比較は単なる文字列比較でよい(固定幅ゼロ埋めのため)。</span>
+<span class="cm">// 専用の比較関数を置くのは、呼び出し側が「なぜ文字列比較でよいのか」を</span>
+<span class="cm">// 毎回考えずに済むようにするためである。SQL 側も同じ理由で単純な `&gt;` を使う。</span>
+func Newer(a, b string) bool <b>{ return a &gt; b }</b></code></pre>
+</div>
+
+<p>中身は <code>a &gt; b</code> だけなのに関数として存在するのは、<strong>「なぜ文字列比較でよいのか」という知識の置き場</strong>を作るためです。SQL 側でも同じ理由で素の <code>&gt;</code> 比較が使えます(§3)。</p>
+
+<h4>「静かに壊れる」から、入口を全部塞ぐ — 初の DB CHECK 制約</h4>
+
+<p>この設計の弱点は、<code>2026.8.3.1</code> のようなゼロ埋め漏れが 1 個入るだけで順序が壊れ、<strong>しかもエラーにならない</strong>ことです。テストも lint も型検査も緑のまま、判定だけが静かに狂います。そこで「入口を全部塞ぐ」方針が採られました:</p>
+
+<div class="codebox">
+<div class="path">migrations/000104_add_game_update_tracking.up.sql(CHECK 制約の抜粋)</div>
+<pre><code>ALTER TABLE moves ADD COLUMN last_changed_game_version TEXT
+    <b>CHECK</b> (
+        last_changed_game_version IS NULL OR (
+            last_changed_game_version <b>GLOB '[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9].[0-9][0-9]'</b>
+            AND CAST(substr(last_changed_game_version, 6, 2) AS INTEGER) BETWEEN 1 AND 12
+            AND CAST(substr(last_changed_game_version, 9, 2) AS INTEGER) BETWEEN 1 AND 31
+        )
+    );</code></pre>
+</div>
+
+<div class="warn">
+<span class="boxtitle">プロジェクト方針の「意図的な例外」がコメントで宣言されている</span>
+このリポジトリは元来「CHECK は DB 側に付けず、アプリ層で制約する」方針でした(DES-003 §3.4)。この 3 列は<strong>スキーマ初の CHECK 制約</strong>で、マイグレーションのコメントが「意図的な例外であり、指示書が DB 側の CHECK を名指しで要求している」と例外であることを明言しています。理由は上記の「静かに壊れる」性質です — アプリ層のバリデーション(<code>internal/gameversion</code>)だけでは生 SQL の UPDATE を塞げません。方針からの逸脱は<strong>逸脱である旨と理由をその場に書き残す</strong>、という規約運用の見本です。なお SQLite の GLOB は正規表現を持たないため、書式は GLOB、月日の範囲は <code>substr + CAST</code> という合わせ技になっています。入口は他にアプリ側の <code>gameversion.Validate</code>(gameversion.go:34-39)と seedgen の値域検証があり、<strong>3 か所すべてが同じ形式を守る多重防御</strong>です。
+</div>
+
+<h3>2.4 NULL の意味論 — 2 列で「安全側」の向きが逆</h3>
+
+<p>面白いのは、同じ NULL でも 2 列で意味と扱いが非対称なことです:</p>
+
+<div class="tablewrap">
+<table>
+<tr><th>列</th><th>NULL の意味</th><th>判定での扱い</th></tr>
+<tr><td><code>moves.last_changed_game_version</code>(マーカー)</td><td>「まだ一度も変わっていない」という<strong>既知の状態</strong>(初回公開より前の変更は存在しないものと扱う)</td><td><strong>影響なし側</strong>に落ちる</td></tr>
+<tr><td><code>combos.baseline_version</code>(基準)</td><td>「いつ登録されたか<strong>不明</strong>」(通常は起きない。CSV 直編集などの防御)</td><td><strong>影響可能性あり側</strong>に倒す(安全側)</td></tr>
+</table>
+</div>
+
+<p>「安全側に倒す」の向きを列ごとに考え分けているのがポイントです。マーカー側の NULL を「不明だから影響あり」と扱うと、初期データの全技が NULL なので<strong>全コンボが影響あり</strong>になってしまいます。既存コンボの基準は、マイグレーション内の <code>UPDATE</code> で「列を足した時点の最新版」に埋められ(ゴミ箱の行も対象 — 復元された瞬間に NULL = 影響あり側へ落ちないように)、初回リリース時の影響件数は 0 件から始まります。</p>
+
+<h2>3. 判定式は 1 本 — 「式の書き写し」をテストで禁止する</h2>
+
+<h3>3.1 正本の述語と 3 つの消費者</h3>
+
+<p>「このコンボは影響可能性があるか」の判定 SQL は、リポジトリ層に<strong>ただ 1 つの定数</strong>として存在します:</p>
+
+<div class="codebox">
+<div class="path">internal/repository/combo/repository.go:409-423</div>
+<pre><code><span class="cm">// 「1 本の move が、そのコンボの基準より後に変わったか」— これが唯一の正本</span>
+const <b>affectedMoveCondSQL</b> = `m.last_changed_game_version IS NOT NULL
+          AND (combos.baseline_version IS NULL
+               OR m.last_changed_game_version &gt; combos.baseline_version)`
+
+<span class="cm">// 真偽判定(WHERE 用): コンボの steps に 1 本でも該当 move があるか</span>
+const affectedByGameUpdateCondSQL = `EXISTS (
+        SELECT 1 FROM combo_steps cs
+        JOIN moves m ON m.id = cs.move_id
+        WHERE cs.combo_id = combos.id
+          AND ` + <b>affectedMoveCondSQL</b> + `
+    )`
+
+<span class="cm">// SELECT の派生列用: 同じ式に別名を付けただけ</span>
+const affectedByGameUpdateExprSQL = affectedByGameUpdateCondSQL + ` AS affected_by_game_update`</code></pre>
+</div>
+
+<p>この式の消費者は 3 つあります — (1) 一覧・詳細の <strong>SELECT 派生列</strong>(全コンボ応答に <code>affectedByGameUpdate</code> として載る)、(2) 絞り込みと件数の <strong>WHERE 句</strong>、(3) 「どの技が変わったか」の<strong>列挙クエリ</strong>(repository.go:1167-)。3 つとも文字列連結で <code>affectedMoveCondSQL</code> を埋め込んでいて、式の中身はどこにも書き写されていません。</p>
+
+<div class="codebox">
+<div class="path">internal/repository/combo/repository.go:1167-1177(変わった技の列挙)</div>
+<pre><code>var listAffectedMovesSQLTemplate = `
+SELECT DISTINCT cs.combo_id, m.id, m.code, pa.alias_text, m.last_changed_game_version
+FROM combo_steps cs
+JOIN moves m ON m.id = cs.move_id
+JOIN combos ON combos.id = cs.combo_id           <span class="cm">-- 述語が combos.baseline_version を読むため join</span>
+LEFT JOIN preset_aliases pa ON ...               <span class="cm">-- 表示名の解決(引けなければ code へフォールバック)</span>
+WHERE cs.combo_id IN (%s)
+  AND ` + <b>affectedMoveCondSQL</b> + `               <span class="cm">-- ここも同じ 1 本</span>
+ORDER BY cs.combo_id, m.id`</code></pre>
+</div>
+
+<div class="note">
+<span class="boxtitle">「真偽の正本は 1 本」— len(AffectedMoves) で判定しない</span>
+モデル側のコメント(<code>internal/model/combo.go:275-284</code>)は「<code>AffectedByGameUpdate</code>(真偽)から列挙を導くのであって、逆ではない。<strong><code>len(AffectedMoves) &gt; 0</code> で影響の有無を判定しないこと</strong>(真偽が 2 か所で表せてしまう)」と釘を刺しています。フロント側(ComboDetailMetadata.tsx:141)にも同じ注意コメントがあります。同じ情報を 2 通りで表せる状態を作ると、いつか片方だけ変わって食い違う — この「正本は 1 本」の徹底が本機能の背骨です。
+</div>
+
+<h3>3.2 ソースコードを grep するテスト</h3>
+
+<p>「式を書き写さない」という規約は、ふつうはコメントで祈るしかありません。このリポジトリはそれを<strong>テストで機械化</strong>しました:</p>
+
+<div class="codebox">
+<div class="path">internal/repository/combo/m28_02c_predicate_source_test.go(要旨)</div>
+<pre><code><span class="cm">// リポジトリ配下の全 .go ソースを走査し、</span>
+<span class="cm">// 「last_changed_game_version と baseline_version の両方に言及する文字列リテラル」を数える。</span>
+<span class="cm">// ⇒ ヒットは affectedMoveCondSQL の 1 か所だけでなければならない。</span>
+if hits[0].value != affectedMoveCondSQL {
+    t.Fatalf("★唯一の判定式が affectedMoveCondSQL ではない: %s:%d", hits[0].file, hits[0].line)
+}
+<span class="cm">// さらに EXISTS / SELECT 派生列 / affectedMoves 列挙が正本を使っていることも検査</span>
+if !strings.Contains(affectedByGameUpdateCondSQL, affectedMoveCondSQL) { t.Error(...) }</code></pre>
+</div>
+
+<p>Go の標準ライブラリ(<code>go/parser</code> 系または単純なファイル走査)でテストコードが<strong>自分のパッケージのソースを読み</strong>、判定式らしき文字列リテラルが 2 か所以上に現れたら赤にする、という発想です。将来の開発者(あるいは AI)が知らずに式を書き写すと、その場でテストが「足すなら affectedMoveCondSQL を参照して組むこと」と教えてくれます。<a href="react-ts-primer.html">React/TS プライマー</a>の queryKeys 規約テストと同じ「<strong>規約を散文で書くより、規約をテストで機械化する</strong>」流儀です。</p>
+
+<h3>3.3 件数と一覧が同じ WHERE を通る配線</h3>
+
+<p>バナーの「N 件」は告知 API が返しますが、その COUNT は専用画面の一覧とは別のクエリです。別のクエリが別の述語を持ってしまうと「バナーは 3 件と言うのに画面には 2 行」という不整合が起きえます。main.go の DI 配線がこれを構造的に防いでいます:</p>
+
+<div class="codebox">
+<div class="path">cmd/tacpendium/main.go:515-532(抜粋)</div>
+<pre><code><span class="cm">// ★件数は comborepo.Count を通す —— List と同じ WHERE 組み立てを共有するため、</span>
+<span class="cm">//   「件数」と「専用画面に出る行」が別々の述語で決まる状態を作れない。</span>
+noticehandler.RegisterGameUpdateRoutes(apiGroup, noticehandler.NewGameUpdateHandler(
+    filepath.Dir(dbPath),
+    func(c echo.Context) (int, error) {
+        affected := true
+        return repo.<b>Count</b>(c.Request().Context(), comborepo.<b>ListFilter</b>{
+            AffectedByGameUpdate: &amp;affected,     <span class="cm">// List と同じフィルタ構造体 → 同じ WHERE ビルダ</span>
+        })
+    },
+    func(c echo.Context) (string, error) {
+        return gameRepo.CurrentDataVersion(c.Request().Context(), gamerepo.CodeSF6)
+    },
+))</code></pre>
+</div>
+
+<p><code>Count</code> と <code>List</code> が同じ <code>ListFilter</code> 構造体から WHERE を組み立てるので、フィルタ条件を将来変えても両者は一緒に変わります。なお告知応答の設計コメント(game_update.go:23-25)は「<code>GET /api/combos?...&amp;limit=1</code> の count で代用できない」理由(ページ内件数しか返らない・limit が丸められる)まで書き残しています。</p>
+
+<h2>4. 基準(baseline)のライフサイクル — 「書き忘れられない」構造にする</h2>
+
+<h3>4.1 登録時: サービス層ではなく INSERT 文で入れる</h3>
+
+<p>新規コンボの <code>baseline_version</code> には「登録時点の現在版」が入ります。これをどの層で書くか、が設計判断です:</p>
+
+<div class="codebox">
+<div class="path">internal/repository/combo/repository.go:455-470(insertComboSQL のコメント)</div>
+<pre><code><span class="cm">// ★★baseline_version(FR702 の基準)は COALESCE で入れる —— 呼び出し側が nil を渡せば</span>
+<span class="cm">// 「その時点の games.current_data_version」が構造的に入る(M28-02a)。</span>
+<span class="cm">//</span>
+<span class="cm">// ★★サービス層で埋める形にしなかった理由は先例である。</span>
+<span class="cm">//   Materialize が ValidateComboForCreate を通さないため、必須 4 欄が空のままの</span>
+<span class="cm">//   本登録コンボが在りえた(followup: materialize-bypasses-required-fields)。</span>
+<span class="cm">//   ⇒「登録経路が N 本ある」ものを呼び出し側の責務にすると、経路が 1 本増えたときに</span>
+<span class="cm">//     静かに抜ける。基準が抜けると そのコンボは永久に「影響可能性あり」側へ出続ける。</span></code></pre>
+</div>
+
+<p>コンボの登録経路は通常の Create のほかに「セットプレイからの実体化(Materialize)」「CSV インポート」など複数あります。「各経路が忘れず埋める」ことを期待する設計は、<strong>経路が増えた瞬間に静かに壊れた実績</strong>(先例 followup)があるので、INSERT 文自体の <code>COALESCE((SELECT current_data_version FROM games ...))</code> で「どの経路から来ても構造的に入る」形にしました。過去の失敗を followup 台帳に記録し、次の設計判断の根拠として引用する — このプロジェクトの運用がコードコメントに現れている好例です。</p>
+
+<h3>4.2 確認時: 楽観的排他の version は上げず、updated_at だけ上げる</h3>
+
+<p>「問題なし」ボタンの実体 <code>AcknowledgeGameVersion</code> は、基準を現在版へ進める 1 本の UPDATE です:</p>
+
+<div class="codebox">
+<div class="path">internal/repository/combo/repository.go:1405-1421(抜粋)</div>
+<pre><code>const advanceBaselineVersionSQL = `
+UPDATE combos
+SET baseline_version = <b>(SELECT current_data_version FROM games WHERE code = ?)</b>,
+    updated_at = datetime('now')
+WHERE id = ? AND deleted_at IS NULL`</code></pre>
+</div>
+
+<p>短い SQL ですが、コメントに 3 つの判断が詰まっています:</p>
+
+<ul>
+<li><strong>版数はサブクエリで games から読む</strong> — API はリクエスト本文を取りません(handler 側も同様)。クライアントが任意の版を送れる形にすると「任意の版へ確認したことにできる」穴になるため、サーバ側の現在値だけが書かれます</li>
+<li><strong><code>version</code>(楽観的排他の列)は上げない</strong> — 基準の前進は「コンボ内容の変更」ではなく「利用者が見たことの記録」なので、他端末で編集中の人の保存を競合エラーにしない</li>
+<li><strong><code>updated_at</code> は進める</strong> — 「いつ確認したか」の痕跡はここにしか残らないし、更新日時順の一覧で最近触ったものが上に来るのは自然、という理由まで書いてある</li>
+</ul>
+
+<div class="compare">
+<span class="boxtitle">Spring 経験者向け: @Version を触らない更新</span>
+JPA の <code>@Version</code> 付きエンティティを普通に保存すると必ず version が上がりますが、ここでは「この UPDATE は楽観ロックの版を<strong>意図的に上げない</strong>」という細かい制御をしています。ORM 越しでは書きにくい判断で、生 SQL だからこそ「どの列を動かし、どの列を動かさないか」を 1 行ずつ選べる、という このリポジトリの ORM 不使用方針の利点が出た場面です。
+</div>
+
+<p>サービス層(<code>internal/service/combo/service.go:1103-1124</code>)はこの UPDATE をトランザクションで包み、<strong>コミット後に <code>FindByID</code> で読み直して</strong>返します。判定(<code>affected_by_game_update</code>)は導出値なので、「進めた結果 false になった」ことを応答でクライアントに返せるようにするためです。ハンドラ(<code>internal/api/combo/handler.go:538-574</code>)はさらに <code>Get</code> を通し直して、タグを利用者スコープで載せた通常形の応答にします。</p>
+
+<h2>5. API 層 — サービス層の無い薄い経路と、その代償の扱い</h2>
+
+<p>告知 API(<code>internal/api/notice/game_update.go</code>)には<strong>サービス層がありません</strong>。件数と現在版は、main.go で注入された 2 つのクロージャ(§3.3)がリポジトリを直接呼びます。読むだけの薄い経路にレイヤーをフルセットで用意しない、という割り切りです。ただし薄くした代償への手当てがきちんとあります:</p>
+
+<div class="codebox">
+<div class="path">internal/api/notice/game_update.go:116-128(抜粋)</div>
+<pre><code><span class="cm">// ★★本経路にサービス層は無い —— 件数と現在版はリポジトリを直接呼ぶクロージャで取る。</span>
+<span class="cm">// ⇒ 呼び手が(busy エラーを)包んでくれることを当てにできない。</span>
+<span class="cm">// そこで gameUpdateError が dbinfra.IsBusy でも判定する。</span>
+var ErrDatabaseBusy = errors.New("notice: database busy")
+
+func gameUpdateError(c echo.Context, err error) error {
+    if errors.Is(err, <b>ErrDatabaseBusy</b>) || <b>dbinfra.IsBusy(err)</b> {   <span class="cm">// 判定を 2 本立てにする</span>
+        return c.JSON(http.StatusServiceUnavailable, ...)
+    }
+    ...</code></pre>
+</div>
+
+<p>通常の経路ではサービス層が SQLite の busy エラーをセンチネル(<code>ErrDatabaseBusy</code>)へ翻訳してくれますが、この経路には翻訳者がいません。「包み忘れると 503 の契約が<strong>黙って到達不能</strong>になる — 実装は 500 を返し続けるのに、センチネルを直接注入するテストは緑のまま通る」とコメントが警告し、生エラー(<code>dbinfra.IsBusy</code>)とセンチネルの両方を見る 2 本立てにしています。「テストが緑でも、テストの入力が本番の入力と違えば意味がない」という<a href="tag-tests.html">テスト解説</a>の教訓の実例です。</p>
+
+<p>応答設計にも 2 つ学びどころがあります:</p>
+
+<ul>
+<li><strong>「無ければ 204」にしない</strong> — 返しているのは有無ではなく「件数 + 現在版 + 延期状態」の 3 情報なので、常に 200 で本文を返します。REST の作法(204 No Content)から外れるときは、外れる理由をコメントで宣言(game_update.go:18-21)</li>
+<li><strong><code>POST /postpone</code> であって <code>/ack</code> ではない</strong> — 「永久に既読」と「次の版まで延期」は意味が違うから、と URL の語選びの理由まで書いてあります。延期の印はデータディレクトリ直下のファイル(移行告知と同じ仕組み)に保存され、<strong>記録された版 == 現在版のときだけ有効</strong>。版が上がれば自動で抑止が外れます</li>
+</ul>
+
+<h2>6. フロントエンド — 1 本のクエリを全部品が共有し、失敗を握りつぶさない</h2>
+
+<h3>6.1 useGameUpdateNotice — 出どころを 1 つに保つ</h3>
+
+<div class="codebox">
+<div class="path">web/src/features/game-update/api.ts:18-26</div>
+<pre><code>export function <b>useGameUpdateNotice</b>() {
+  return useQuery({
+    queryKey: queryKeys.notices.gameUpdate(),      <span class="cm">// = ["notices", "game-update"]</span>
+    queryFn: () =&gt; fetchJSON&lt;GameUpdateNotice&gt;(NOTICE_PATH),
+    <b>retry: false</b>,     <span class="cm">// 失敗を失敗として早く出す(告知は再試行で粘るものではない)</span>
+  });
+}</code></pre>
+</div>
+
+<p>バナー(2 か所)・一覧ボタン・専用画面の見出し件数が、すべてこの 1 本のフックを呼びます。queryKey が同じなので<strong>実際の HTTP リクエストは 1 回で、キャッシュを 4 部品が共有</strong>します(TanStack Query の「キーが同じなら画面が違っても同じキャッシュ」の実戦形)。「問題なし」や延期のミューテーションは <code>invalidateQueries</code> でこのキーを無効化し、全部品の件数が一斉に更新されます。</p>
+
+<div class="warn">
+<span class="boxtitle">「取得失敗」を「0 件」として扱わない</span>
+バナーもボタンも、<code>isError</code> のときは<strong>エラー表示 + 再試行リンク</strong>を出します(GameUpdateBanner.tsx:33-50)。素朴に書くと <code>data?.affectedCount ?? 0</code> のように失敗を 0 件へ潰しがちですが、それは「影響があるのに何も出ない」= この機能の存在意義が黙って消える壊れ方です。コメントは過去の同型バグ(セットプレイ件数が取得失敗を隠していた followup)を「先例の轍」として名指ししています。<strong>optional chaining + デフォルト値は「失敗の握りつぶし」になりうる</strong> — TypeScript で最も書きやすい形が最も危ない、という好例です。
+</div>
+
+<h3>6.2 延期の分水嶺 — バナーは消すが、入口は消さない</h3>
+
+<p>「次の更新まで延期」を押すと消えるのは<strong>バナーだけ</strong>で、コンボ一覧のボタンは残ります。境界の理由が LAN 運用にあります:</p>
+
+<div class="codebox">
+<div class="path">web/src/features/game-update/AffectedCombosButton.tsx:11-12(コメント抜粋)</div>
+<pre><code><span class="cm">// ★★延期しても消えない —— 抑止するのはバナーだけである。LAN で 1 人が延期したら</span>
+<span class="cm">//   他の利用者が入口を失う形にしない。⇒ ここが分水嶺である(CHANGE-162 §2.3)。</span></code></pre>
+</div>
+
+<p>このアプリは LAN モードで複数人が同じサーバを使えます(利用者切替は <code>X-User-Id</code>)。延期の印は<strong>サーバ側のファイル</strong>に保存されるので全員に効きます — だからこそ「1 人の延期で全員の入口が消える」ことのないよう、消してよいもの(通知)と消してはいけないもの(導線)を切り分けています。なお延期を localStorage に持てば利用者ごとに独立しますが、あえてサーバ側にしたのは <code>web/CLAUDE.md</code> §1 のブラウザストレージ台帳へキーを増やさない(移行告知と同じ仕組みに乗せる)判断で、これもコメントに明記されています。</p>
+
+<h3>6.3 専用画面 — 既存の表を「表そのものとして」再利用する</h3>
+
+<p><code>GameUpdateCombosPage.tsx</code> は、コンボ一覧の <code>ComboTable</code> をそのまま使い、専用画面のときだけ「変わった技」等の列を渡します。冒頭コメント(1-29 行)が設計の輪郭を宣言しています: 新しい一覧の仕組みを作らない / 全行が該当するのでバッジは置かない(冗長) / キャラは「見出し + 表」を縦に並べる / 取得失敗は失敗として出す。さらに:</p>
+
+<ul>
+<li><strong>件数の正本は告知 API</strong> — 一覧クエリは <code>limit=1000</code> で打ち切られうるので、「表示件数 &lt; affectedCount」のときは打ち切りを明示します。「部分データを全部として見せない」という §6.1 と同族の原則です</li>
+<li><strong>削除は一覧と同じ作法</strong> — 確認ダイアログもミューテーションも既存のものを使い、「この画面だけ別の削除の作法」を持ち込みません</li>
+</ul>
+
+<h3>6.4 詳細画面 — 「不明」を「-」にしない</h3>
+
+<p><code>ComboDetailMetadata.tsx</code>(129 行〜)は前提バージョンの行を常時出し、<code>baselineVersion</code> が無いときは「-」ではなく<strong>「不明」+ 影響可能性の印</strong>を出します。「-」は「該当なし(問題ない)」に見えてしまい、NULL = 安全側へ倒す §2.4 のセマンティクスと矛盾するからです。バックエンドの NULL の意味論が、フロントの表示語の選択にまで一貫して繋がっています。</p>
+
+<h2>7. テスト — debug ビルドタグの「書き込み口」で E2E の状態を作る</h2>
+
+<p>この機能の E2E には固有の難題があります: 「技がアップデートで変わった」状態は、通常の UI 操作では作れません(マイグレーション配布で起きる状態だから)。そこで <strong>debug ビルド専用の書き込み API</strong> が用意されました:</p>
+
+<div class="codebox">
+<div class="path">internal/api/debug/game_version.go:58-67(抜粋)/ routes.go:18</div>
+<pre><code><span class="cm">// FR702 の判定は moves.last_changed_game_version が非 NULL であることを要求するが、</span>
+<span class="cm">// 通常運用でこれを書くのはマイグレーションだけ。E2E が状態を作るための debug 口。</span>
+`UPDATE moves SET last_changed_game_version = ? WHERE id = ?`
+...
+g.DELETE("/debug/notices/game-update", h.ClearGameUpdateNotice)   <span class="cm">// 延期ファイルの掃除</span></code></pre>
+</div>
+
+<p><code>internal/api/debug/</code> は<a href="combo-tests.html">コンボのテスト</a>で見たとおりビルドタグ <code>debug</code> のときだけ実体を持ち、本番ビルドでは no-op です。E2E スタックは debug ビルドで起動するので、spec は API で「技 X が版 Y で変わった」状態を仕込んでから UI を検証できます。</p>
+
+<div class="codebox">
+<div class="path">web/e2e/m28-02c-game-update.spec.ts(シナリオ構成)</div>
+<pre><code>test.describe("M28-02c ゲーム更新の影響コンボ", () =&gt; {
+  test("バナー → 専用画面 →「問題なし」→ 件数が減る", ...)          <span class="cm">// 主動線の往復</span>
+  test("★★破壊確認 (b): 延期してもバナーだけが消え、一覧のボタンは消えない", ...)
+  test("専用画面の行アクション: コピーは出さず、削除で件数が減り、復元で戻る", ...)
+});</code></pre>
+</div>
+
+<p>2 本目の「破壊確認」は §6.2 の分水嶺そのものを固定するテストです。仕様の中で<strong>最も壊れたら困る境界</strong>(延期の抑止範囲)を名指しで 1 本の spec にしておく、というシナリオ設計は <a href="playwright-guide.html">Playwright ガイド</a>の「仕様の急所を spec にする」パターンの実例です。バックエンド側では、§3.2 の述語一本化テストに加え、サービス・リポジトリの通常テスト(<code>m28_02a_game_update_test.go</code> 等)が判定・確認・境界(ゴミ箱 404 など)を押さえています。</p>
+
+<h2>8. この機能から持ち帰る設計判断(まとめ)</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>判断</th><th>要点</th><th>どこで見たか</th></tr>
+<tr><td>導出 vs 保存</td><td>比較で求まる概念はテーブルに持たない。同期漏れという壊れ方を構造的に消す</td><td>§2.1</td></tr>
+<tr><td>ソート可能な文字列設計</td><td>固定幅ゼロ埋めなら TEXT の辞書順 = 時系列順。比較関数は 1 行、SQL は素の <code>&gt;</code></td><td>§2.3</td></tr>
+<tr><td>静かに壊れるものは入口で塞ぐ</td><td>壊れてもエラーにならない制約は、アプリ層 + DB CHECK + 生成側検証の多重防御。方針の例外は例外と明記</td><td>§2.3</td></tr>
+<tr><td>NULL の意味を列ごとに決める</td><td>「安全側」の向きは列の意味論で決まる。全列一律の規則にしない</td><td>§2.4</td></tr>
+<tr><td>正本は 1 本 + 機械化</td><td>SQL 述語・真偽値・クエリキー — 二重表現を作らず、規約はテストで強制する</td><td>§3</td></tr>
+<tr><td>忘れうる責務は構造へ埋める</td><td>N 経路が各自で書く形にせず、INSERT 文の COALESCE で「必ず入る」形に</td><td>§4.1</td></tr>
+<tr><td>クライアントから状態値を受けない</td><td>版数はサーバが読んで書く。「任意の値で確認済みにできる」穴を作らない</td><td>§4.2, §5</td></tr>
+<tr><td>失敗を既定値へ潰さない</td><td><code>?? 0</code> は握りつぶし。エラーはエラーの見た目で出し、再試行を渡す</td><td>§6.1</td></tr>
+<tr><td>複数利用者を意識した抑止範囲</td><td>1 人の操作で全員から消えるもの/消えないものを切り分け、境界を E2E で固定</td><td>§6.2, §7</td></tr>
+</table>
+</div>
+
+<p>コード量そのものは小さい機能ですが、「壊れ方から逆算して構造を選ぶ」判断が層をまたいで一貫しているのが読みどころです。<a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>で見た基礎(トランザクション・楽観的排他・N+1 回避のバッチ注入)が全部前提として登場するので、迷ったらそちらへ戻って読み直してください。</p>
+
+<footer>
+Tacpendium Go/React 学習ガイド — 生成日 2026-09-08(コードは同日時点の main 相当スナップショットに基づく)
+</footer>
+</div>
+</body>
+</html>

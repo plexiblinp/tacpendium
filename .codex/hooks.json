@@ -1,0 +1,52 @@
+{
+  "description": "Codex-native project hooks generated from .claude/settings.json with codex.external_agent_config.detect/import. PreToolUse blocking and PostToolUse quality output were both verified in live Codex 0.147.0 sessions on 2026-08-12. Canonical implementations remain in .claude/hooks; PostToolUse adapts measured Codex apply_patch payloads to the canonical file_path input. No matchers are used because native tool-name matching was not independently measured. Tracking: docs/handover/followup-backlog.md section J, slug codex-hooks-json-not-dispatched (resolved).",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_PROJECT_DIR=\"$(git rev-parse --show-toplevel)\" bash \"$(git rev-parse --show-toplevel)/.claude/hooks/pre-push-guard.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "CLAUDE_PROJECT_DIR=\"$(git rev-parse --show-toplevel)\" bash \"$(git rev-parse --show-toplevel)/.claude/hooks/design-desk-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -c 'if (.tool_input.file_path? // \"\") != \"\" then . elif .tool_name == \"apply_patch\" then (.tool_input.command | [scan(\"(?m)^\\\\*\\\\*\\\\* (?:Add|Update) File: ([^\\\\r\\\\n]+)$\") | .[0]] | unique[]) as $path | .tool_input.file_path = $path else empty end' | while IFS= read -r hook_input; do printf '%s\\n' \"$hook_input\" | CLAUDE_PROJECT_DIR=\"$(git rev-parse --show-toplevel)\" bash \"$(git rev-parse --show-toplevel)/.claude/hooks/post-edit-check.sh\"; done",
+            "timeout": 90
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_PROJECT_DIR=\"$(git rev-parse --show-toplevel)\" bash \"$(git rev-parse --show-toplevel)/.claude/hooks/stop-test.sh\"",
+            "timeout": 300
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_PROJECT_DIR=\"$(git rev-parse --show-toplevel)\" bash \"$(git rev-parse --show-toplevel)/.claude/hooks/notify-bell.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

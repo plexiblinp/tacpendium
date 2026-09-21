@@ -1,0 +1,437 @@
+# リリース — タグを契機に、配布物を組んで来歴を付けて公開する(M36-02)
+#
+# ★★★nightly-crossbuild.yml とは**別の契機**である。混ぜないこと。
+#   nightly = 定時 / リリース = タグ。CHANGE-129 の逐語 ——
+#   「**CI の artifact は配布物ではない。** nightly が残すのは素のバイナリであり、
+#     DES-002 §11.2 が定めるアーカイブ構成ではない」。
+#   ⇒ **nightly の artifact を配布物へ格上げしない。** 本ファイルを別に立てることで
+#     その境界を構造で守る(指示書 §3-3 / §4.4)。
+#
+# ★★本ワークフローは B1(コード署名)の**代替**である(2026-09-12 開発者判断・
+#   license-strategy-outline §10.6)。SmartScreen の警告は消えない。
+#   ⇒ 消すのが B1 であり、本ワークフローがするのは「**代わりに検証する手段を渡す**」ことである。
+#
+#   | B1 が与えるはずだったもの     | ここでの代替                                  |
+#   |-------------------------------|-----------------------------------------------|
+#   | 作者のものである              | attestation(このコミットからこの CI で作られた) |
+#   | 改ざんされていない            | SHA-256 + attestation の検証                  |
+#   | 中身が分かる                  | SBOM                                          |
+#   | 配布元が確かである            | タグ署名 + CI からのリリース                  |
+#
+# ---------------------------------------------------------------------------
+# ★★★外部仕様の出典(2026-09-19 実査。**記憶で書かないこと**＝指示書 §0.2)
+#
+#   - actions/attest@v4
+#     https://github.com/actions/attest/blob/main/README.md
+#     ★★`actions/attest-build-provenance` と `actions/attest-sbom` は v4 以降
+#       どちらも本アクションの**薄い wrapper** であり、README が
+#       「新規実装は actions/attest を使え」と明記している。
+#       https://github.com/actions/attest-build-provenance/blob/main/README.md
+#       ⇒ **旧アクションは非推奨だが「動く」。** だから記憶で書くと静かに古くなる。
+#
+#   - permissions について
+#     README は id-token / attestations / artifact-metadata の 3 つを挙げるが、
+#     **artifact-metadata は「artifact storage record を作る」ためのものであり、
+#     storage record は push-to-registry を使うときのものである**(同 README の
+#     create-storage-record の記述)。本ワークフローはコンテナを push しない。
+#     ★実際、アクション自身の CI は `attestations: write` + `id-token: write` だけで
+#       動いている: https://github.com/actions/attest/blob/main/.github/workflows/ci.yml
+#     ⇒ **artifact-metadata は付けない。** 付ける必要が出たらここへ理由ごと足すこと。
+#
+#   - anchore/sbom-action@v0 (syft。Apache-2.0＝CLAUDE.md §6 の許可列)
+#     https://github.com/anchore/sbom-action  (最新 v0.24.2 / メジャータグは v0)
+#     ★★本体は `-tags=embed_web` で**フロントエンドのビルド成果物をバイナリへ embed**
+#       している。⇒ Go だけの SBOM は中身を偽ることになる。syft のワークスペース走査で
+#       go.mod と pnpm-lock.yaml の両方を 1 回で拾う。
+#
+#   - 利用者側の検証コマンド: gh attestation verify <file> --repo <owner>/<repo>
+#     https://github.com/cli/cli/blob/trunk/pkg/cmd/attestation/verify/verify.go
+#     (--owner か --repo のどちらかが必須)
+#
+#   - タグ署名の検証: git verify-tag + gpg.ssh.allowedSignersFile(git 組み込み・新規依存ゼロ)
+#     **一次情報 = git 自身のドキュメント**
+#     https://raw.githubusercontent.com/git/git/master/Documentation/config/gpg.adoc
+#     逐語(gpg.ssh.allowedSignersFile)——「A file containing ssh public keys which you are
+#     willing to trust. The file consists of one or more lines of principals followed by
+#     an ssh public key.」
+#     ★★★同ドキュメントの逐語が (4) の根拠である——**署名者の公開鍵が同ファイルに
+#       無い場合、git は信頼度を `undefined` とし、`git verify-commit` / `git verify-tag`
+#       は失敗する。** ⇒ 鍵が未登録なら検証は通らない。
+#
+#     ★★「タグを持たない checkout は検証対象 0 件で緑になる」は**公式の記述ではない。**
+#       ⇒ 本ワークフローの設計上の判断である(格付け＝自前の推論)。
+#       `git verify-tag` は引数に与えたタグしか見ないため、fetch-tags を落として
+#       タグが 1 つも無い状態では「検証すべきものが無い」まま先へ進みうる。
+#       ⇒ だから (1) でタグの実在を明示的に確かめる。**公式が言っているとは書かない。**
+# ---------------------------------------------------------------------------
+#
+# ★アクションのピンは既存 2 本の流儀に合わせる(floating major タグ。SHA ピンはしない)。
+#   Go の版は go-version-file: go.mod。pnpm の版は書かない(packageManager が正本)。
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # ★公開せずに「門とビルドが通るか」だけを確かめる dry-run。
+  #   ⇒ タグを打つ前に壊れていることに気づけるようにするためにある。
+  #
+  #   ★★★dry-run が確かめないもの(M36-02 レビュー 中-1):
+  #     **タグ署名の検証 / attestation / 公開の 3 段は走らない**(いずれも
+  #     `if: github.ref_type == 'tag'`)。⇒ **最も壊れやすい 3 段は dry-run では
+  #     一度も動かない。** 確かめられるのは門 / ビルド / アーカイブ / SBOM までである。
+  #     ⇒ その 3 段は**使い捨ての rc タグ**で実走させること(完了報告 §7)。
+  #
+  #   ★★★さらに、**非公開の開発リポでは workflow_dispatch を含め job 全体が走らない**
+  #     (下の job 直下の `if:` を見ること)。⇒ dry-run も公開リポでのみ意味を持つ。
+  workflow_dispatch:
+
+# ★既定は read。必要な権限は job 側でだけ開ける(既存 2 本と同じ姿勢)。
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: release (build / attest / publish)
+    runs-on: ubuntu-latest
+
+    # -----------------------------------------------------------------------
+    # ★★★public リポジトリでのみ走る(2026-09-20 開発者裁定)
+    #
+    #   理由 1 —— **attestation は private / internal リポジトリでは取れない。**
+    #     actions/attest README の逐語(2026-09-20 実査):
+    #       「To use artifact attestations in private or internal repositories,
+    #         you must be on a GitHub Enterprise Cloud plan.」
+    #       「Artifact attestations are available in public repositories for all
+    #         current GitHub plans.」
+    #       https://github.com/actions/attest/blob/main/README.md
+    #     ⇒ 非公開の開発リポで走らせても、attestation 段で必ず落ちる。
+    #
+    #   理由 2 —— **開発リポへのタグは、公開スナップショット生成の*正規の契機*である**
+    #     (D-637。公開リポ = f(開発リポの tag, 許可リスト))。
+    #     ★本ファイルは public-snapshot-manifest.txt の `ALLOW .github/**` により
+    #       公開リポへ運ばれるため、**両方のリポジトリに存在する。**
+    #     ⇒ ガードが無いと、スナップショットを作るたびに開発リポ側が赤くなる。
+    #       **★赤が常態化すると、本物の赤に気づけなくなる。**
+    #
+    #   理由 3 —— **副次効果として「意図しない版が公開される」が構造的に起きなくなる**
+    #     (開発者の懸念・2026-09-20)。⇒ 非公開側では本 job がそもそも動かない。
+    #
+    # ★★`!= true` ではなく `== false` で書く(fail-closed)。
+    #   ⇒ フィールドが取れなかったとき、`!= true` は**走ってしまう**。`== false` は走らない。
+    #   ★「公開側で走らない」は目に見えて直せるが、「非公開側で走る」は塞ぎたかったもの
+    #     そのものである。⇒ 迷う側を安全側へ倒す。
+    #
+    # ★ジョブごと skip されるため、GitHub の UI には **「Skipped」と出る。**
+    #   ⇒ 黙って消えるわけではない。
+    # -----------------------------------------------------------------------
+    if: github.event.repository.private == false
+
+    timeout-minutes: 45
+    permissions:
+      contents: write      # ★リリースの作成と資産の添付。★既存 2 本は read しか持たない
+      id-token: write      # Sigstore の短命証明書を取るための OIDC
+      attestations: write  # attestation の保存
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # ★★タグの**オブジェクト**が要る(署名は注釈タグに載る)。
+          #   fetch-tags を落とすと「検証対象 0 件」で緑になる。
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Record start time
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+
+      # ---------------------------------------------------------------------
+      # ★★★段 1: タグ署名の検証 —— **何よりも先に置く。**
+      #
+      #   ここが素通りすると、署名していないものを「署名済み」として配ることになる。
+      #   ⇒ 指示書 §4.5 が「本サブで最も重い失敗」と呼ぶ形である。
+      #   ⇒ **5 つの穴をすべて明示的に赤にする。**
+      # ---------------------------------------------------------------------
+      - name: Verify tag signature
+        if: github.ref_type == 'tag'
+        env:
+          SIGNERS: .github/allowed_signers
+        run: |
+          set -uo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          echo "検証するタグ: $TAG"
+
+          # (1) タグのオブジェクトが checkout に在るか(fetch-tags 漏れの検出)
+          if ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::error::タグ $TAG が checkout に在りません。fetch-tags の設定を確認してください。"
+            exit 1
+          fi
+
+          # (2) 注釈タグか。★軽量タグは署名を持てない ⇒ 素通りさせない
+          OBJTYPE="$(git cat-file -t "refs/tags/$TAG" 2>/dev/null || true)"
+          if [ "$OBJTYPE" != "tag" ]; then
+            echo "::error::$TAG は軽量タグです(object type=$OBJTYPE)。署名付きの注釈タグが要ります。"
+            echo "::error::  git tag -s $TAG -m '$TAG' で打ち直してください。"
+            exit 1
+          fi
+
+          # (3) 台帳が在るか
+          if [ ! -f "$SIGNERS" ]; then
+            echo "::error::$SIGNERS が在りません。署名者の台帳が無い状態ではリリースできません。"
+            exit 1
+          fi
+
+          # (4) ★★台帳に**実効的な**登録が在るか(コメントと空行しか無い状態を拒否)
+          EFFECTIVE="$(grep -vcE '^[[:space:]]*(#|$)' "$SIGNERS" || true)"
+          EFFECTIVE="${EFFECTIVE:-0}"
+          if [ "$EFFECTIVE" -eq 0 ]; then
+            echo "::error::$SIGNERS に署名者が 1 件も登録されていません(コメントのみ)。"
+            echo "::error::  ★鍵の作成と登録は開発者の手番です。$SIGNERS の手順に従って公開鍵を登録してください。"
+            echo "::error::  ★ここで止めています。素通りさせると、署名していないものを署名済みとして配ることになります。"
+            exit 1
+          fi
+          echo "台帳の署名者: $EFFECTIVE 件"
+
+          # (5) 署名そのものの検証
+          git config gpg.ssh.allowedSignersFile "$SIGNERS"
+          if ! git verify-tag "$TAG"; then
+            echo "::error::タグ $TAG の署名を検証できませんでした。"
+            echo "::error::  署名が無いか、署名者が $SIGNERS に登録されていません。"
+            exit 1
+          fi
+
+          echo "✅ タグ $TAG の署名を検証しました"
+          # ★★★検証が通ったことを**証跡として残す。** 公開段はこの印が無ければ動かない。
+          #   ⇒ 「条件を書き忘れたら公開が素通りする」形にしない(多重防御)。
+          touch "${RUNNER_TEMP}/tag-verified"
+
+      # ---------------------------------------------------------------------
+      # ★★★段 2: 門(M36-02・射程 1)
+      #
+      #   D-890 ——「**組める**」ことは「**配布してよい**」ことではない。
+      #   img がリンク切れの説明書を同梱した配布物が、検査は全緑のまま組み上がる。
+      #   ⇒ **リリースを打つ経路に門を置く。**
+      #   ★`make release-archives` そのものは塞がない(指示書 §3-2)。門はここに在る。
+      # ---------------------------------------------------------------------
+      - name: Gate — 説明書の図が全数実在するか
+        run: bash scripts/check-manual-images.sh
+
+      - name: Gate — README.txt が正本と一致し、アーカイブ名が構成の正本と揃っているか
+        run: bash scripts/check-dist-readme.sh
+
+      # ---------------------------------------------------------------------
+      # 段 3: 配布物を組む
+      # ---------------------------------------------------------------------
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - uses: pnpm/action-setup@v6
+        with:
+          # ★版は書かない。web/package.json の packageManager が正本である。
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: make build-all
+        # ★ビルドの旗(-tags=embed_web / CGO_ENABLED=0 / GOOS・GOARCH / 出力名)は
+        #   Makefile が正本である。ここへ写さない(E-76)。
+        run: make build-all
+
+      - name: 配布アーカイブを組む
+        # ★M36-01 が「CI から呼ぶため引数なしの 1 コマンドで完結する形」にしてある入口。
+        #   ★構成の正本は scripts/release-targets.sh。ここへ名前を書かない。
+        #   ★本スクリプトは末尾で check-release-archive.sh を必ず呼ぶ
+        #     ⇒「組めた」が常に「中身を検査した」を含む。
+        run: bash scripts/build-release-archives.sh
+
+      - name: 組んだものを一覧する
+        run: |
+          set -uo pipefail
+          ls -l dist/release/
+          {
+            echo "### 配布アーカイブ"
+            echo ""
+            echo "| ファイル | サイズ |"
+            echo "|---|---|"
+            for f in dist/release/*; do
+              echo "| \`$(basename "$f")\` | $(du -h "$f" | cut -f1) |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ---------------------------------------------------------------------
+      # 段 4: SBOM(射程 3)
+      # ---------------------------------------------------------------------
+      # ★★組み上がった**アーカイブの中身**にも門を掛ける(M36-02 レビュー 中-4)。
+      #   ⇒ `check-manual-images.sh` は源泉(docs/usermanual/)を見る。
+      #     `check-release-archive.sh` は `manual/images` を**ディレクトリとして在るか**
+      #     しか見ない(CLAUDE.md §8 の逐語)。
+      #   **⇒ 「源泉には図が全数在るが、アーカイブには 1 枚も入っていない」状態は、
+      #     2 つの検査を両方すり抜ける。** ★D-890 の問いは「配布してよいか」である。
+      #   ⇒ 展開して、同じ門をアーカイブの中の manual/ へ向ける。
+      - name: Gate — 組み上がったアーカイブの中の図が全数実在するか
+        run: |
+          set -uo pipefail
+          WORK="$(mktemp -d)"
+          trap 'rm -rf "$WORK"' EXIT
+          rc=0
+          for a in dist/release/*.tar.gz; do
+            d="$WORK/$(basename "$a" .tar.gz)"
+            mkdir -p "$d"
+            tar -xzf "$a" -C "$d"
+            echo "--- $(basename "$a") ---"
+            bash scripts/check-manual-images.sh "$d/manual" || rc=1
+          done
+          for a in dist/release/*.zip; do
+            d="$WORK/$(basename "$a" .zip)"
+            mkdir -p "$d"
+            unzip -q "$a" -d "$d"
+            echo "--- $(basename "$a") ---"
+            bash scripts/check-manual-images.sh "$d/manual" || rc=1
+          done
+          exit "$rc"
+
+      - name: SBOM を生成する
+        uses: anchore/sbom-action@v0
+        with:
+          # ★★★母集団の選択と、その理由(M36-02 レビュー 中-2)。
+          #
+          #   **採ったもの = ソースツリー全体の走査(`path: .`)。**
+          #   ⇒ go.mod と web/pnpm-lock.yaml の**両方**を 1 回で拾う。
+          #
+          #   ★なぜ「配布物そのもの」を走査しないか——**できないからである。**
+          #     本体は `-tags=embed_web` でフロントのビルド成果物を**バイナリへ
+          #     embed** する。⇒ 出来上がった exe を syft で走査しても、拾えるのは
+          #     Go モジュールだけであり、**埋め込まれた npm 依存は現れない。**
+          #     ⇒ 配布物だけを見る SBOM は、中身を偽ることになる。
+          #
+          #   ★★代償を明記する——**この SBOM は配布物より*広い*。**
+          #     devDependencies / web/e2e / 開発用スクリプトも母集団に入る。
+          #     ⇒ 「配布物に入っていないものまで載る」側の誤差であり、
+          #       **「入っているのに載らない」側の誤差ではない。**
+          #     ⇒ 供給網の確認という用途では、広いほうが安全側に倒れる。
+          path: .
+          format: spdx-json
+          artifact-name: tacpendium.spdx.json
+          output-file: dist/release/tacpendium.spdx.json
+          # ★Release への添付は下の gh release create でまとめて行う
+          #   (このアクションの自動添付には任せない。⇒ 添付するものを 1 か所で決める)。
+          upload-release-assets: false
+
+      - name: SBOM が出ていることを確かめる
+        run: |
+          set -uo pipefail
+          SBOM=dist/release/tacpendium.spdx.json
+          [ -s "$SBOM" ] || { echo "::error::SBOM が空、または在りません: $SBOM"; exit 1; }
+          echo "SBOM: $(wc -c < "$SBOM") バイト"
+          # ★★「出した」だけで終えない。⇒ **JSON として読めること**と、
+          #   **packages が実際に在ること**を見る(M36-02 レビュー 中-2)。
+          #   ★`grep '"name"' | wc -l` では JSON が壊れていても数えてしまう。
+          PKGS="$(jq '.packages | length' "$SBOM")" || {
+            echo "::error::SBOM を JSON として読めません: $SBOM"; exit 1; }
+          echo "SBOM の packages 件数: $PKGS"
+          [ "$PKGS" -gt 0 ] || { echo "::error::SBOM に packages がありません"; exit 1; }
+          # ★本体の Go モジュールが居ることを 1 件だけ実名で見る(母集団の取り違え検出)。
+          jq -e '.packages[] | select(.name == "modernc.org/sqlite")' "$SBOM" >/dev/null || {
+            echo "::error::SBOM に本体の依存(modernc.org/sqlite)が現れません。走査対象が違う可能性があります。"
+            exit 1; }
+          echo "✅ 本体の依存が SBOM に現れることを確認"
+
+      - name: SBOM の要約
+        run: |
+          set -uo pipefail
+          {
+            echo "### SBOM"
+            echo ""
+            echo "- packages: $(jq '.packages | length' dist/release/tacpendium.spdx.json) 件"
+            echo "- 走査対象: ソースツリー全体(★配布物より広い。理由はワークフローのコメント)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ---------------------------------------------------------------------
+      # ★★段 5: attestation(射程 2)
+      #   「このバイナリは**このコミット**から**この CI** で作られた」が検証できること。
+      # ---------------------------------------------------------------------
+      - name: ビルド来歴の attestation
+        if: github.ref_type == 'tag'
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/release/*.zip
+            dist/release/*.tar.gz
+
+      - name: SBOM の attestation
+        if: github.ref_type == 'tag'
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/release/*.zip
+            dist/release/*.tar.gz
+          sbom-path: dist/release/tacpendium.spdx.json
+
+      # ---------------------------------------------------------------------
+      # 段 6: リリース本文(射程 6)
+      # ---------------------------------------------------------------------
+      - name: リリース本文を組む
+        # ★正本は 1 つ。SHA-256 の手順は docs/usermanual/dist-readme.txt から抽出し、
+        #   アーカイブ名は scripts/release-targets.sh から引く。手で 2 か所に書かない(E-76)。
+        run: bash scripts/generate-release-notes.sh "${GITHUB_REF_NAME}" > "${RUNNER_TEMP}/release-notes.md"
+
+      - name: リリース本文を要約へ出す
+        run: cat "${RUNNER_TEMP}/release-notes.md" >> "$GITHUB_STEP_SUMMARY"
+
+      # ---------------------------------------------------------------------
+      # ★★★段 7: 公開 —— **CI から出す。手元からアップロードしない**(指示書 §4.2)。
+      #   手元から上げると来歴署名の意味が消える。
+      # ---------------------------------------------------------------------
+      - name: リリースを作って資産を添付する
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+
+          # ★★★多重防御。署名検証の段が「通った」印を残していなければ、ここで止める。
+          #   ⇒ 上の if: 条件を将来だれかが緩めても、署名なしでは公開されない。
+          if [ ! -f "${RUNNER_TEMP}/tag-verified" ]; then
+            echo "::error::タグ署名の検証が通った証跡がありません。公開しません。"
+            exit 1
+          fi
+
+          TAG="${GITHUB_REF_NAME}"
+          # ★rc / beta / alpha を含むタグはプレリリース扱いにする
+          # ★配列で持つ。裸の変数展開は単語分割・グロブ展開の事故のもとである。
+          EXTRA=()
+          case "$TAG" in
+            *-rc*|*-beta*|*-alpha*) EXTRA+=(--prerelease) ;;
+          esac
+
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file "${RUNNER_TEMP}/release-notes.md" \
+            --verify-tag \
+            ${EXTRA[@]+"${EXTRA[@]}"} \
+            dist/release/*
+
+          echo "✅ リリース $TAG を作成しました"
+
+      - name: Job summary
+        if: always()
+        run: |
+          set -uo pipefail
+          {
+            echo ""
+            echo "| 項目 | 値 |"
+            echo "|---|---|"
+            echo "| 契機 | ${{ github.event_name }} (ref_type=${{ github.ref_type }}) |"
+            echo "| ref | \`${{ github.ref_name }}\` |"
+            echo "| 公開 | ${{ github.ref_type == 'tag' && '行った' || '★していない(dry-run)' }} |"
+            echo "| 所要 | $(( $(date +%s) - ${JOB_START:-$(date +%s)} )) 秒 |"
+          } >> "$GITHUB_STEP_SUMMARY"

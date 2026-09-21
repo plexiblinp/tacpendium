@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tacpendium で学ぶ Go / React — 学習ガイド 目次</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; background:#f8fafc; color:#1e293b; font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; line-height:1.9; }
+.topnav { background:#0f172a; color:#cbd5e1; padding:10px 20px; font-size:13px; }
+.topnav a { color:#93c5fd; text-decoration:none; margin-right:14px; }
+.topnav a:hover { text-decoration:underline; }
+.wrap { max-width:920px; margin:0 auto; padding:28px 20px 90px; }
+h1 { font-size:26px; border-left:6px solid #2563eb; padding-left:12px; line-height:1.5; }
+h2 { font-size:21px; margin-top:48px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+h3 { font-size:17px; margin-top:32px; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; font-size:.9em; font-family:Consolas,"SF Mono",Menlo,monospace; }
+.codebox { margin:16px 0; border-radius:8px; overflow:hidden; border:1px solid #334155; }
+.codebox .path { background:#1e293b; color:#93c5fd; font:12px Consolas,Menlo,monospace; padding:6px 12px; border-bottom:1px solid #334155; }
+.codebox pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow-x:auto; font:13px/1.7 Consolas,Menlo,monospace; }
+.codebox pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+.codebox b { color:#fbbf24; font-weight:600; }
+.codebox .cm { color:#7dd3fc; opacity:.65; }
+.note,.compare,.warn { border-radius:8px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+.note { background:#eff6ff; border:1px solid #bfdbfe; }
+.compare { background:#fffbeb; border:1px solid #fde68a; }
+.warn { background:#fef2f2; border:1px solid #fecaca; }
+.boxtitle { display:block; font-weight:700; font-size:12px; letter-spacing:.08em; margin-bottom:6px; color:#475569; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#fff; }
+th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; white-space:nowrap; }
+.flow { list-style:none; counter-reset:step; padding:0; margin:16px 0; }
+.flow li { position:relative; margin:0 0 10px; padding:10px 14px 10px 52px; background:#fff; border:1px solid #cbd5e1; border-radius:8px; font-size:14.5px; }
+.flow li::before { counter-increment:step; content:counter(step); position:absolute; left:12px; top:12px; width:26px; height:26px; background:#2563eb; color:#fff; border-radius:50%; text-align:center; line-height:26px; font-weight:700; font-size:13px; }
+.toc { background:#fff; border:1px solid #cbd5e1; border-radius:8px; padding:6px 22px 18px; }
+.toc ol { padding-left:22px; }
+.toc li { margin:10px 0; }
+.toc .sub { color:#64748b; font-size:13.5px; display:block; }
+.lane { display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; margin:16px 0; }
+.lane .box { flex:1 1 120px; min-width:110px; background:#fff; border:2px solid #2563eb; border-radius:8px; padding:8px 10px; text-align:center; font-size:13px; }
+.lane .box small { color:#64748b; display:block; font-size:11.5px; line-height:1.5; }
+.lane .arr { align-self:center; color:#2563eb; font-weight:700; font-size:18px; }
+.lane .box.fe { border-color:#059669; }
+.lane .box.db { border-color:#b45309; }
+footer { margin-top:64px; padding-top:16px; border-top:1px solid #cbd5e1; font-size:13.5px; color:#64748b; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">目次</a>
+  <a href="go-lang-primer.html">Go 言語プライマー</a>
+  <a href="react-ts-primer.html">React/TS プライマー</a>
+  <a href="tag-walkthrough.html">タグ管理ウォークスルー</a>
+  <a href="tag-tests.html">タグのテスト</a>
+  <a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+  <a href="combo-tests.html">コンボのテスト + E2E</a>
+  <a href="playwright-guide.html">Playwright ガイド</a>
+  <a href="shadcn-tailwind-guide.html">shadcn/Tailwind</a>
+  <a href="game-update-walkthrough.html">ゲーム更新影響判定</a>
+  <a href="shell-guardrails-guide.html">シェル検査とフック</a>
+</nav>
+<div class="wrap">
+
+<h1>Tacpendium で学ぶ Go / React<br>— 自分のリポジトリを教材にした学習ガイド</h1>
+
+<p>この資料集は、Tacpendium(SF6 コンボ管理アプリ)の<strong>実際のコード</strong>を教材にして、Go と React の言語仕様・フレームワークの考え方・アプリが動く流れを解説するものです。Flask / Spring Boot でのアプリ開発経験がある読者を想定し、随所に「Flask / Spring ではこうだった」という対比コラムを挟んでいます。</p>
+
+<div class="note">
+<span class="boxtitle">この資料の読み方</span>
+コード引用にはすべて<strong>実ファイルのパスと行番号</strong>を付けています(例: <code>internal/service/tag/service.go:65</code>)。読みながらエディタで該当ファイルを開き、「引用部分の前後で何が起きているか」を実物で確認するのが最も効果的です。コードは 2026-07-22(フェーズ3)に初版を書き、<strong>2026-09-08 時点の main 相当スナップショットへ更新済み</strong>です。その後の変更で行番号がずれることがあります。
+</div>
+
+<h2>1. 収録ドキュメントと推奨読了順</h2>
+
+<div class="toc">
+<ol>
+  <li><a href="index.html">目次・全体アーキテクチャ(このページ)</a>
+    <span class="sub">アプリ全体の構造と「1 リクエストの一生」。最初にここで地図を持つ</span></li>
+  <li><a href="go-lang-primer.html">Go 言語プライマー</a>
+    <span class="sub">struct タグ・エラー処理・インターフェース・context など、このリポジトリを読むのに必要な Go の言語仕様を実コードで解説</span></li>
+  <li><a href="react-ts-primer.html">React + TypeScript プライマー</a>
+    <span class="sub">関数コンポーネント・hooks・TanStack Query・zod。サーバレンダリング(Jinja/Thymeleaf)との発想の違い</span></li>
+  <li><a href="tag-walkthrough.html">タグ管理 完全ウォークスルー</a>
+    <span class="sub">最小で素直な機能を 1 本、バックエンド 4 層とフロントエンドを通しで追跡。<strong>本編</strong></span></li>
+  <li><a href="tag-tests.html">タグ管理のテスト解説</a>
+    <span class="sub">Go の実 DB テストと Vitest + React Testing Library。JUnit/pytest との対比</span></li>
+  <li><a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+    <span class="sub">アプリの中核機能。トランザクション・楽観的排他・N+1 対策・presence-detection など実戦的な設計を学ぶ</span></li>
+  <li><a href="combo-tests.html">コンボのテスト + E2E(Playwright)</a>
+    <span class="sub">モックを使うハンドラテスト、コンポーネントテスト、独立スタックで動く E2E</span></li>
+  <li><a href="playwright-guide.html">Playwright E2E シナリオガイド</a>
+    <span class="sub">E2E 基盤の仕組み(使い捨て DB・専用ポート)、セレクタ規約、65 spec に育った実例から抽出したシナリオ設計パターン、新規 spec の書き方</span></li>
+  <li><a href="shadcn-tailwind-guide.html">shadcn/ui + Tailwind スタイリングガイド</a>
+    <span class="sub">CSS 最小限の地図(ボックスモデル・flex)から、Tailwind の読み方、shadcn の三層構造(Radix × Tailwind × cva)、デザイントークン、実際に色や形を変える方法まで</span></li>
+  <li><a href="game-update-walkthrough.html">ゲーム更新影響判定 ウォークスルー</a>
+    <span class="sub">応用編(2026-09 新設)。M28 で追加された FR702 を DB → SQL → Go → React → E2E まで通しで読む。「保存せず導出する」設計、ソート可能なバージョン文字列、DB CHECK 制約、述語一本化をテストで強制する技法など</span></li>
+  <li><a href="shell-guardrails-guide.html">シェル検査とフック — 規約を機械化する</a>
+    <span class="sub">応用編(2026-09 新設)。アプリの外側にある scripts/(シェル 24 本)と .claude/hooks/(6 本)を読む。ベースライン固定型の検査、陽性・陰性対照による自己検査、終了コードの三値、許可リスト方式のガード、フックの設計規律</span></li>
+</ol>
+</div>
+
+<div class="note">
+<span class="boxtitle">なぜ「タグ管理」と「コンボ CRUD」の 2 本立てか</span>
+タグ管理はバックエンド 4 層 + フロントエンドが最小構成で揃っていて、全体の流れを 1 機能で追い切るのに最適です(Go 側 約 700 行、テスト除く)。一方コンボ CRUD はアプリの中核で、トランザクションや楽観的排他などの実戦的な要素が詰まっていますが、Go 側だけで約 1 万行(CSV 入出力含む、テスト除く)あります。<strong>まずタグで「型」を掴み、コンボで「実戦」を読む</strong>、という順序を推奨します。
+</div>
+
+<h2>2. このアプリの全体アーキテクチャ</h2>
+
+<h3>2.1 構成要素</h3>
+
+<div class="tablewrap">
+<table>
+<tr><th>層</th><th>技術</th><th>場所</th><th>Flask / Spring での対応物</th></tr>
+<tr><td>フロントエンド</td><td>React 18 + TypeScript + Vite</td><td><code>web/src/</code></td><td>Jinja2 / Thymeleaf テンプレート(ただし発想が根本的に違う。React/TS プライマー参照)</td></tr>
+<tr><td>Web フレームワーク</td><td>Echo(Go)</td><td><code>cmd/tacpendium/main.go</code> でルート登録</td><td>Flask 本体 / Spring MVC(DispatcherServlet + ルーティング)</td></tr>
+<tr><td>ハンドラ層</td><td><code>internal/api/&lt;ドメイン&gt;/</code></td><td>handler.go / dto.go / routes.go</td><td>Flask の view 関数 / Spring の <code>@RestController</code></td></tr>
+<tr><td>サービス層</td><td><code>internal/service/&lt;ドメイン&gt;/</code></td><td>ビジネスロジック・バリデーション・トランザクション</td><td>Spring の <code>@Service</code></td></tr>
+<tr><td>リポジトリ層</td><td><code>internal/repository/&lt;ドメイン&gt;/</code></td><td>SQL を集約(ORM 不使用・素の SQL)</td><td>Spring の Repository/DAO、Flask なら SQLAlchemy の代わりに生 SQL</td></tr>
+<tr><td>モデル</td><td><code>internal/model/</code></td><td>ドメイン構造体(struct)</td><td>Entity / dataclass</td></tr>
+<tr><td>DB</td><td>SQLite(WAL モード)</td><td>単一ファイル。ドライバは純 Go 実装(CGO 不要)</td><td>組み込み H2 / SQLite と同じ発想</td></tr>
+<tr><td>マイグレーション</td><td>golang-migrate</td><td><code>migrations/*.sql</code> を起動時に自動適用</td><td>Flyway / Alembic</td></tr>
+</table>
+</div>
+
+<h3>2.2 配布形態: 単一バイナリ + embed</h3>
+
+<p>このアプリの配布形態は「exe を 1 個ダブルクリックすると使える」ことを目標にしています。Go の <code>embed</code> 機能でフロントエンドのビルド成果物(Vite が生成する HTML/JS/CSS)をバイナリ内に焼き込み、Echo が API と静的ファイルの両方を配信します。</p>
+
+<div class="codebox">
+<div class="path">cmd/tacpendium/main.go:542-559(抜粋)</div>
+<pre><code>if tacpendium.WebEmbedded {
+    webFS, fsErr := tacpendium.WebFS()
+    if fsErr != nil {
+        return fmt.Errorf("web fs: %w", fsErr)
+    }
+    <b>staticapi.Register(e, webFS)</b>   <span class="cm">// SPA 静的配信(未知パス→index.html フォールバック)</span>
+    ...
+    printStartupNotice(os.Stdout, cfg.Server.Mode, actualPort, lanIPs)
+                                     <span class="cm">// アクセス URL をコンソールへ常時表示(ログ level 非依存)</span>
+    launchBrowser(actualPort)        <span class="cm">// exe 起動だけでブラウザが開く</span>
+}</code></pre>
+</div>
+
+<p>一方、<strong>開発時は 2 プロセス構成</strong>です。Go のバックエンド(<code>go run ./cmd/tacpendium</code>)と Vite の開発サーバー(<code>pnpm run dev</code>)を別々に起動し、Vite が <code>/api/*</code> へのリクエストをバックエンドにプロキシ転送します(<code>web/src/lib/api-client.ts:1-4</code> のコメント参照)。フロントのコードを保存すると即座にブラウザへ反映される(HMR)のは Vite 側の機能です。</p>
+
+<div class="compare">
+<span class="boxtitle">Flask / Spring 経験者向け</span>
+Spring Boot の「fat JAR に静的リソースを同梱して <code>java -jar</code> で起動」とほぼ同じ発想です。違いは、Go は JVM 不要のネイティブバイナリを吐くので、配布物が本当に「exe 1 個」になる点。また Flask の <code>render_template()</code> のようなサーバー側テンプレートは存在せず、サーバーは<strong>常に JSON を返すだけ</strong>で、HTML の組み立ては全部ブラウザ内の React が行います。
+</div>
+
+<h3>2.3 起動シーケンス</h3>
+
+<p><code>cmd/tacpendium/main.go</code> の <code>run()</code>(254 行目〜)が起動のすべてです。上から読むと以下の順で進みます。</p>
+
+<ol class="flow">
+<li><code>config.Load(configPath)</code> — TOML 設定ファイル読込(無ければデフォルト値)。Spring の <code>application.yml</code> に相当。パスは <code>resolveConfigPath()</code> が決め、環境変数 <code>TACPENDIUM_CONFIG_PATH</code> で E2E 用に差し替えられる</li>
+<li><code>prepareDataDir()</code> — <strong>既定データディレクトリの自動移行</strong>(M28-01 の Tacpendium 改名にともなう「コピー → 検証 → config 書換 → 旧の退避」。main.go:265)。ログ出力先が旧ディレクトリ配下でありうるため、<strong>ロガー初期化より前</strong>に行う、という順序制約がコメントに明記されている</li>
+<li><code>applog.Init()</code> — ロギング初期化(標準ライブラリ <code>log/slog</code> + ローテーション)</li>
+<li><code>migration.Run()</code> — マイグレーション自動適用(main.go:279)。Flyway の起動時適用と同じ</li>
+<li><code>dbinfra.Open()</code> — SQLite 接続オープン。WAL モード等の PRAGMA を適用</li>
+<li><strong>DI 配線</strong>(main.go:295-386)— repository → service → handler の順に依存を手書きで注入。Spring の DI コンテナがやることを、Go では <code>New()</code> 関数の呼び出しで明示的に行う</li>
+<li><strong>ポート競合フォールバック</strong>(L-04、main.go:390-410)— <code>netutil.ListenAvailable()</code> で先にリスナを確保し、既定ポートが使用中なら次の空きポートへ。確保した実ポートで CORS 許可 Origin を構築する</li>
+<li><code>echo.New()</code> + ミドルウェア登録(RequestID / Logger / CORS / Auth / UserContext の 5 本。main.go:460-475)。Auth(簡易パスワード、M22-01)は「CORS の後ろ」、UserContext(利用者解決、M22-02)は「Auth の後ろ」と、<strong>順序自体が設計</strong>としてコメントに書かれている</li>
+<li><code>RegisterRoutes()</code> をドメインごとに呼びルート登録(main.go:477-536)</li>
+<li><code>e.Listener = listener</code> + <code>e.Start(bindAddr)</code> — 確保済みリスナで HTTP サーバー起動。以後リクエストを待ち受ける</li>
+</ol>
+
+<div class="codebox">
+<div class="path">cmd/tacpendium/main.go:344-347, 487(タグ機能の DI 配線とルート登録)</div>
+<pre><code><span class="cm">// M3-01: タグ CRUD API の DI 配線</span>
+tagRepo := tagrepo.New(sqlDB)                   <span class="cm">// repository を作る(利用者作成時の既定タグ生成で userService とも共用)</span>
+tagService := tagsvc.New(tagRepo)               <span class="cm">// repository を service に注入</span>
+tagHandler := taghandler.NewHandler(tagService) <span class="cm">// service を handler に注入</span>
+...
+taghandler.RegisterRoutes(apiGroup, tagHandler) <span class="cm">// /api/tags 系ルートを Echo に登録</span></code></pre>
+</div>
+
+<div class="compare">
+<span class="boxtitle">Spring との最大の違い: DI が「見える」</span>
+Spring では <code>@Autowired</code> / コンストラクタインジェクションで、どのクラスがどこで組み立てられるかはコンテナ任せです。Go にはコンテナがなく、<code>main.go</code> に依存グラフ全体が手書きで並びます。最初は冗長に見えますが、「このハンドラは何に依存しているのか」を追うときに <code>main.go</code> を見れば全部書いてある、というのが Go 流の明示性です。
+</div>
+
+<h2>3. 1 リクエストの一生(このアプリの「背骨」)</h2>
+
+<p>このアプリで何かを保存・表示するとき、データは必ず次の経路を通ります。この図を頭に入れておくと、以降のウォークスルーで「いまどの箱の話をしているか」を見失いません。</p>
+
+<div class="lane">
+  <div class="box fe">React ページ<small>pages/*.tsx<br>画面の骨格</small></div>
+  <div class="arr">→</div>
+  <div class="box fe">カスタムフック<small>features/*/hooks<br>TanStack Query</small></div>
+  <div class="arr">→</div>
+  <div class="box fe">API クライアント<small>features/*/api<br>fetch で HTTP</small></div>
+  <div class="arr">→</div>
+  <div class="box">Echo ルータ<small>+ ミドルウェア<br>(RequestID/CORS)</small></div>
+  <div class="arr">→</div>
+  <div class="box">handler<small>internal/api<br>HTTP⇔DTO 変換</small></div>
+  <div class="arr">→</div>
+  <div class="box">service<small>internal/service<br>業務ロジック</small></div>
+  <div class="arr">→</div>
+  <div class="box">repository<small>internal/repository<br>SQL 実行</small></div>
+  <div class="arr">→</div>
+  <div class="box db">SQLite<small>tacpendium.db<br>WAL モード</small></div>
+</div>
+
+<p>レスポンスは逆順に戻り、最後に TanStack Query がキャッシュを更新して React が画面を再描画します。具体例で言うと:</p>
+
+<ol class="flow">
+<li>ユーザーがタグ管理画面で「+ 新規作成」→ フォーム入力 → 保存をクリック</li>
+<li>React のフォームフック(<code>useTagFormDialog</code>)が zod でクライアント側バリデーション</li>
+<li>ミューテーションフック(<code>useTagManagement</code> の <code>createMutation</code>)が <code>tagApi.create()</code> を呼ぶ</li>
+<li><code>fetch("/api/tags", { method: "POST", body: JSON.stringify(...) })</code> が飛ぶ</li>
+<li>Echo が <code>POST /api/tags</code> にマッチするハンドラ <code>Handler.Create</code> を呼ぶ</li>
+<li>ハンドラが JSON を Go の構造体に <code>Bind</code>(逆シリアライズ)し、サービス <code>CreateTag</code> を呼ぶ</li>
+<li>サービスが VAL-T01(名前重複)/ VAL-T02(空名)を検証し、リポジトリ <code>Create</code> を呼ぶ</li>
+<li>リポジトリが <code>INSERT INTO tags ...</code> を実行</li>
+<li>作成されたタグが構造体→JSON に変換されて 201 Created で返る</li>
+<li>ミューテーション成功時に <code>invalidateQueries({ queryKey: queryKeys.tags.all() })</code> が走り、一覧クエリが「古い」と印付けされる(クエリキーは M24-08 で <code>web/src/lib/query-keys.ts</code> に集約された。文字列リテラル <code>["tags"]</code> の散在をやめ、キー階層を 1 か所で定義する)</li>
+<li>TanStack Query が自動で <code>GET /api/tags</code> を再取得し、新しいデータで React が一覧を再描画</li>
+</ol>
+
+<p>この 11 ステップの実コードを 1 行ずつ追うのが <a href="tag-walkthrough.html">タグ管理ウォークスルー</a> です。</p>
+
+<h2>4. 用語対応表(Flask / Spring Boot → このリポジトリ)</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>知っている概念</th><th>このリポジトリでの対応</th><th>補足</th></tr>
+<tr><td>Flask <code>@app.route()</code> / Spring <code>@GetMapping</code></td><td><code>g.GET("/tags", h.List)</code>(routes.go)</td><td>アノテーションではなく関数呼び出しで登録する</td></tr>
+<tr><td><code>@RequestBody</code> / <code>request.get_json()</code></td><td><code>c.Bind(&amp;input)</code></td><td>JSON → struct への逆シリアライズ。struct タグ(<code>json:"name"</code>)がマッピング定義</td></tr>
+<tr><td><code>@PathVariable</code> / <code>&lt;int:id&gt;</code></td><td><code>c.Param("id")</code>(常に文字列で来る)</td><td>数値変換は自前で <code>strconv.ParseInt</code></td></tr>
+<tr><td><code>@RequestParam</code> / <code>request.args</code></td><td><code>c.QueryParam("category")</code></td><td>同上。型変換・検証は手書き</td></tr>
+<tr><td>DTO / シリアライザ</td><td><code>internal/api/&lt;domain&gt;/dto.go</code> + struct タグ</td><td>Jackson / marshmallow の役割を標準ライブラリ <code>encoding/json</code> が担う</td></tr>
+<tr><td><code>@Service</code></td><td><code>internal/service/</code> の <code>Service</code> インターフェース + 実装</td><td>インターフェースはテストでモック差し替えするための境界</td></tr>
+<tr><td>JPA Repository / SQLAlchemy</td><td><code>internal/repository/</code> の生 SQL</td><td>ORM は使わない方針。SQL が全部読める</td></tr>
+<tr><td><code>@Transactional</code></td><td><code>db.BeginTx()</code> + <code>defer tx.Rollback()</code> + <code>tx.Commit()</code></td><td>宣言的ではなく手続き的。コンボ作成(combo の service.go:351。DSN の <code>_txlock=immediate</code> で BEGIN 時点から write lock を取る設計)が好例</td></tr>
+<tr><td>例外 + <code>@ExceptionHandler</code></td><td>エラー値の return + ハンドラでの <code>errors.Is</code> 分岐</td><td>Go には例外がない。これが最大の発想転換ポイント(Go プライマー §4)</td></tr>
+<tr><td>Bean Validation(<code>@NotNull</code> 等)</td><td>サービス層の手書き検証 + フロントの zod</td><td>宣言的バリデーションの仕組みは使っていない</td></tr>
+<tr><td>Flyway / Alembic</td><td>golang-migrate(起動時自動適用)</td><td><code>migrations/*.up.sql</code> / <code>*.down.sql</code> のペア</td></tr>
+<tr><td>セッション / 認証</td><td>簡易パスワード認証(M22-01、既定は無効)+ 利用者切替(M22-02、<code>X-User-Id</code> ヘッダ)</td><td><code>internal/api/middleware/auth.go</code> / <code>user.go</code>。利用者切替は「認証」ではなく「誰として操作するか」の札(DES-002 §8)。ヘッダ未指定時は <code>users.id</code> の最小値へ倒す</td></tr>
+</table>
+</div>
+
+<h2>5. ディレクトリの歩き方</h2>
+
+<p>あるドメイン(例: tag)について調べたいとき、見るべきファイルは毎回同じ形で並んでいます。</p>
+
+<div class="codebox">
+<div class="path">「tag」ドメインの標準セット</div>
+<pre><code>internal/model/tag.go                  <span class="cm">← ドメイン構造体・定数(DB 行 / JSON の形)</span>
+internal/repository/tag/repository.go  <span class="cm">← SQL(SELECT/INSERT/UPDATE/DELETE)</span>
+internal/service/tag/service.go        <span class="cm">← 業務ロジック(検証・組み合わせ)</span>
+internal/service/tag/errors.go         <span class="cm">← この機能が返しうるエラーの一覧</span>
+internal/api/tag/handler.go            <span class="cm">← HTTP との橋渡し(status code 決定)</span>
+internal/api/tag/routes.go             <span class="cm">← URL → ハンドラの対応表</span>
+
+web/src/types/tag.ts                   <span class="cm">← API レスポンスの TypeScript 型</span>
+web/src/features/tag/api/tagApi.ts     <span class="cm">← fetch ラッパ(HTTP クライアント)</span>
+web/src/features/tag/hooks/            <span class="cm">← TanStack Query のフック群</span>
+web/src/features/tag/components/       <span class="cm">← 画面部品(テーブル・ダイアログ)</span>
+web/src/pages/TagManagementPageRoute.tsx <span class="cm">← ルーティング単位のページ</span></code></pre>
+</div>
+
+<div class="note">
+<span class="boxtitle">自動生成の全体像資料</span>
+リポジトリには機械生成された全体像資料が 2 つあります: <code>docs/handover/code-facts.md</code>(全ルート・DTO・構造体・マイグレーション DDL を実コードから抽出したもの)と <code>docs/handover/docs-map.md</code>(設計書 ID ⇄ ファイルパスの対応表)。「この API のレスポンスに何が入るんだっけ?」を調べるときは code-facts.md を grep するのが最速です。
+</div>
+
+<p>次は <a href="go-lang-primer.html">Go 言語プライマー</a> へ。すでに Go の文法をある程度知っている場合は、<a href="tag-walkthrough.html">タグ管理ウォークスルー</a> から始めて、詰まったらプライマーに戻る読み方でも構いません。</p>
+
+<footer>
+Tacpendium Go/React 学習ガイド — 生成日 2026-07-22 / 更新日 2026-09-08(コードは更新日時点の main 相当スナップショットに基づく)
+</footer>
+</div>
+</body>
+</html>

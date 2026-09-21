@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>React + TypeScript プライマー — Tacpendium のコードで学ぶ</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; background:#f8fafc; color:#1e293b; font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; line-height:1.9; }
+.topnav { background:#0f172a; color:#cbd5e1; padding:10px 20px; font-size:13px; }
+.topnav a { color:#93c5fd; text-decoration:none; margin-right:14px; }
+.topnav a:hover { text-decoration:underline; }
+.wrap { max-width:920px; margin:0 auto; padding:28px 20px 90px; }
+h1 { font-size:26px; border-left:6px solid #059669; padding-left:12px; line-height:1.5; }
+h2 { font-size:21px; margin-top:48px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+h3 { font-size:17px; margin-top:32px; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; font-size:.9em; font-family:Consolas,"SF Mono",Menlo,monospace; }
+.codebox { margin:16px 0; border-radius:8px; overflow:hidden; border:1px solid #334155; }
+.codebox .path { background:#1e293b; color:#93c5fd; font:12px Consolas,Menlo,monospace; padding:6px 12px; border-bottom:1px solid #334155; }
+.codebox pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow-x:auto; font:13px/1.7 Consolas,Menlo,monospace; }
+.codebox pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+.codebox b { color:#fbbf24; font-weight:600; }
+.codebox .cm { color:#7dd3fc; opacity:.65; }
+.note,.compare,.warn { border-radius:8px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+.note { background:#eff6ff; border:1px solid #bfdbfe; }
+.compare { background:#fffbeb; border:1px solid #fde68a; }
+.warn { background:#fef2f2; border:1px solid #fecaca; }
+.boxtitle { display:block; font-weight:700; font-size:12px; letter-spacing:.08em; margin-bottom:6px; color:#475569; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#fff; }
+th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; white-space:nowrap; }
+footer { margin-top:64px; padding-top:16px; border-top:1px solid #cbd5e1; font-size:13.5px; color:#64748b; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+footer a { color:#2563eb; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">目次</a>
+  <a href="go-lang-primer.html">Go 言語プライマー</a>
+  <a href="react-ts-primer.html">React/TS プライマー</a>
+  <a href="tag-walkthrough.html">タグ管理ウォークスルー</a>
+  <a href="tag-tests.html">タグのテスト</a>
+  <a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+  <a href="combo-tests.html">コンボのテスト + E2E</a>
+  <a href="playwright-guide.html">Playwright ガイド</a>
+  <a href="shadcn-tailwind-guide.html">shadcn/Tailwind</a>
+  <a href="game-update-walkthrough.html">ゲーム更新影響判定</a>
+  <a href="shell-guardrails-guide.html">シェル検査とフック</a>
+</nav>
+<div class="wrap">
+
+<h1>React + TypeScript プライマー<br>— Tacpendium のコードで学ぶ</h1>
+
+<p>Flask(Jinja2)や Spring Boot(Thymeleaf)のサーバーレンダリングに慣れていると、React の何が根本的に違うのかが最初の壁になります。このページはまず<strong>発想の違い</strong>を押さえてから、このリポジトリのタグ機能・コンボ機能の実コードで文法と仕組みを説明します。</p>
+
+<h2>1. 発想の転換: 「画面を組み立てる」から「状態を宣言する」へ</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th></th><th>Jinja2 / Thymeleaf(サーバーレンダリング)</th><th>React(このアプリ)</th></tr>
+<tr><td>HTML を作る場所</td><td>サーバー。リクエストごとにテンプレートへ値を流し込む</td><td>ブラウザ。サーバーは JSON しか返さない</td></tr>
+<tr><td>画面の更新</td><td>ページ全体を再リクエスト(またはフォーム POST → リダイレクト)</td><td>状態(state)が変わると、変わった部分だけ React が再描画</td></tr>
+<tr><td>プログラマが書くもの</td><td>「この操作のときに DOM をこう書き換える」(jQuery 的)または全再描画</td><td><strong>「状態が X のとき画面はこうあるべき」という宣言</strong>。書き換え手順は書かない</td></tr>
+<tr><td>データの持ち主</td><td>常にサーバー(セッション・DB)</td><td>UI 状態はブラウザ内(useState)、サーバー由来データはキャッシュ(TanStack Query)</td></tr>
+</table>
+</div>
+
+<p>実例で見ます。タグ一覧画面の描画部分は「ロード中なら…、エラーなら…、データがあれば…」という<strong>状態→見た目の対応表</strong>そのものです:</p>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/components/TagManagementPage.tsx:94-129(抜粋)</div>
+<pre><code>{tagsQuery.isLoading &amp;&amp; (
+  &lt;p className="text-sm text-slate-500"&gt;{t("tag.management.loading")}&lt;/p&gt;
+)}
+{tagsQuery.isError &amp;&amp; (
+  &lt;p className="text-sm text-red-600"&gt;{t("tag.management.loadError")}&lt;/p&gt;
+)}
+{tagsQuery.data &amp;&amp; (
+  &lt;&gt;
+    <span class="cm">// …検索欄と件数表示(M24-02 で追加)…</span>
+    &lt;TagListTable
+      tags={filteredTags}                     <span class="cm">// 検索語で絞り込んだ結果</span>
+      onEdit={handleEditClick}
+      onDelete={handleDeleteClick}
+      searchQuery={search}
+      onClearSearch={() =&gt; setSearch("")}
+    /&gt;
+  &lt;/&gt;
+)}</code></pre>
+</div>
+
+<p>「ロードが終わったらスピナーを消してテーブルを挿入する」という手順はどこにも書いてありません。<code>tagsQuery</code> の中身が変わるたびに React がこの関数を再実行し、宣言と現実の DOM の差分だけを適用します。<strong>再実行されても壊れない純粋な「状態→画面」関数を書く</strong>、というのが React の中心思想です。</p>
+
+<h2>2. 関数コンポーネントと JSX</h2>
+
+<p>React のコンポーネントは「props(引数)を受け取り JSX を返す関数」です。JSX は JavaScript の中に HTML 風の構文を書ける拡張で、ビルド時(Vite)に関数呼び出しへ変換されます。</p>
+
+<div class="codebox">
+<div class="path">web/src/pages/TagManagementPageRoute.tsx(全 13 行)</div>
+<pre><code>import Header from "@/components/Header";
+import { TagManagementPage } from "@/features/tag/components/TagManagementPage";
+
+export default function <b>TagManagementPageRoute</b>() {   <span class="cm">// コンポーネント = PascalCase の関数</span>
+  return (
+    &lt;main className="min-h-screen bg-slate-50 text-slate-900"&gt;
+      &lt;<b>Header</b> /&gt;                                     <span class="cm">// 大文字始まり = コンポーネントの呼び出し</span>
+      &lt;div className="max-w-7xl mx-auto px-4 py-6"&gt;
+        &lt;TagManagementPage /&gt;
+      &lt;/div&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+</div>
+
+<p>JSX の読み方の要点:</p>
+<ul>
+<li><code>className</code> は HTML の <code>class</code>(JS の予約語を避けるため)。値の <code>min-h-screen bg-slate-50 …</code> は <strong>Tailwind CSS</strong> のユーティリティクラスで、CSS ファイルを書かずにスタイルをクラス名で指定する流儀(読み方は<a href="shadcn-tailwind-guide.html">shadcn/Tailwind ガイド</a>で詳説)</li>
+<li><code>{...}</code> の中は生の JavaScript 式。<code>{tagsQuery.data &amp;&amp; (...)}</code> は「左が truthy なら右を描画」という条件描画イディオム</li>
+<li><code>@/</code> は <code>web/src/</code> を指すパスエイリアス(Vite 設定)。相対パス地獄の回避策</li>
+<li>タグの大文字/小文字に意味がある: <code>&lt;main&gt;</code> は素の HTML 要素、<code>&lt;Header /&gt;</code> は自作コンポーネント</li>
+</ul>
+
+<h2>3. props — コンポーネントの引数は「値 + コールバック」</h2>
+
+<p>親から子へはデータを渡し、子から親へは<strong>コールバック関数を渡してもらって呼ぶ</strong>のが React の通信様式です。タグ編集ダイアログの props 定義:</p>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/components/TagFormDialog.tsx:24-33</div>
+<pre><code>interface Props {
+  open: boolean;                                     <span class="cm">// 親が開閉を決める(後述の「制御」パターン)</span>
+  tag?: Tag | null;                                  <span class="cm">// 編集対象。null/undefined なら新規作成モード</span>
+  onOpenChange: (open: boolean) =&gt; void;             <span class="cm">// 「閉じたい」と親へ伝えるコールバック</span>
+  onSubmit: (values: TagFormSubmitValues) =&gt; Promise&lt;void&gt;;  <span class="cm">// 保存処理は親が持つ</span>
+}
+
+export function TagFormDialog(<b>{ open, tag, onOpenChange, onSubmit }: Props</b>) {
+  const { t } = useTranslation();
+  const isEdit = tag != null;
+  ...</code></pre>
+</div>
+
+<p><code>{ open, tag, ... }: Props</code> は分割代入(props オブジェクトをその場でフィールドに展開)です。注目すべきは<strong>ダイアログ自身が「自分を閉じる」処理を持っていない</strong>こと。開閉状態 <code>formOpen</code> は親(TagManagementPage)の useState にあり、子は <code>onOpenChange(false)</code> で「閉じてほしい」と依頼するだけです。状態の持ち主を 1 か所に集める、これが React の「単方向データフロー」です。</p>
+
+<h2>4. useState — 再レンダリングの引き金</h2>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/components/TagManagementPage.tsx:25-37</div>
+<pre><code>const [formOpen, setFormOpen] = <b>useState</b>(false);          <span class="cm">// [現在値, 更新関数] のペア</span>
+const [editingTag, setEditingTag] = useState&lt;Tag | null&gt;(null);
+const [deletingTag, setDeletingTag] = useState&lt;Tag | null&gt;(null);
+
+const handleCreateClick = () =&gt; {
+  setEditingTag(null);     <span class="cm">// 「編集対象なし」= 新規作成モード</span>
+  setFormOpen(true);       <span class="cm">// ← これが再レンダリングを起こし、ダイアログが現れる</span>
+};
+
+const handleEditClick = (tag: Tag) =&gt; {
+  setEditingTag(tag);      <span class="cm">// この tag がダイアログの初期値になる</span>
+  setFormOpen(true);
+};</code></pre>
+</div>
+
+<p>重要な性質: <code>formOpen = true</code> のような直接代入は<strong>禁止</strong>です。必ず <code>setFormOpen()</code> を通します。React は「set 関数が呼ばれた」ことを検知してコンポーネント関数を再実行(再レンダリング)するので、変数を直接書き換えても画面には何も起きません。</p>
+
+<div class="compare">
+<span class="boxtitle">Flask / Spring 経験者向け</span>
+サーバーレンダリングでは「新規作成画面」と「編集画面」は別 URL・別リクエストになりがちですが、ここでは <code>editingTag</code> が null か否かという<strong>状態の違い</strong>だけで同じダイアログが 2 つのモードを演じます。URL 遷移ではなく状態遷移で画面が変わるのが SPA です。
+</div>
+
+<h2>5. useEffect — 「描画の後にやる副作用」の登録</h2>
+
+<p>コンポーネント関数は純粋な「状態→JSX」変換であるべきで、描画以外の仕事(タイマー、購読、そして「props の変化に応じた状態の同期」)は <code>useEffect</code> に隔離します。タグフォームの「ダイアログが開いた瞬間に、対象タグの値でフォームをリセットする」処理:</p>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/hooks/useTagFormDialog.ts:43-51</div>
+<pre><code>useEffect(() =&gt; {
+  if (open) {
+    form.reset({
+      name: tag?.name ?? "",                       <span class="cm">// ?. = null 安全アクセス、?? = null 合体</span>
+      category: tag?.category ?? "",
+      color: tag ? (tag.color ?? "") : DEFAULT_TAG_COLOR,  <span class="cm">// 新規は既定色、編集は元の色</span>
+    });
+  }
+}, <b>[open, tag, form]</b>);                             <span class="cm">// 依存配列: これらが変わった描画後にだけ実行</span></code></pre>
+</div>
+
+<p>第 2 引数の<strong>依存配列</strong>が useEffect の肝です。「配列内の値が前回描画から変わっていたら、描画完了後にこの関数を実行する」という契約で、ここでは「open が false→true に変わった(ダイアログが開いた)」タイミングを捉えています。<code>tag?.name ?? ""</code> は「tag が null でなければ name、それも無ければ ""」という TypeScript の null 安全イディオムで、頻出します。</p>
+
+<h2>6. カスタムフック — ロジックを部品化する仕組み</h2>
+
+<p><code>use</code> で始まる関数を自作すると、useState/useEffect を含むロジックの塊を再利用可能な部品にできます。このリポジトリの規約では「見た目(components/)」と「ロジック(hooks/)」を分離するのにカスタムフックを使っています。</p>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/hooks/useTagManagement.ts(全 33 行)</div>
+<pre><code>export function <b>useTagManagement</b>() {
+  const queryClient = useQueryClient();
+
+  const tagsQuery = useQuery({
+    queryKey: <b>queryKeys.tags.list(true)</b>,             <span class="cm">// = ["tags", { include_usage: true }](後述 §7)</span>
+    queryFn: () =&gt; tagApi.list({ includeUsage: true }),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (input: CreateTagInput) =&gt; tagApi.create(input),
+    onSuccess: () =&gt; queryClient.invalidateQueries({ queryKey: queryKeys.tags.all() }),
+  });
+  <span class="cm">// updateMutation / deleteMutation も同型 …</span>
+
+  return { tagsQuery, createMutation, updateMutation, deleteMutation };
+}</code></pre>
+</div>
+
+<p>コンポーネント側は <code>const { tagsQuery, createMutation, ... } = useTagManagement();</code> と 1 行書くだけで「タグ一覧の取得 + 3 種の更新操作」一式を手に入れます(TagManagementPage.tsx:17-18)。テストでもフック単体を <code>renderHook</code> で検証できます(<a href="tag-tests.html">タグのテスト</a>参照)。</p>
+
+<div class="note">
+<span class="boxtitle">2026-09 追記: 「サーバーアクセス以外」の共通フック化の実例 — useListboxKeyNav</span>
+カスタムフックは useQuery を包むためだけのものではありません。M27-02a では、検索付きセレクトとタグ入力欄の 2 か所に同じ「候補リスト(role="listbox")を ↑↓ キーで巡回する」操作が必要になり、コピーではなく共通フック <code>web/src/hooks/useListboxKeyNav.ts</code>(全 59 行)へ実体を 1 本化しました。設計が教材的です: <strong>useState を一切持たず</strong>、「今どの候補にいるか」を state に持つ代わりに実 DOM のフォーカス位置をそのまま現在地として使います(<code>[role="option"]</code> の要素列から <code>document.activeElement</code> を探し、次の要素へ <code>focus()</code> する)。state を持たないので、検索で候補が絞り込まれても位置合わせの同期処理が要りません。「状態を持たないで済むなら持たない」の好例です。
+</div>
+
+<h2>7. TanStack Query — 「サーバー状態」という第 3 の概念</h2>
+
+<p>ここがサーバーレンダリング経験者にとって一番新しい概念です。React の useState は「UI の状態」を持ちますが、タグ一覧のような<strong>サーバー由来のデータ</strong>は性質が違います: 自分だけが真実を持っているわけではなく、古くなるし、取得は失敗するし、複数画面で共有されます。TanStack Query はこれを「キー付きキャッシュ」として管理するライブラリです。</p>
+
+<h3>7.1 useQuery — 読み取り</h3>
+
+<ul>
+<li><code>queryKey: queryKeys.tags.list(true)</code>(実体は <code>["tags", { include_usage: true }]</code>)— キャッシュの住所。<strong>キーが同じなら画面が違っても同じキャッシュを共有</strong>します</li>
+<li><code>queryFn</code> — 実際の取得処理(fetch)。TanStack Query が「いつ呼ぶか」を管理する</li>
+<li>戻り値の <code>isLoading / isError / data</code> が §1 で見た宣言的描画の材料になる</li>
+</ul>
+
+<p>コンボ一覧ではキーにフィルタ条件オブジェクトを丸ごと入れています:</p>
+
+<div class="codebox">
+<div class="path">web/src/features/combo/api.ts:94-103</div>
+<pre><code>export function useCombos(filter: ComboListFilter) {
+  return useQuery({
+    queryKey: <b>queryKeys.combos.list(filter)</b>,  <span class="cm">// = ["combos", filter]。フィルタが変わる = 別のキー = 自動で再取得</span>
+    queryFn: () =&gt; {
+      const qs = buildQuery(filter);
+      const path = qs ? `/api/combos?${qs}` : "/api/combos";
+      return fetchJSON&lt;ComboListResponse&gt;(path);
+    },
+  });
+}</code></pre>
+</div>
+
+<p>ユーザーがフィルタを変更すると <code>filter</code> オブジェクトが変わり、queryKey が変わり、TanStack Query が新しいキーのデータを自動で取りに行きます。「フィルタ変更時に再取得する」コードはどこにも書いてありません。<strong>キー設計 = 再取得戦略</strong>です。</p>
+
+<h3>7.2 useMutation + invalidateQueries — 書き込みと再同期</h3>
+
+<p>作成・更新・削除は <code>useMutation</code> で行い、成功時に <code>invalidateQueries</code> で関連キャッシュへ「古くなった」と印を付けます。印の付いたクエリは自動で再取得され、画面が最新化されます。</p>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/hooks/useTagManagement.ts:15-18</div>
+<pre><code>const createMutation = useMutation({
+  mutationFn: (input: CreateTagInput) =&gt; tagApi.create(input),   <span class="cm">// POST /api/tags</span>
+  onSuccess: () =&gt; queryClient.<b>invalidateQueries({ queryKey: queryKeys.tags.all() })</b>,
+  <span class="cm">// queryKeys.tags.all() = ["tags"]。前方一致: ["tags", {include_usage:true}] などタグ系キャッシュ全部が無効化される</span>
+});</code></pre>
+</div>
+
+<div class="note">
+<span class="boxtitle">この 2 つ + キー設計で「画面が勝手に最新になる」</span>
+保存 → invalidate → 自動再取得 → 再レンダリング。このループがこのアプリ全域の更新パターンです。コンボの PUT ではさらに進んだキャッシュ操作(<code>removeQueries</code> で旧詳細を消し、<code>setQueryData</code> で新レスポンスを直接キャッシュに書く。combo/api.ts:231-247)も出てきます。
+</div>
+
+<h3>7.3 queryKey の集約 — 直書きをやめた理由(2026-09 追記)</h3>
+
+<p>上のコードで queryKey が配列リテラルではなく <code>queryKeys.tags.list(true)</code> のような関数呼び出しになっているのは、M24-08 で<strong>全キーを <code>web/src/lib/query-keys.ts</code> の <code>queryKeys</code> ファクトリへ集約した</strong>ためです(2026-07 時点の本ガイド初版では直書きでした)。</p>
+
+<div class="warn">
+<span class="boxtitle">なぜ集約するのか — 前方一致は「静かに」壊れる</span>
+キーを書く側(useQuery)と無効化する側(invalidateQueries)は別ファイルに分かれます。配列リテラルの直書きだと、片方のキー構造だけ変えたときに前方一致が外れますが、<strong>例外は出ず「画面が更新されない」だけ</strong>になります。着手前の実測では本番 58 件の invalidateQueries のうち 39 件が前方一致に依存していました。集約後は、正本の外で配列リテラルを書くと専用テスト(query-keys.convention.test.ts)が赤になり、「どの invalidate がどの query にちょうど当たるか」も実物の QueryClient を使うテスト(query-keys.invalidation.test.ts)で表として固定されています。<strong>「規約を散文で書く」より「規約をテストで機械化する」</strong>——このリポジトリの一貫した流儀です(web/CLAUDE.md §1.5)。
+</div>
+
+<div class="compare">
+<span class="boxtitle">Flask / Spring 経験者向け</span>
+サーバーレンダリングの「POST → リダイレクト → GET(PRG パターン)」に相当するのが「mutation → invalidate → refetch」です。ページ遷移なしで同じ整合性が得られる、と対応付けると腑に落ちやすいはずです。
+</div>
+
+<h2>8. TypeScript — JSON の形をコンパイル時に固定する</h2>
+
+<p>TypeScript は JavaScript に型を足した言語で、ビルド時に型検査してから型情報を消した JS を出力します。このリポジトリでは <strong>Go 側の JSON タグと TypeScript の interface を手動で対応させる</strong>運用です(コード生成はしていない)。</p>
+
+<div class="codebox">
+<div class="path">web/src/types/tag.ts:1-8 と internal/model/tag.go:50-57 の対応</div>
+<pre><code>export interface Tag {          <span class="cm">// Go 側: type Tag struct {</span>
+  id: number;                   <span class="cm">//   ID     int64  `json:"id"`</span>
+  userId: number;               <span class="cm">//   UserID int64  `json:"userId"`   ← camelCase で一致</span>
+  name: string;
+  category<b>?</b>: string;            <span class="cm">//   Category *string `json:"category,omitempty"`</span>
+  color?: string;               <span class="cm">//   ← Go の「*T + omitempty」 = TS の「?(省略可)」</span>
+  usageCount?: number;
+}</code></pre>
+</div>
+
+<p>言語仕様の対応関係:</p>
+<div class="tablewrap">
+<table>
+<tr><th>Go</th><th>TypeScript</th><th>意味</th></tr>
+<tr><td><code>*string</code> + <code>omitempty</code></td><td><code>category?: string</code></td><td>キーが無いかもしれない(undefined)</td></tr>
+<tr><td><code>*int</code>(null を送る)</td><td><code>damage?: number | null</code></td><td>union 型。コンボ編集用 <code>Combo</code>(combo/types.ts:224-272)は「未入力」を null で表すためこちら</td></tr>
+<tr><td><code>int64 / float64</code></td><td><code>number</code></td><td>TS/JS に整数型はなく number のみ</td></tr>
+<tr><td><code>[]model.Tag</code></td><td><code>Tag[]</code></td><td>配列</td></tr>
+<tr><td>ジェネリクス <code>Optional[T]</code></td><td><code>fetchJSON&lt;T&gt;(path)</code></td><td>型パラメータ。呼び出し側が「このレスポンスは T 型」と教える</td></tr>
+</table>
+</div>
+
+<div class="warn">
+<span class="boxtitle">TS の型は「ランタイムでは消える」</span>
+<code>fetchJSON&lt;Tag[]&gt;("/api/tags")</code> と書いても、実行時にレスポンスが本当に Tag[] かは検査されません(<code>return res.json() as T</code> はただの表明)。バックエンドと型がずれると実行時に静かに壊れます。だからこそ CLAUDE.md は「JSON タグ camelCase 統一」「列挙定数の両側同期」を規約で強制し、types.ts 冒頭コメント(combo/types.ts:1-7)で「フィールド追加時は全 interface に追加」と注意喚起しています。実行時にも検査したい入力(ユーザーのフォーム)には次節の zod を使います。
+</div>
+
+<h2>9. zod + react-hook-form — フォームの検証</h2>
+
+<p>zod は「実行時に値の形を検査できるスキーマ」ライブラリ、react-hook-form(RHF)はフォーム状態管理ライブラリです。タグフォームでの組み合わせ:</p>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/hooks/useTagFormDialog.ts:16-24, 36-41</div>
+<pre><code>export function <b>createTagFormSchema</b>(t: Translate) {  <span class="cm">// Translate = (key: string) =&gt; string</span>
+  return <b>z.object({</b>
+    name: z.string().trim().min(1, t("tag.form.nameRequired")),  <span class="cm">// VAL-T02 のフロント側</span>
+    category: z.string().optional(),
+    color: z.string().regex(/^(#[0-9A-Fa-f]{6}|)$/, t("tag.form.colorFormat")),
+  <b>});</b>
+}
+
+type TagFormValues = <b>z.infer&lt;ReturnType&lt;typeof createTagFormSchema&gt;&gt;</b>;  <span class="cm">// スキーマから TS 型を逆算(二重定義しない)</span>
+
+<span class="cm">// …フック本体…</span>
+const { t } = useTranslation();
+const schema = useMemo(() =&gt; createTagFormSchema(t), [t]);  <span class="cm">// t が変わらない限り同じスキーマを再利用</span>
+const form = useForm&lt;TagFormValues&gt;({
+  resolver: <b>zodResolver(schema)</b>,                     <span class="cm">// RHF の検証エンジンとして zod を接続</span>
+  defaultValues: { name: "", category: "", color: "" },
+});</code></pre>
+</div>
+
+<p><code>z.infer</code> が便利な点です: スキーマ(実行時検証)から型(コンパイル時検証)を導出するので、両者が絶対にずれません。Bean Validation のアノテーション + DTO クラスを 1 つの定義で済ませているイメージです。なお同じ検証(空名・重複)はサーバー側にも必ずあります(service.go の VAL-T01/T02)。<strong>フロントの検証は UX のため、サーバーの検証が防衛線</strong>という役割分担はサーバーレンダリング時代と同じです。</p>
+
+<div class="note">
+<span class="boxtitle">2026-09 追記: スキーマが定数からファクトリ関数になった理由</span>
+本ガイド初版(2026-07)ではスキーマは <code>export const tagFormSchema = z.object({...})</code> というモジュールトップレベルの定数で、エラーメッセージは日本語リテラルでした。M24-07 で検証メッセージを i18n 化した際、<strong>ファクトリ関数 <code>createTagFormSchema(t)</code></strong> に変わっています。定数のままだと文言が「モジュール読込時の言語」で焼き付き、言語切替後も旧言語のメッセージが残るためです。呼び手のフックが毎回 <code>t</code> を渡して組み立て、<code>useMemo</code> で再生成を抑えます。型導出も <code>z.infer&lt;ReturnType&lt;typeof createTagFormSchema&gt;&gt;</code> と 1 段挟む形になりました——「関数の戻り値の型」を取る <code>ReturnType</code> は TypeScript のユーティリティ型の代表格です。副次効果として、テストからは <code>t</code> に恒等関数を渡せばモック無しでスキーマを検証できます。
+</div>
+
+<h2>10. アプリの土台 — エントリポイントとルーティング</h2>
+
+<p>SPA の起動は「index.html の空 div に React をマウントする」ことから始まります。</p>
+
+<div class="codebox">
+<div class="path">web/src/main.tsx:17-48(抜粋)</div>
+<pre><code>const queryClient = new QueryClient({           <span class="cm">// TanStack Query のキャッシュ本体(アプリで 1 個)</span>
+  defaultOptions: {
+    queries: {
+      <span class="cm">// 401 は再試行しない——認証が要るという応答は繰り返しても変わらず、既定の 3 回再試行は空転(実測で約 7 秒)</span>
+      retry: (failureCount, error) =&gt; !isUnauthorizedError(error) &amp;&amp; failureCount &lt; 3,
+    },
+  },
+});
+
+ReactDOM.createRoot(rootElement).render(
+  &lt;React.StrictMode&gt;
+    &lt;<b>QueryClientProvider</b> client={queryClient}&gt;  <span class="cm">// 配下の全コンポーネントに queryClient を供給</span>
+      &lt;<b>BrowserRouter</b>&gt;                            <span class="cm">// URL とコンポーネントの対応付けを有効化</span>
+        &lt;<b>AuthGate</b>&gt;                               <span class="cm">// 入場(認証)を通ってから内側を描画</span>
+          &lt;<b>CurrentUserProvider</b>&gt;                  <span class="cm">// 現在の利用者を配下へ供給(利用者一覧 API は保護対象)</span>
+            &lt;App /&gt;
+          &lt;/CurrentUserProvider&gt;
+        &lt;/AuthGate&gt;
+      &lt;/BrowserRouter&gt;
+    &lt;/QueryClientProvider&gt;
+  &lt;/React.StrictMode&gt;,
+);</code></pre>
+</div>
+
+<p>この入れ子は React の <strong>Context(コンテキスト)</strong>という仕組みで、「Provider の内側ならどこでも useQueryClient() / useNavigate() が使える」ようにするものです。Spring の ApplicationContext に少し似た「アプリ全域サービスの供給層」と捉えてください。入れ子の<strong>順序に意味がある</strong>点も教材的です: AuthGate を App の外側に置くのは、App が先頭で保護対象の API を呼ぶため(認証前に内側を描画すると読めない問い合わせが飛ぶ)、CurrentUserProvider がさらに内側なのは利用者一覧そのものが保護対象だからです(main.tsx:36-39 のコメント参照)。</p>
+
+<p>ルーティングは <code>router.tsx</code> に全ページが列挙されています:</p>
+
+<div class="codebox">
+<div class="path">web/src/router.tsx:26-57(抜粋)</div>
+<pre><code>&lt;Routes&gt;
+  &lt;Route path="/" element={&lt;HomePage /&gt;} /&gt;
+  &lt;Route path="/combos" element={&lt;ComboListPage /&gt;} /&gt;
+  &lt;Route path="/combos/new" element={&lt;ComboEditorPage /&gt;} /&gt;
+  &lt;Route path="/combos/<b>:id</b>/edit" element={&lt;ComboEditorPage /&gt;} /&gt;  <span class="cm">// :id は useParams() で取れる</span>
+  &lt;Route path="/combos/:id" element={&lt;ComboDetailPage /&gt;} /&gt;
+  &lt;Route path="/tags/manage" element={&lt;TagManagementPageRoute /&gt;} /&gt;
+  ...
+  &lt;Route path="/game-update/combos" element={&lt;GameUpdateCombosPage /&gt;} /&gt;  <span class="cm">// M28-02c で追加</span>
+  &lt;Route path="*" element={&lt;Navigate to="/" replace /&gt;} /&gt;  <span class="cm">// 未知 URL はホームへ</span>
+&lt;/Routes&gt;</code></pre>
+</div>
+
+<p>Flask の <code>@app.route("/combos/&lt;int:id&gt;")</code> のクライアント版です。ただしこの「遷移」はサーバーに HTML を取りに行きません。URL が変わるとマッチするコンポーネントが差し替わるだけで、データは各ページのフックが JSON API から取得します。だからこそバックエンドの SPA 配信(internal/api/static/handler.go:53-83。embed ビルド時に cmd/tacpendium/main.go:542-547 で登録)は「未知パスは全部 index.html を返す」フォールバックが必要になります — <code>/tags/manage</code> を直接開いてもサーバーにそんなファイルはなく、index.html + React Router が解決するからです。</p>
+
+<h2>11. i18n — 文字列は t() を通す</h2>
+
+<p>画面のあちこちにある <code>const { t } = useTranslation();</code> と <code>{t("common.loading")}</code> は react-i18next による国際化です。初期化は <code>web/src/lib/i18n.ts</code>、文言は翻訳リソース(<code>web/src/locales/ja.json</code> / <code>en.json</code>)にキーで登録され、コンポーネントはキーで参照します。<code>t("comboList.registeredCount", { count: ... })</code> のように変数埋め込みもできます。テストではこれをモックして「キーがそのまま返る」ようにする例が出てきます(<a href="combo-tests.html">コンボのテスト</a>参照)。</p>
+
+<div class="note">
+<span class="boxtitle">2026-09 追記: 用語統一もテストで守る</span>
+M29-01 で画面の用語が統一され、未参照キーが削除されました。興味深いのはその守り方で、<code>web/src/locales/</code> には翻訳 JSON と並んで <code>retired-words.test.ts</code>(廃止した語の再混入を検出)や <code>forbidden-words.test.ts</code>、<code>no-japanese-in-en.test.ts</code>(英語リソースへの日本語混入を検出)といったテストが同居しています。§7.3 の queryKeys と同じく、<strong>「表記ルールを散文で書く」のではなく「破ったらテストが赤くなる」形で機械化</strong>する流儀です。
+</div>
+
+<h2>12. まとめ — 読むためのチェックリスト</h2>
+
+<div class="tablewrap">
+<table>
+<tr><th>見かけたら</th><th>こう読む</th></tr>
+<tr><td><code>export function Xxx() { return &lt;...&gt; }</code></td><td>コンポーネント。「状態→画面」の純関数。状態が変わるたび再実行される</td></tr>
+<tr><td><code>const [x, setX] = useState(...)</code></td><td>UI 状態。setX が再レンダリングの引き金。直接代入は無効</td></tr>
+<tr><td><code>useEffect(() =&gt; {...}, [deps])</code></td><td>deps が変わった描画後に実行される副作用</td></tr>
+<tr><td><code>useXxx()(自作)</code></td><td>カスタムフック。hooks/ にあるロジック部品。中を見れば useQuery 等の組み合わせ</td></tr>
+<tr><td><code>useQuery({ queryKey, queryFn })</code></td><td>サーバーデータの購読。キーがキャッシュの住所、キー変更 = 自動再取得。キーは <code>lib/query-keys.ts</code> の <code>queryKeys</code> ファクトリで作る(直書き禁止・§7.3)</td></tr>
+<tr><td><code>useMutation + invalidateQueries</code></td><td>書き込み + 関連キャッシュの無効化(= 画面の自動最新化)</td></tr>
+<tr><td><code>x?: T</code> / <code>T | null</code> / <code>??</code> / <code>?.</code></td><td>「値がないかもしれない」の型と安全アクセス。Go の *T に対応</td></tr>
+<tr><td><code>z.object({...})</code> / <code>z.infer</code></td><td>実行時スキーマとそこから導出した型。フォーム検証は zodResolver で RHF に接続</td></tr>
+<tr><td><code>{cond &amp;&amp; &lt;X /&gt;}</code> / <code>{cond ? a : b}</code></td><td>条件描画。if 文の代わりに式で書く</td></tr>
+<tr><td><code>onXxx={handler}</code></td><td>子→親のコールバック。子は状態を持たず親に依頼する(単方向データフロー)</td></tr>
+<tr><td><code>t("key")</code></td><td>i18n の文言参照。実文言は翻訳リソース側</td></tr>
+</table>
+</div>
+
+<footer>
+<span><a href="go-lang-primer.html">← Go 言語プライマー</a></span>
+<span>生成日 2026-07-22 / 更新日 2026-09-08(コード引用を同日時点の作業ツリーと突合)</span>
+<span><a href="tag-walkthrough.html">次: タグ管理ウォークスルー →</a></span>
+</footer>
+</div>
+</body>
+</html>

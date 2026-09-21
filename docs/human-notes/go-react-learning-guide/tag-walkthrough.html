@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>タグ管理 完全ウォークスルー — Tacpendium で学ぶ Go / React</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; background:#f8fafc; color:#1e293b; font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif; line-height:1.9; }
+.topnav { background:#0f172a; color:#cbd5e1; padding:10px 20px; font-size:13px; }
+.topnav a { color:#93c5fd; text-decoration:none; margin-right:14px; }
+.topnav a:hover { text-decoration:underline; }
+.wrap { max-width:920px; margin:0 auto; padding:28px 20px 90px; }
+h1 { font-size:26px; border-left:6px solid #7c3aed; padding-left:12px; line-height:1.5; }
+h2 { font-size:21px; margin-top:48px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+h3 { font-size:17px; margin-top:32px; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; font-size:.9em; font-family:Consolas,"SF Mono",Menlo,monospace; }
+.codebox { margin:16px 0; border-radius:8px; overflow:hidden; border:1px solid #334155; }
+.codebox .path { background:#1e293b; color:#93c5fd; font:12px Consolas,Menlo,monospace; padding:6px 12px; border-bottom:1px solid #334155; }
+.codebox pre { margin:0; background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow-x:auto; font:13px/1.7 Consolas,Menlo,monospace; }
+.codebox pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+.codebox b { color:#fbbf24; font-weight:600; }
+.codebox .cm { color:#7dd3fc; opacity:.65; }
+.note,.compare,.warn { border-radius:8px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+.note { background:#eff6ff; border:1px solid #bfdbfe; }
+.compare { background:#fffbeb; border:1px solid #fde68a; }
+.warn { background:#fef2f2; border:1px solid #fecaca; }
+.boxtitle { display:block; font-weight:700; font-size:12px; letter-spacing:.08em; margin-bottom:6px; color:#475569; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#fff; }
+th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; vertical-align:top; }
+th { background:#f1f5f9; white-space:nowrap; }
+.flow { list-style:none; counter-reset:step; padding:0; margin:16px 0; }
+.flow li { position:relative; margin:0 0 10px; padding:10px 14px 10px 52px; background:#fff; border:1px solid #cbd5e1; border-radius:8px; font-size:14.5px; }
+.flow li::before { counter-increment:step; content:counter(step); position:absolute; left:12px; top:12px; width:26px; height:26px; background:#7c3aed; color:#fff; border-radius:50%; text-align:center; line-height:26px; font-weight:700; font-size:13px; }
+.flow li .who { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:10px; margin-right:6px; vertical-align:1px; }
+.who.fe { background:#d1fae5; color:#065f46; }
+.who.be { background:#dbeafe; color:#1e40af; }
+.who.db { background:#fef3c7; color:#92400e; }
+footer { margin-top:64px; padding-top:16px; border-top:1px solid #cbd5e1; font-size:13.5px; color:#64748b; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+footer a { color:#2563eb; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="index.html">目次</a>
+  <a href="go-lang-primer.html">Go 言語プライマー</a>
+  <a href="react-ts-primer.html">React/TS プライマー</a>
+  <a href="tag-walkthrough.html">タグ管理ウォークスルー</a>
+  <a href="tag-tests.html">タグのテスト</a>
+  <a href="combo-walkthrough.html">コンボ CRUD ウォークスルー</a>
+  <a href="combo-tests.html">コンボのテスト + E2E</a>
+  <a href="playwright-guide.html">Playwright ガイド</a>
+  <a href="shadcn-tailwind-guide.html">shadcn/Tailwind</a>
+  <a href="game-update-walkthrough.html">ゲーム更新影響判定</a>
+  <a href="shell-guardrails-guide.html">シェル検査とフック</a>
+</nav>
+<div class="wrap">
+
+<h1>タグ管理 完全ウォークスルー<br>— 1 機能でバックエンド 4 層とフロントエンドを通しで読む</h1>
+
+<p>題材は <code>/tags/manage</code>(タグ管理画面)。タグの一覧表示・新規作成・編集・削除ができる、このアプリで最も小さく素直な CRUD 機能です。<strong>DB の 1 行がブラウザの 1 行になるまで/フォームの入力が DB の 1 行になるまで</strong>を、実コードで全区間追跡します。</p>
+
+<div class="note">
+<span class="boxtitle">前提</span>
+<a href="go-lang-primer.html">Go プライマー</a>と<a href="react-ts-primer.html">React/TS プライマー</a>の内容(エラー処理・インターフェース・useState・TanStack Query)は説明済みとして進めます。詰まったらそちらへ。
+</div>
+
+<h2>1. 機能の全体像</h2>
+
+<h3>1.1 API は 5 本</h3>
+
+<div class="codebox">
+<div class="path">internal/api/tag/routes.go(全 13 行)</div>
+<pre><code>func RegisterRoutes(g *echo.Group, h *Handler) {
+    g.GET("/tags", h.List)          <span class="cm">// 一覧(?category= &amp;include_usage= &amp;character_id=)</span>
+    g.GET("/tags/:id", h.Get)       <span class="cm">// 単体取得</span>
+    g.POST("/tags", h.Create)       <span class="cm">// 作成</span>
+    g.PATCH("/tags/:id", h.Update)  <span class="cm">// 部分更新</span>
+    g.DELETE("/tags/:id", h.Delete) <span class="cm">// 削除(?force=true で使用中でも削除)</span>
+}</code></pre>
+</div>
+
+<p><code>g</code> は main.go:480 で作られた <code>/api</code> グループなので、実際の URL は <code>/api/tags</code> です。この 13 行が「この機能の API 仕様の一覧表」を兼ねます — Echo ではルート登録がコードなので、仕様書とコードが乖離しません。</p>
+
+<h3>1.2 テーブルは 2 つ</h3>
+
+<div class="tablewrap">
+<table>
+<tr><th>テーブル</th><th>役割</th><th>カラム</th></tr>
+<tr><td><code>tags</code></td><td>タグ本体</td><td>id, user_id, name, category(NULL可), color(NULL可)</td></tr>
+<tr><td><code>combo_tags</code></td><td>コンボ⇔タグの多対多関連</td><td>combo_id, tag_id(tags 削除時は ON DELETE CASCADE で道連れ)</td></tr>
+</table>
+</div>
+
+<h3>1.3 バリデーション仕様(設計書 DES-006 由来)</h3>
+
+<div class="tablewrap">
+<table>
+<tr><th>コード</th><th>内容</th><th>実装場所</th><th>HTTP</th></tr>
+<tr><td>VAL-T01</td><td>同一ユーザー内でタグ名重複禁止</td><td>service.go:73-77(作成)/ 91-95(更新)</td><td>409 Conflict</td></tr>
+<tr><td>VAL-T02</td><td>タグ名は空・空白のみ禁止</td><td>service.go:129-134 <code>validateName</code>(+フロントの zod)</td><td>400 Bad Request</td></tr>
+<tr><td>VAL-T03</td><td>使用中タグは force なしで削除不可</td><td>service.go:112-120</td><td>409 Conflict(usage_count 付き)</td></tr>
+</table>
+</div>
+
+<h2>2. バックエンド編 — 下(DB)から上(HTTP)へ</h2>
+
+<p>読む順序はあえて<strong>下の層から</strong>にします。データの形(model)→ 永続化(repository)→ 業務規則(service)→ HTTP 変換(handler)の順に積み上げると、各層の「役割の違い」が見えやすいからです。</p>
+
+<h3>2.1 model — データの形と定数</h3>
+
+<div class="codebox">
+<div class="path">internal/model/tag.go:50-71(抜粋)</div>
+<pre><code>type Tag struct {
+    ID         int64   `db:"id"          json:"id"`
+    UserID     int64   `db:"user_id"     json:"userId"`
+    Name       string  `db:"name"        json:"name"`
+    Category   *string `db:"category"    json:"category,omitempty"`  <span class="cm">// NULL 許容 → ポインタ</span>
+    Color      *string `db:"color"       json:"color,omitempty"`
+    UsageCount *int    `db:"-"           json:"usageCount,omitempty"` <span class="cm">// JOIN の集計結果。DB カラムではない</span>
+}
+
+type CreateTagInput struct {           <span class="cm">// POST のリクエストボディ</span>
+    Name     string  `json:"name"`
+    Category *string `json:"category,omitempty"`
+    Color    *string `json:"color,omitempty"`
+}
+
+type UpdateTagInput struct {           <span class="cm">// PATCH: 全フィールドがポインタ = nil なら変更しない</span>
+    Name     *string `json:"name,omitempty"`
+    Category *string `json:"category,omitempty"`
+    Color    *string `json:"color,omitempty"`
+}</code></pre>
+</div>
+
+<p>ポイントは <code>CreateTagInput</code> の <code>Name</code> は値型(必須)、<code>UpdateTagInput</code> の <code>Name</code> はポインタ(任意)という<strong>型による意図の表現</strong>。また同ファイル冒頭(tag.go:3-20)には <code>TagCategoryMyComboStatus = "mycombo_status"</code> のような列挙定数があり、フロント側 <code>web/src/constants/mycombo.ts</code> と対で管理されます(CLAUDE.md §4 の定数同期規約)。</p>
+
+<h3>2.2 repository — SQL の置き場所</h3>
+
+<p>リポジトリ層の責務は「SQL の実行と、行 ⇔ struct の詰め替え」だけです。業務判断はしません。</p>
+
+<h4>一覧: 条件分岐を SQL 側に押し込むイディオム</h4>
+
+<div class="codebox">
+<div class="path">internal/repository/tag/repository.go:49-72(listSimple)</div>
+<pre><code>q := `
+    SELECT id, user_id, name, category, color
+    FROM tags
+    WHERE user_id = ?
+      AND <b>(? = '' OR category = ?)</b>          -- category 未指定('')なら全件、指定ありなら絞り込み
+    ORDER BY CASE WHEN category IS NULL THEN 1 ELSE 0 END, category, name
+`
+rows, err := r.db.QueryContext(ctx, q, userID, <b>category, category</b>)  <span class="cm">// 同じ値を 2 回バインド</span>
+if err != nil {
+    return nil, fmt.Errorf("tag list: %w", err)
+}
+defer rows.Close()
+
+var tags []model.Tag
+for rows.Next() {                             <span class="cm">// カーソルを 1 行ずつ進める</span>
+    var t model.Tag
+    if err := rows.Scan(&amp;t.ID, &amp;t.UserID, &amp;t.Name, &amp;t.Category, &amp;t.Color); err != nil {
+        return nil, fmt.Errorf("tag list scan: %w", err)
+    }
+    tags = append(tags, t)
+}
+return tags, rows.Err()</code></pre>
+</div>
+
+<ul>
+<li><code>(? = '' OR category = ?)</code> は「Go 側で SQL 文字列を組み立て分岐する代わりに、条件そのものを SQL に書く」イディオム。SQL は常に 1 パターンでプリペアが効き、コードも短い</li>
+<li><code>rows.Scan(&amp;t.ID, ...)</code> — ORM がないので、SELECT した列の順番と Scan に渡すポインタの順番を<strong>手で一致させる</strong>。ここがずれるとバグるので、列とフィールドは常に同順で書く規律がある</li>
+<li>最後の <code>rows.Err()</code> — ループが「正常終了」か「途中でエラー中断」かはこれで判別する。忘れやすいので定型で必ず付ける</li>
+</ul>
+
+<h4>使用件数付き一覧: LEFT JOIN の ON 句に置いた条件</h4>
+
+<p>タグ管理画面は各タグの「使用コンボ数」バッジを出すため、<code>include_usage=true</code> で JOIN 集計版が走ります。ここに実務的な SQL の学びどころがあります:</p>
+
+<div class="codebox">
+<div class="path">internal/repository/tag/repository.go:74-94(listWithUsage、コメント要約付き)</div>
+<pre><code><span class="cm">// characterID のフィルタは LEFT JOIN の ON 句に置く(WHERE に置くと、当該キャラの
+// コンボを持たないタグが結果から消えてしまうため)。
+// 論理削除(ゴミ箱内)のコンボは数えない。</span>
+q := `
+    SELECT
+      t.id, t.user_id, t.name, t.category, t.color,
+      COUNT(c.id) AS usage_count
+    FROM tags t
+    LEFT JOIN combo_tags ct ON ct.tag_id = t.id
+    LEFT JOIN combos c ON c.id = ct.combo_id
+      <b>AND c.deleted_at IS NULL</b>                 -- ゴミ箱のコンボは数えない
+      <b>AND (? IS NULL OR c.character_id = ?)</b>    -- キャラ絞り込みも ON 句で
+    WHERE t.user_id = ?
+      AND (? = '' OR t.category = ?)
+    GROUP BY t.id
+    ORDER BY CASE WHEN t.category IS NULL THEN 1 ELSE 0 END, t.category, t.name
+`</code></pre>
+</div>
+
+<div class="note">
+<span class="boxtitle">なぜ WHERE ではなく ON に書くのか</span>
+LEFT JOIN の後の WHERE で <code>c.character_id = ?</code> と絞ると、「そのキャラのコンボが 1 件もないタグ」は行ごと消えてしまい、「usage_count = 0 のタグを一覧に出す」要件が壊れます。ON 句に書けば「JOIN の相手が絞られるだけ」でタグ側の行は残り、COUNT が 0 になります。コード内コメント(repository.go:75-80)がこの理由と「削除ガード側の CountUsage はゴミ箱を含む(意図的な非対称)」まで説明しており、<strong>コメントは Why を書く</strong>という良い見本にもなっています。
+</div>
+
+<h4>作成・更新・削除: RowsAffected と再取得</h4>
+
+<div class="codebox">
+<div class="path">internal/repository/tag/repository.go:142-154(Create)/ 206-219(Delete)</div>
+<pre><code>func (r *repository) Create(ctx context.Context, userID int64, input model.CreateTagInput) (*model.Tag, error) {
+    q := `INSERT INTO tags (user_id, name, category, color) VALUES (?, ?, ?, ?)`
+    res, err := r.db.ExecContext(ctx, q, userID, input.Name, input.Category, input.Color)
+    if err != nil {
+        return nil, fmt.Errorf("tag create: %w", err)
+    }
+    id, err := res.<b>LastInsertId()</b>          <span class="cm">// AUTOINCREMENT の採番結果</span>
+    ...
+    return r.<b>Get(ctx, userID, id)</b>          <span class="cm">// INSERT 後に SELECT し直して完全な行を返す</span>
+}
+
+func (r *repository) Delete(ctx context.Context, userID, tagID int64) error {
+    res, err := r.db.ExecContext(ctx, `DELETE FROM tags WHERE id = ? AND user_id = ?`, tagID, userID)
+    ...
+    n, err := res.<b>RowsAffected()</b>
+    ...
+    if n == 0 {
+        return <b>ErrNotFound</b>                 <span class="cm">// 影響 0 行 = そもそも存在しなかった</span>
+    }
+    return nil
+}</code></pre>
+</div>
+
+<p><code>RowsAffected() == 0</code> を「存在しない」と解釈して <code>ErrNotFound</code> に変換するのは、「SELECT で存在確認 → DELETE」の 2 クエリを 1 クエリで済ませる定石です。Update(repository.go:157-192)も同じパターン + <a href="go-lang-primer.html">プライマー §8.1</a> で見た動的 SET 句組み立てです。</p>
+
+<div class="warn">
+<span class="boxtitle">CASCADE は「書けば効く」とは限らない — SQLite の PRAGMA は接続単位</span>
+combo_tags の道連れ削除(§1.2 の ON DELETE CASCADE)は、実は長らく<strong>発火するかどうかが運任せ</strong>でした。SQLite の <code>PRAGMA foreign_keys</code> は接続ごとの設定ですが、初期化時の 1 回しか発行していなかったため、<code>database/sql</code> のコネクションプールが複数接続を張ると FK=ON なのはそのうち 1 本だけ — DELETE がどの接続に乗るか次第で CASCADE が効いたり効かなかったりし、実 DB に combo_tags の孤児行が残っていました。M23-10 で全接続に PRAGMA が届くよう修正され、現在は Delete のコメント(repository.go:194-205)がこの経緯を Why として記録し、テスト <code>TestForeignKeys_CascadeActuallyFires</code> が挙動を固定しています。<strong>「スキーマに書いた制約」と「実行時に有効な制約」は別物</strong>という、SQLite + プール構成ならではの学びどころです。
+</div>
+
+<h3>2.3 service — 業務規則の置き場所</h3>
+
+<p>サービス層はリポジトリを組み合わせて<strong>業務ルールを実現</strong>します。一番密度が高いのが削除です:</p>
+
+<div class="codebox">
+<div class="path">internal/service/tag/service.go:104-126(DeleteTag = VAL-T03 の実装)</div>
+<pre><code>func (s *service) DeleteTag(ctx context.Context, userID, tagID int64, force bool) error {
+    if _, err := s.repo.Get(ctx, userID, tagID); err != nil {   <span class="cm">// ① 存在確認</span>
+        if errors.Is(err, tagrepo.ErrNotFound) {
+            return ErrNotFound            <span class="cm">// repo のエラーを service のエラーに詰め替え</span>
+        }
+        return err
+    }
+    if <b>!force</b> {                                                 <span class="cm">// ② force でなければ使用中チェック</span>
+        count, err := s.repo.CountUsage(ctx, tagID)
+        if err != nil {
+            return err
+        }
+        if count &gt; 0 {
+            return <b>&amp;TagInUseError{UsageCount: count}</b>            <span class="cm">// 件数付きエラー(VAL-T03)</span>
+        }
+    }
+    err := s.repo.Delete(ctx, userID, tagID)                     <span class="cm">// ③ 削除実行</span>
+    if errors.Is(err, tagrepo.ErrNotFound) {
+        return ErrNotFound
+    }
+    return err
+}</code></pre>
+</div>
+
+<div class="note">
+<span class="boxtitle">レイヤごとにエラーを持ち替える理由</span>
+リポジトリの <code>tagrepo.ErrNotFound</code> をそのまま上に流さず、サービスの <code>ErrNotFound</code>(errors.go:6)へ詰め替えています。ハンドラが「サービス層のエラーだけ知っていればよい」状態を保つためで、層の依存方向(api → service → repository)を崩さない小さな規律です。
+</div>
+
+<p>作成(CreateTag、service.go:65-79)は<a href="go-lang-primer.html">プライマー §5.1</a> で全文を読みました: 空名検証 → 全件取得して重複チェック → INSERT、という素直な流れです。タグは 1 ユーザー数十件程度の想定なので「全件取って Go 側で重複チェック」で十分、という規模感の判断も読み取れます。</p>
+
+<h3>2.4 handler — HTTP と Go 世界の境界</h3>
+
+<p>ハンドラの仕事は 3 つだけです: <strong>(1) HTTP から入力を取り出して型にする、(2) サービスを呼ぶ、(3) 結果・エラーを HTTP(ステータス + JSON)に変換する</strong>。Create を見ると全部入りです:</p>
+
+<div class="codebox">
+<div class="path">internal/api/tag/handler.go:84-103(Create)</div>
+<pre><code>func (h *Handler) Create(c echo.Context) error {
+    var input model.CreateTagInput
+    if err := <b>c.Bind(&amp;input)</b>; err != nil {                       <span class="cm">// (1) JSON → struct</span>
+        return c.JSON(http.StatusBadRequest, model.NewAPIError("invalid_request", ...))
+    }
+
+    tag, err := <b>h.service.CreateTag(c.Request().Context(), mw.UserIDFrom(c), input)</b>  <span class="cm">// (2)</span>
+    if err != nil {
+        switch {                                                  <span class="cm">// (3) エラー → ステータス</span>
+        case errors.Is(err, tagsvc.ErrTagNameEmpty):
+            return c.JSON(http.StatusBadRequest, model.NewAPIError("tag_name_empty", "タグ名は必須です"))
+        case errors.Is(err, tagsvc.ErrTagNameDuplicate):
+            return c.JSON(http.StatusConflict, model.NewAPIError("tag_name_duplicate", "同名のタグが既に存在します"))
+        default:
+            slog.ErrorContext(c.Request().Context(), "create tag", slog.String("err", err.Error()))
+            return c.JSON(http.StatusInternalServerError, model.NewAPIError("internal_error", ...))
+        }
+    }
+    return <b>c.JSON(http.StatusCreated, tag)</b>                       <span class="cm">// (3) struct → JSON、201</span>
+}</code></pre>
+</div>
+
+<p>補足ポイント:</p>
+<ul>
+<li><code>mw.UserIDFrom(c)</code>(middleware/user.go:60-65)— 以前は固定の <code>defaultUserID = 1</code> でしたが、M22-02 の複数利用者対応で廃止。<code>X-User-Id</code> ヘッダをミドルウェア <code>UserContext</code> が解決して <code>echo.Context</code> に載せ、ハンドラは取り出すだけ。★これは認証ではなく<strong>「誰として操作するか」の札</strong>(DES-002 §8。入場の可否は別の簡易パスワード認証が判定)で、ヘッダが無ければ既定利用者へ倒します。「定数 1 を書かないこと」とコード側にも明記されています</li>
+<li>想定内エラー(空名・重複)はログに出さず、<strong>想定外(default)だけ slog.ErrorContext でログ</strong>する。ログノイズを増やさない設計</li>
+<li>クエリパラメータの取り出しは List(handler.go:37-47)が見本: <code>c.QueryParam("character_id")</code> は文字列なので <code>strconv.ParseInt</code> + 正数チェックを手書きし、不正なら 400</li>
+<li>エラー応答は常に <code>model.NewAPIError(code, message)</code> の統一形式 <code>{"error": {"code": ..., "message": ...}}</code>。フロントはこの <code>code</code> で分岐する(後述)</li>
+</ul>
+
+<h3>2.5 配線 — main.go の 3 行</h3>
+
+<div class="codebox">
+<div class="path">cmd/tacpendium/main.go:345-347, 487</div>
+<pre><code>tagRepo := tagrepo.New(sqlDB)                    <span class="cm">// repo(SQL 接続を注入)</span>
+tagService := tagsvc.New(tagRepo)                <span class="cm">// service(repo を注入)</span>
+tagHandler := taghandler.NewHandler(tagService)  <span class="cm">// handler(service を注入)</span>
+...
+taghandler.RegisterRoutes(apiGroup, tagHandler)  <span class="cm">// /api/tags 系を Echo に登録</span></code></pre>
+</div>
+
+<p><code>tagRepo</code> が変数に切り出されているのは、M22-02 以降<strong>利用者サービス(usersvc、main.go:351)にも同じリポジトリを注入している</strong>ためです。利用者を新規作成すると既定タグ 3 件(mycombo_status カテゴリ)を同時に生成する必要があり、そのために repository には <code>Create</code> と別に <code>CreateTx</code>(repository.go:134-140)— <code>*sql.Tx</code> を受け取って利用者作成と同一トランザクションに載せる変種 — が生えています。「片方だけコミットされると機能不全の利用者ができる」ケースでのトランザクション境界の切り方の見本です。</p>
+
+<p>これでバックエンドは完成形です。<code>POST /api/tags</code> が来ると Echo → <code>Handler.Create</code> → <code>service.CreateTag</code> → <code>repository.Create</code> → SQLite と流れます。</p>
+
+<h2>3. フロントエンド編 — 画面からサーバーへ</h2>
+
+<h3>3.1 ルートから画面の骨格まで</h3>
+
+<p>URL <code>/tags/manage</code> は <code>router.tsx:38</code> で <code>TagManagementPageRoute</code> に対応付き、その中身が <code>TagManagementPage</code>(features/tag/components/)です。このコンポーネントが画面の「司令塔」で、持っている状態は 4 つだけ:</p>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/components/TagManagementPage.tsx:15-27(抜粋)</div>
+<pre><code>export function TagManagementPage() {
+  const { t } = useTranslation();                           <span class="cm">// i18n(M24-07 で全文言をキー化)</span>
+  const { tagsQuery, createMutation, updateMutation, deleteMutation } =
+    <b>useTagManagement()</b>;                                    <span class="cm">// サーバー状態はフックに委譲</span>
+
+  const [search, setSearch] = useState("");                 <span class="cm">// タグ名検索(M24-02)</span>
+  const [formOpen, setFormOpen] = useState(false);          <span class="cm">// ダイアログ開閉</span>
+  const [editingTag, setEditingTag] = useState&lt;Tag | null&gt;(null);   <span class="cm">// 編集対象(null=新規)</span>
+  const [deletingTag, setDeletingTag] = useState&lt;Tag | null&gt;(null); <span class="cm">// 削除確認対象</span></code></pre>
+</div>
+
+<p>「タグ一覧そのもの」は useState に<strong>入っていない</strong>ことに注目してください。一覧はサーバー状態なので TanStack Query のキャッシュ(<code>tagsQuery.data</code>)にあり、UI 状態(どのダイアログが開いているか・検索語)だけを useState が持ちます。この分離がこのリポジトリのフロント設計の背骨です。M24-02 で追加された検索も、サーバーへ問い直すのではなく <code>filterByText(tagsQuery.data ?? [], search, ...)</code>(同 77-79 行)で<strong>キャッシュ済み配列をクライアント側で絞り込むだけ</strong>です — タグは 1 利用者ぶんで件数が少ないため、API を増やさない判断です。</p>
+
+<div class="note">
+<span class="boxtitle">queryKey は 1 ファイルに集中管理(M24-08)</span>
+<code>useTagManagement</code>(hooks/useTagManagement.ts)の中を見ると、queryKey は配列リテラルではなく <code>queryKeys.tags.list(true)</code> / <code>queryKeys.tags.all()</code>(web/src/lib/query-keys.ts:113-124 のファクトリ)を参照しています。キーを書く側(useQuery)と <code>invalidateQueries</code> を書く側は別ファイルに分かれがちで、片方だけ書き換えると TanStack Query の前方一致が<strong>例外も出さずに外れ、「画面が更新されない」だけになる</strong>ためです。全キーを 1 ファクトリへ集約し、規約テスト(query-keys.convention.test.ts)がファクトリ外の配列リテラルを機械的に禁止しています。Flask で言えば「URL を文字列で書かず url_for() に寄せる」のと同じ発想です。
+</div>
+
+<h3>3.2 API クライアント — fetch の薄いラッパ</h3>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/api/tagApi.ts:27-47, 70-75(抜粋)</div>
+<pre><code>async function request&lt;T&gt;(path: string, init?: RequestInit): Promise&lt;T&gt; {
+  const res = await <b>fetch</b>(path, {
+    credentials: "same-origin",
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+  });
+  if (!res.ok) {                                    <span class="cm">// 4xx/5xx ならエラーボディを読んで throw</span>
+    let body: TagErrorResponse | null = null;
+    try { body = (await res.json()) as TagErrorResponse; } catch { <span class="cm">/* パース失敗は null */</span> }
+    throw new <b>TagApiError(res.status, body, `HTTP ${res.status}`)</b>;
+  }
+  if (res.status === 204) return undefined as T;    <span class="cm">// DELETE の No Content 対応</span>
+  return res.json() as Promise&lt;T&gt;;
+}
+
+export const tagApi = {
+  ...
+  create(input: CreateTagInput): Promise&lt;Tag&gt; {
+    return request&lt;Tag&gt;("/api/tags", { method: "POST", body: JSON.stringify(input) });
+  },
+  ...
+};</code></pre>
+</div>
+
+<p><code>TagApiError</code>(tagApi.ts:8-25)は Go 側の統一エラー形式を受け止めるクラスで、<code>err.code</code> でバックエンドのエラーコード(<code>"tag_name_duplicate"</code> 等)、<code>err.usageCount</code> で details 内の件数が取れます。<strong>バックエンドの handler.go とフロントの tagApi.ts は「エラー形式」という契約で結ばれている</strong>わけです。</p>
+
+<h3>3.3 フォームの提出 — zod 検証から 409 ハンドリングまで</h3>
+
+<p>保存ボタンを押したときの処理は <code>useTagFormDialog</code> に集約されています:</p>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/hooks/useTagFormDialog.ts:53-74(handleSubmit)</div>
+<pre><code>const handleSubmit = form.handleSubmit(async (values) =&gt; {   <span class="cm">// zod 検証を通過した値だけが来る</span>
+  try {
+    await onSubmit({
+      name: values.name,
+      category: values.category <b>|| undefined</b>,   <span class="cm">// 空文字は「未設定」に正規化(Go 側の *string=nil へ)</span>
+      color: values.color || undefined,
+    });
+    onClose();                                    <span class="cm">// 成功したら閉じる</span>
+  } catch (err) {
+    if (err instanceof TagApiError) {
+      if (<b>err.code === "tag_name_duplicate"</b>) {    <span class="cm">// バックエンド VAL-T01 の 409</span>
+        form.setError("name", { message: t("tag.form.duplicateName") });
+      } else {
+        form.setError("root", {
+          message: err.body?.error.message ?? t("tag.form.genericError"),
+        });
+      }
+    } else {
+      form.setError("root", { message: t("tag.form.unexpectedError") });
+    }
+  }
+});</code></pre>
+</div>
+
+<div class="note">
+<span class="boxtitle">zod スキーマが「ファクトリ」になった理由(M24-07 の i18n 対応)</span>
+検証メッセージも i18n キー化されたため、スキーマは <code>createTagFormSchema(t)</code>(useTagFormDialog.ts:16-22)という<strong>関数</strong>になりました。モジュール読込時にスキーマを 1 回だけ作ると、エラーメッセージ文字列がその時点の言語で「焼き込まれ」、言語を切り替えても旧言語のまま残ります。フック側で <code>useMemo(() =&gt; createTagFormSchema(t), [t])</code>(同 37 行)とし、言語が変わるたびに作り直すのが解です。Flask/Babel で <code>gettext</code> をインポート時に評価してしまい <code>lazy_gettext</code> に直す、あの問題と同型です。
+</div>
+
+<p>ここで<strong>二重のバリデーション</strong>が完成します: 空名・色形式は zod がクライアントで即時に弾き(サーバーへ行かない)、名前重複はサーバーだけが判定できるので 409 を受けてフィールドエラーに変換します。<code>category || undefined</code> の正規化は「空文字を送ると Go 側で <code>*string</code> が空文字を指してしまい、NULL と区別がつかなくなる」のを防ぐ、境界面の小さな配慮です。</p>
+
+<h3>3.4 親コンポーネントでの結線</h3>
+
+<div class="codebox">
+<div class="path">web/src/features/tag/components/TagManagementPage.tsx:43-75(抜粋)</div>
+<pre><code>const handleFormSubmit = async (values) =&gt; {
+  if (editingTag) {                                <span class="cm">// 編集モード → PATCH</span>
+    await updateMutation.<b>mutateAsync</b>({ id: editingTag.id, input: {...} });
+    toast.success(t("tag.management.updated"));    <span class="cm">// 「タグを更新しました」</span>
+  } else {                                         <span class="cm">// 新規モード → POST</span>
+    await createMutation.mutateAsync({...});
+    toast.success(t("tag.management.created"));    <span class="cm">// 「タグを作成しました」</span>
+  }
+};
+
+const handleDeleteConfirm = () =&gt; {
+  if (!deletingTag) return;
+  const usageCount = deletingTag.usageCount ?? 0;
+  deleteMutation.mutate(
+    { id: deletingTag.id, <b>force: usageCount &gt; 0</b> },  <span class="cm">// 使用中なら確認ダイアログ経由で force=true</span>
+    { onSuccess: () =&gt; setDeletingTag(null) },
+  );
+};</code></pre>
+</div>
+
+<ul>
+<li><code>mutateAsync</code> は Promise を返す版。フォーム側の try/catch(§3.3)でエラーを拾うために async 版を使う。削除は結果をフォームに返す必要がないので <code>mutate</code>(投げっぱなし + onSuccess コールバック)</li>
+<li>削除フローはバックエンドの VAL-T03 とフロント UI の合作: 一覧は <code>include_usage=true</code> で取得しているので各タグの <code>usageCount</code> を既に知っており、確認ダイアログ(TagDeleteConfirmDialog)で件数を見せた上で <code>?force=true</code> を付けて DELETE する</li>
+<li><code>toast.success</code> は画面上部に出る通知(sonner ライブラリ)。Flask の <code>flash()</code> のクライアント版</li>
+</ul>
+
+<h3>3.5 タグ選択欄のキーボード操作 — 部品統合ではなく「挙動の共有」(M27-02a)</h3>
+
+<p>コンボ編集画面のタグ欄 <code>TagSelector</code>(features/tag/components/)は、キャラ選択などが使う共通部品 <code>SearchableSelect</code> とは<strong>別実装</strong>です(タグの新規登録行・×付きチップ列など固有の要素を持つため)。長らく「キャラ選択では ↓ キーで候補へ入れるのに、タグ欄では入れない」という同一画面内の非対称があり、M27-02a で解消されました。このとき採られた設計判断が学びどころです:</p>
+
+<div class="codebox">
+<div class="path">web/src/hooks/useListboxKeyNav.ts:22-59(抜粋)</div>
+<pre><code>export function useListboxKeyNav&lt;T extends HTMLElement = HTMLUListElement&gt;() {
+  const listRef = useRef&lt;T&gt;(null);
+
+  function optionButtons(): HTMLElement[] {
+    return Array.from(
+      listRef.current?.querySelectorAll&lt;HTMLElement&gt;(<b>'[role="option"]'</b>) ?? [],
+    );
+  }
+
+  function moveFocus(delta: number, from?: HTMLElement) {
+    const buttons = optionButtons();
+    if (buttons.length === 0) return;
+    const current = from ? buttons.indexOf(from) : -1;
+    <span class="cm">// 検索欄からの ↓ は先頭へ、↑ は末尾へ。それ以外は循環移動</span>
+    const next =
+      current === -1
+        ? delta &gt; 0 ? 0 : buttons.length - 1
+        : (current + delta + buttons.length) % buttons.length;
+    buttons[next]?.<b>focus()</b>;
+  }
+  ...
+  return { listRef, handleListKeyDown };
+}</code></pre>
+</div>
+
+<ul>
+<li><strong>部品を統合せず、挙動だけを共有した</strong> — <code>TagSelector</code> を <code>SearchableSelect</code> へ丸ごと寄せる案は、タグ固有の機能(新規登録行など)を 15 コントロールが載る共通部品へ持ち込むことになるため退けられ、約 30 行のキーボード処理だけが <code>useListboxKeyNav</code> フックとして切り出されました。「コンポーネントの共通化は重いが、フックの共通化は軽い」という React の再利用単位の使い分けです</li>
+<li><strong>ハイライト位置の state を持たない</strong> — 現在位置を useState で管理せず、<strong>実 DOM のフォーカスそのものを位置とする</strong>(roving focus)。検索で候補が絞り込まれても「state と DOM の位置合わせ」の同期コードが不要になります</li>
+<li><strong><code>role="option"</code> が契約</strong> — フックは <code>listRef</code> 内の <code>[role="option"]</code> だけを対象にするので、「候補として ↓↑ で辿れるか」は利用側が role を付けるかで決まります。ARIA 属性がアクセシビリティとロジック両方の契約を兼ねる設計です</li>
+<li><strong>Enter はフックで扱わない</strong> — 候補は <code>&lt;button type="button"&gt;</code> なので、フォーカスさえ載ればブラウザ既定の動作で onClick が発火します。「選んだら閉じる(単一選択)/開いたまま(複数選択)」の差は利用側の onClick に残り、フックは方向キーだけに徹します</li>
+</ul>
+
+<div class="warn">
+<span class="boxtitle">unmount とフォーカスの落とし穴</span>
+TagSelector.tsx:72-85 の <code>handleCreate</code> にはもう 1 つ実戦的な教訓があります。「〜を新規登録」ボタンにフォーカスが載ったまま作成すると、作成完了で検索語がクリアされてこのボタン自体が unmount されます。<strong>React はフォーカスを親要素へ戻してくれない</strong>ため、フォーカスは <code>document.body</code> へ落ち、以後 ↓ も Enter も候補へ届かなくなります。対策は作成後に <code>searchRef.current?.focus()</code> で検索欄へ明示的に戻すこと。「フォーカスの載った要素を消すときは、次のフォーカス先を自分で決める」という定石です。
+</div>
+
+<h2>4. 通しシーケンス — 「保存」クリックから一覧更新まで</h2>
+
+<p>ここまでの部品を 1 本につなぎます。ユーザーが新規作成ダイアログで「作成」を押した瞬間から:</p>
+
+<ol class="flow">
+<li><span class="who fe">FE</span><code>TagFormDialog</code> の <code>&lt;form onSubmit={handleSubmit}&gt;</code> が発火。RHF が zod スキーマで検証(<code>createTagFormSchema</code>、useTagFormDialog.ts:16-22)。空名ならここで止まり <code>&lt;FormMessage /&gt;</code> にエラー表示 — サーバーへは行かない</li>
+<li><span class="who fe">FE</span>検証通過 → <code>onSubmit({name, category, color})</code>(親の <code>handleFormSubmit</code>)→ <code>createMutation.mutateAsync</code> → <code>tagApi.create(input)</code></li>
+<li><span class="who fe">FE</span><code>fetch("/api/tags", {method:"POST", body: JSON.stringify(input)})</code> — HTTP リクエスト発射。開発時は Vite が localhost のバックエンドへプロキシ</li>
+<li><span class="who be">BE</span>Echo がルート表から <code>POST /api/tags</code> → <code>Handler.Create</code> を特定。前段でミドルウェア(RequestID 採番・アクセスログ・CORS・簡易パスワード認証・X-User-Id → 利用者 ID 解決)が通過</li>
+<li><span class="who be">BE</span><code>c.Bind(&amp;input)</code> が JSON を <code>model.CreateTagInput</code> へ逆シリアライズ(struct タグ <code>json:"name"</code> がマッピング表)</li>
+<li><span class="who be">BE</span><code>service.CreateTag</code>: <code>validateName</code>(VAL-T02)→ 既存タグ全件取得 → 名前重複チェック(VAL-T01)</li>
+<li><span class="who db">DB</span><code>repository.Create</code> が <code>INSERT INTO tags (user_id, name, category, color) VALUES (?,?,?,?)</code> を実行、<code>LastInsertId()</code> で新 ID 取得、<code>Get</code> で完全な行を SELECT し直す</li>
+<li><span class="who be">BE</span>ハンドラが <code>c.JSON(http.StatusCreated, tag)</code> — struct が json タグに従いシリアライズされ、<code>{"id":5,"userId":1,"name":"対空",...}</code> が 201 で返る</li>
+<li><span class="who fe">FE</span><code>request&lt;Tag&gt;</code> が res.ok を確認して JSON をパース → mutation 成功。<code>onSuccess</code> で <code>invalidateQueries({queryKey: queryKeys.tags.all()})</code>(= <code>["tags"]</code>)— タグ系キャッシュ全部に前方一致で「古い」マーク</li>
+<li><span class="who fe">FE</span>フォーム側の await が解けて <code>onClose()</code> → <code>setFormOpen(false)</code> → ダイアログが閉じる。<code>toast.success("タグを作成しました")</code></li>
+<li><span class="who fe">FE</span>TanStack Query が無効化された <code>queryKeys.tags.list(true)</code>(= <code>["tags", {include_usage:true}]</code>)を自動再取得 → <code>GET /api/tags?include_usage=true</code> が走り(手順 4〜8 の GET 版)、新しい一覧が返る</li>
+<li><span class="who fe">FE</span><code>tagsQuery.data</code> が新配列に変わる → <code>TagManagementPage</code> が再レンダリング → <code>TagListTable</code> に新タグの行が現れる</li>
+</ol>
+
+<p><strong>エラー経路(名前重複)の場合</strong>は手順 6 で <code>ErrTagNameDuplicate</code> が返り、手順 8 が「409 + <code>{"error":{"code":"tag_name_duplicate",...}}</code>」になり、手順 9 の代わりに <code>TagApiError</code> が throw され、§3.3 の catch が <code>form.setError("name", ...)</code> — ダイアログは開いたまま名前欄の下に赤字が出ます。invalidate は走らないので一覧は変わりません。</p>
+
+<h2>5. 自分で追ってみる(理解度チェック)</h2>
+
+<div class="note">
+<span class="boxtitle">課題(コードを読んで答えが言えれば、この機能は「読めた」と言えます)</span>
+<ol>
+<li><strong>編集(PATCH)の通しシーケンス</strong>を §4 と同じ粒度で口頭再現してみる。特に「name だけ変えたとき、category はなぜ消えないのか」を <code>UpdateTagInput</code> のポインタと repository.Update の SET 句組み立てで説明する</li>
+<li>使用中タグ(usageCount=3)を削除するとき、<strong>DELETE リクエストは何回飛ぶか</strong>。TagManagementPage.tsx:68-75 と handler.go:145-173 を読んで答える(ヒント: フロントは事前に usageCount を知っている)</li>
+<li><code>GET /api/tags?character_id=abc</code> を叩くと何が返るか。handler.go:41-47 で確認し、実際に <code>curl</code> で試して 400 の JSON を見る</li>
+<li>タグ名を「  」(空白 2 個)で作成しようとすると、<strong>どの層の、どの行で</strong>止まるか。フロント(zod の <code>.trim().min(1)</code>)とバックエンド(<code>validateName</code>)の両方を挙げ、「なぜ両方に書くのか」を説明する</li>
+</ol>
+</div>
+
+<p>次は<a href="tag-tests.html">この機能のテストコード</a>を読みます。テストは「この機能の仕様の実行可能な記述」なので、ウォークスルーの答え合わせにもなります。</p>
+
+<footer>
+<span><a href="react-ts-primer.html">← React/TS プライマー</a></span>
+<span>生成日 2026-07-22 / 更新日 2026-09-08(M27〜M29 時点のコードに追随)</span>
+<span><a href="tag-tests.html">次: タグ管理のテスト →</a></span>
+</footer>
+</div>
+</body>
+</html>

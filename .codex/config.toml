@@ -1,0 +1,10 @@
+# Project defaults load only after the repository is trusted by the user.
+# Authentication, personal model selection, and other user preferences remain in CODEX_HOME.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = false
+
+[features]
+hooks = true

@@ -1,0 +1,38 @@
+# allowed_signers — リリースタグの署名を検証するための「信頼する署名者」の台帳
+#
+# ★★★このファイルは*空の器*として M36-02 が置き、2026-09-21 に開発者の
+#   リリース署名用公開鍵を 1 件登録した。秘密鍵は Windows ホストだけに保管する。
+#
+# ★★★登録が 0 件のあいだ、.github/workflows/release.yml のタグ署名検証は
+#   **明示的に落ちる。** ⇒ 黙って素通りさせない(指示書 §2.5-3 / §4.5)。
+#   **素通りさせると、署名していないものを「署名済み」として配ることになる。**
+#   これが本サブで最も重い失敗である。
+#
+# ---------------------------------------------------------------------------
+# 登録のしかた(★開発者の手番)
+# ---------------------------------------------------------------------------
+# 1) 署名用の SSH 鍵を作る(既存の認証用鍵と分けることを勧める)
+#      ssh-keygen -t ed25519 -C 'tacpendium release signing' -f ~/.ssh/tacpendium_sign
+#
+# 2) git に署名の設定を入れる
+#      git config --global gpg.format ssh
+#      git config --global user.signingkey ~/.ssh/tacpendium_sign.pub
+#
+# 3) **公開鍵**を下の書式でこのファイルへ 1 行足し、コミットする
+#      <識別子> <鍵の種類> <公開鍵本体>
+#    識別子はメールアドレスでよい。★足すのは .pub の中身であって秘密鍵ではない。
+#      例) cat ~/.ssh/tacpendium_sign.pub の出力に、先頭へ識別子を付けて貼る
+#
+# 4) 署名付きの**注釈タグ**を打ってリモートへ送る(★軽量タグは署名を持てない)
+#      git tag -s v0.1.0 -m 'v0.1.0'
+#      (リモートへの反映は開発者が行う)
+#
+# 5) GitHub 側でも "verified" バッジを出したいなら、同じ公開鍵を
+#    Settings > SSH and GPG keys へ **Signing Key** として登録する
+#    (★こちらは表示のためであり、CI の検証は本ファイルだけを見る)
+#
+# ---------------------------------------------------------------------------
+# 書式: <principal> [options] <keytype> <base64>
+#   例: dev@example.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...
+# ---------------------------------------------------------------------------
+tacpendium-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID9/25gBQkLTXHIWnQenyXG7U7dRnd9bPI66GtjKvD5F

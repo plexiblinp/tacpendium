@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tacpendium — アップデート戦略</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #0a0f0d;
+    --bg-raised: #11181a;
+    --bg-card: #15201f;
+    --border: #233330;
+    --border-bright: #34504a;
+    --text: #e6f0ed;
+    --text-dim: #8ba39c;
+    --text-faint: #506b64;
+    --accent: #3fd1a8;
+    --accent2: #5ab0ff;
+    --tacpendium: #5ab0ff;
+    --sf6: #ff7a59;
+    --warn: #ffb454;
+    --danger: #ff6b6b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 85% 6%, rgba(63,209,168,0.06), transparent 38%),
+      radial-gradient(circle at 8% 88%, rgba(90,176,255,0.05), transparent 42%);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    line-height: 1.72;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 22px; }
+
+  header { border-bottom: 1px solid var(--border); padding: 52px 0 32px; }
+  .kicker {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent);
+    margin-bottom: 15px; display: flex; align-items: center; gap: 10px;
+  }
+  .kicker::before { content: ''; width: 28px; height: 1px; background: var(--accent); }
+  h1 { font-size: 2.3rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 13px; }
+  h1 .mono { font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+  .lead { color: var(--text-dim); font-size: 0.97rem; max-width: 680px; }
+  .draft-note {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-faint);
+    margin-top: 16px; padding-left: 13px; border-left: 2px solid var(--border-bright);
+  }
+
+  .toc { display: flex; gap: 9px; flex-wrap: wrap; margin: 28px 0 8px; }
+  .toc a {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; text-decoration: none;
+    color: var(--text-dim); border: 1px solid var(--border); padding: 7px 13px;
+    border-radius: 20px; transition: all 0.18s;
+  }
+  .toc a:hover { border-color: var(--accent); color: var(--accent); }
+
+  section { margin-top: 48px; scroll-margin-top: 18px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .sec-num { font-family:'JetBrains Mono',monospace; color: var(--accent); font-size: 0.85rem; font-weight: 700; }
+  .sec-head h2 { font-size: 1.45rem; font-weight: 900; letter-spacing: -0.01em; }
+  .sec-desc { color: var(--text-dim); font-size: 0.89rem; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px dashed var(--border); }
+
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.86rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.06em; color: var(--text-faint); text-transform: uppercase; font-weight: 700; }
+  td { color: var(--text-dim); }
+  td strong { color: var(--text); font-weight: 500; }
+  tr:last-child td { border-bottom: none; }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 22px; margin-bottom: 12px;
+  }
+  .card.tacpendium { border-left: 3px solid var(--tacpendium); }
+  .card.sf6 { border-left: 3px solid var(--sf6); }
+  .card h3 { font-size: 1.02rem; font-weight: 700; margin-bottom: 8px; }
+  .card p { color: var(--text-dim); font-size: 0.88rem; margin-bottom: 6px; }
+  .card p strong { color: var(--text); }
+  .card ul { list-style: none; margin: 6px 0; }
+  .card li { color: var(--text-dim); font-size: 0.86rem; padding: 3px 0 3px 18px; position: relative; }
+  .card li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); }
+
+  .pill { font-family:'JetBrains Mono',monospace; font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.05em; }
+  .pill.l1 { background: rgba(63,209,168,0.15); color: var(--accent); border:1px solid rgba(63,209,168,0.3);}
+  .pill.l2 { background: rgba(90,176,255,0.15); color: var(--tacpendium); border:1px solid rgba(90,176,255,0.3);}
+  .pill.l3 { background: rgba(255,180,84,0.15); color: var(--warn); border:1px solid rgba(255,180,84,0.3);}
+  .pill.l4 { background: rgba(255,107,107,0.15); color: var(--danger); border:1px solid rgba(255,107,107,0.3);}
+
+  .callout {
+    border-radius: 10px; padding: 16px 20px; margin: 16px 0; font-size: 0.88rem;
+  }
+  .callout.accent { background: rgba(63,209,168,0.07); border: 1px solid rgba(63,209,168,0.25); color: var(--text-dim); }
+  .callout.warn { background: rgba(255,180,84,0.07); border: 1px solid rgba(255,180,84,0.3); color: var(--text-dim); }
+  .callout.danger { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.3); color: var(--text-dim); }
+  .callout strong { color: var(--text); }
+  .callout .ctitle { font-family:'JetBrains Mono',monospace; font-size:0.66rem; letter-spacing:0.1em; display:block; margin-bottom:6px; }
+  .callout.accent .ctitle { color: var(--accent); }
+  .callout.warn .ctitle { color: var(--warn); }
+  .callout.danger .ctitle { color: var(--danger); }
+
+  .principle-box {
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 28px; margin-top: 14px;
+  }
+  .principle { display: flex; gap: 13px; padding: 11px 0; border-top: 1px dashed var(--border); }
+  .principle:first-child { border-top: none; }
+  .principle .pn { font-family:'JetBrains Mono',monospace; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+  .principle .pt { font-size: 0.88rem; }
+  .principle .pt strong { color: var(--text); }
+  .principle .pt span { color: var(--text-dim); }
+
+  .ext-note {
+    font-family:'JetBrains Mono',monospace; font-size:0.74rem;
+    color: var(--text-faint); background: rgba(255,255,255,0.02);
+    border: 1px dashed var(--border-bright); border-radius: 8px;
+    padding: 12px 16px; margin-top: 14px;
+  }
+  .ext-note strong { color: var(--text-dim); }
+
+  footer {
+    margin-top: 50px; padding-top: 24px; border-top: 1px solid var(--border);
+    font-family:'JetBrains Mono',monospace; font-size: 0.7rem; color: var(--text-faint);
+    text-align: center; line-height: 2;
+  }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 1.7rem; }
+    table { font-size: 0.8rem; }
+    th, td { padding: 8px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Update Strategy · Draft</div>
+    <h1><span class="mono">Tacpendium</span> アップデート戦略</h1>
+    <p class="lead">アプリ本体とSF6データの更新に、個人OSSとして<strong>持続可能なペース</strong>で追従するための方針。「全部に追従する」ではなく「リスクだけ即応、他はまとめて・必要時に」が基本姿勢。</p>
+    <p class="draft-note">DRAFT / 拡張前提 — リリース運用の主要論点（区分・チェンジログ・後方互換・ロールバック・テスト・検知）を反映。バージョニング規約の細部は保留中。随時更新する。</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="toc">
+    <a href="#triggers">更新トリガー</a>
+    <a href="#levels">影響レベル</a>
+    <a href="#releases">リリース区分</a>
+    <a href="#versioning">バージョニング</a>
+    <a href="#changelog">チェンジログ</a>
+    <a href="#compat">後方互換</a>
+    <a href="#rollback">ロールバック</a>
+    <a href="#test">テスト範囲</a>
+    <a href="#detect">SF6検知・ペース</a>
+    <a href="#deps">依存追従</a>
+    <a href="#env">環境変化</a>
+    <a href="#dist">配布戦略</a>
+    <a href="#data">データ維持</a>
+    <a href="#version">バージョン方針</a>
+    <a href="#legal">データ配布の法務</a>
+    <a href="#principles">原則</a>
+  </div>
+
+  <!-- TRIGGERS -->
+  <section id="triggers">
+    <div class="sec-head"><span class="sec-num">01</span><h2>更新が必要になるトリガー</h2></div>
+    <p class="sec-desc">起因を Tacpendium側 と SF6側 に分けて整理。SF6側は「影響レベル」（§02）で対応の重さが変わる。</p>
+
+    <div class="card tacpendium">
+      <h3>Tacpendium 起因（アプリ自身）</h3>
+      <ul>
+        <li>機能追加</li>
+        <li>バグ修正</li>
+        <li>脆弱性修正</li>
+        <li>依存ライブラリ更新追従（→ §03）</li>
+        <li>AIプロバイダの仕様変更追従（モデル廃止・API変更）</li>
+        <li>OS・ブラウザ・ランタイム環境変化への対応（→ §04）</li>
+        <li>パフォーマンス改善・リファクタリング</li>
+        <li>ドキュメント・翻訳の更新</li>
+      </ul>
+    </div>
+
+    <div class="card sf6">
+      <h3>SF6 起因（外部ゲーム）</h3>
+      <ul>
+        <li>キャラ性能調整（数値: ダメージ・フレーム変更）</li>
+        <li>技の追加・削除</li>
+        <li>技の挙動・仕様変更</li>
+        <li>キャラ追加（固有システムを伴う場合あり）</li>
+        <li>共通システムの数値調整</li>
+        <li>新システムの追加（新ゲージ・新メカニクス）</li>
+        <li>システムの廃止・仕様変更</li>
+        <li>公式データの表記・フォーマット変更</li>
+        <li>メジャー/シーズン更新（複数変更の束）</li>
+        <li>用語・名称の変更</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- LEVELS -->
+  <section id="levels">
+    <div class="sec-head"><span class="sec-num">02</span><h2>影響レベル（対応の重さ）</h2></div>
+    <p class="sec-desc">SF6変更を「アプリの何に影響するか」で分類。<strong>いかに多くをL1に収めるか</strong>が追従の手間を最小化する設計目標。</p>
+    <table>
+      <thead><tr><th>レベル</th><th>内容</th><th>対応</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill l1">L1</span> データのみ</td><td>数値調整、キャラ追加、システム数値変更</td><td><strong>データ更新だけ</strong>。アプリ更新不要が理想</td></tr>
+        <tr><td><span class="pill l2">L2</span> データ構造</td><td>新技種別、新データ項目の発生</td><td>スキーマ拡張 + アプリ更新</td></tr>
+        <tr><td><span class="pill l3">L3</span> ロジック/UI</td><td>新システム、新メカニクス、表示変更</td><td>コード変更 + アプリ更新</td></tr>
+        <tr><td><span class="pill l4">L4</span> データ取得方法</td><td>公式フォーマット・表記変更</td><td>取り込み方法の見直し</td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ctitle">設計目標</span>データと機能を分離し、<strong>多くのSF6変更を「データ更新（L1）」で吸収</strong>する。L1はアプリ再配布不要で追従できる状態を目指す。</div>
+  </section>
+
+  <!-- RELEASES -->
+  <section id="releases">
+    <div class="sec-head"><span class="sec-num">03</span><h2>リリースの3区分</h2></div>
+    <p class="sec-desc">性質の異なる3種類のリリースに分ける。それぞれ判断軸とペースが違う。</p>
+    <table>
+      <thead><tr><th>区分</th><th>内容</th><th>ペース</th></tr></thead>
+      <tbody>
+        <tr><td><strong>① 脆弱性対応</strong></td><td>公開範囲から見て危険性の高い脆弱性への対応</td><td>即時〜数日（最優先）</td></tr>
+        <tr><td><strong>② SF6追従</strong></td><td>SF6のコンボ・フレーム等に影響する変更への追従</td><td>SF6パッチに応じて</td></tr>
+        <tr><td><strong>③ 機能追加</strong></td><td>新たに作りたい機能・取り入れたいユーザー要望の実現時</td><td>気分次第・ベストエフォート</td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ctitle">②の判断軸</span>「バグfixか調整か」ではなく<strong>「コンボ・データに影響するか否か」</strong>で判断する。UI修正・サーバー安定化などコンボに無関係な変更は無視。</div>
+    <div class="callout warn"><span class="ctitle">バグコンボの例外</span>経験上、異常なバグコンボは明らかに異常なものばかりで<strong>1ヶ月もかからず公式に修正される</strong>。よって、バグfixで影響を受けるようなコンボへの追従は不要と判断（短命なため）。</div>
+  </section>
+
+  <!-- VERSIONING -->
+  <section id="versioning">
+    <div class="sec-head"><span class="sec-num">04</span><h2>バージョニング規約</h2></div>
+    <p class="sec-desc">アプリのバージョンと、対応するSF6の調整表記を併記する。</p>
+    <div class="callout accent"><span class="ctitle">表記イメージ</span><strong>アプリ本体バージョン + 対応SF6調整表記</strong>を併記（例: <code>v1.3.0 (SF6: 対応表記)</code>）。ユーザーが「今どのSF6バージョンに対応しているか」を一目で分かるようにする。</div>
+    <div class="callout warn"><span class="ctitle">保留中の確認事項</span>SF6の調整表記が「年月日」か「シーズン/バージョン番号」か、<strong>採用前に公式の現行仕様を確認する</strong>（うろ覚えのため）。アプリ本体のバージョン番号の付け方は<strong>SemVer（メジャー.マイナー.パッチ）推奨</strong>だが、決定は保留（急がない）。</div>
+    <div class="ext-note"><strong>SemVer対応の目安（採用する場合）</strong>: 脆弱性対応=パッチ / SF6データ更新=パッチ〜マイナー / 機能追加=マイナー / 破壊的変更=メジャー</div>
+  </section>
+
+  <!-- CHANGELOG -->
+  <section id="changelog">
+    <div class="sec-head"><span class="sec-num">05</span><h2>チェンジログの運用（開発者向け / 一般向け）</h2></div>
+    <p class="sec-desc">読み手で2種類に分ける。それぞれ作り方と負荷が違う。</p>
+    <table>
+      <thead><tr><th>種別</th><th>内容</th><th>作り方・負荷</th></tr></thead>
+      <tbody>
+        <tr><td><strong>開発者向け</strong></td><td>gitログと実際の差分の中間ぐらいの情報</td><td>AIに書かせる。レビューだけなので<strong>低負荷</strong></td></tr>
+        <tr><td><strong>一般向け</strong></td><td>細かい点は抽象化。どんな要件に対応したか・どんな新機能か・新機能の使い方に重点</td><td>重いが重要。AIだけでなく自分も注力</td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ctitle">負荷の見立て</span>開発者向けはAI生成+レビューで軽い。一般向けは重いが、ユーザー体験に直結する重要部分なので手をかける価値がある。</div>
+  </section>
+
+  <!-- COMPAT -->
+  <section id="compat">
+    <div class="sec-head"><span class="sec-num">06</span><h2>後方互換性の方針</h2></div>
+    <p class="sec-desc">どのバージョン間でデータの動作を保証するか。</p>
+    <table>
+      <thead><tr><th>方向</th><th>方針</th></tr></thead>
+      <tbody>
+        <tr><td><strong>旧バージョン → 新バージョン</strong></td><td><strong>動作を担保する</strong>（マイグレーションで対応）</td></tr>
+        <tr><td><strong>新バージョン → 旧バージョン</strong></td><td>担保しない。ユーザーには「動く可能性があるかも」レベルの通知</td></tr>
+        <tr><td>破壊的変更がある場合</td><td>その時だけ「補償しない」と明示通知</td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ctitle">技削除への備え</span>技の削除事例はこれまでSF6にないため<strong>積極対応は不要</strong>。ただし最低限の防衛策（参照先がなくなっても壊れない程度）はつける。起きていないことに過剰投資せず、保険だけ持つ。</div>
+  </section>
+
+  <!-- ROLLBACK -->
+  <section id="rollback">
+    <div class="sec-head"><span class="sec-num">07</span><h2>ロールバック（最優先で担保）</h2></div>
+    <p class="sec-desc">更新して問題が起きたとき、前の状態に戻せること。<strong>データ完全消失は絶対に防ぐ</strong>。</p>
+    <div class="callout danger"><span class="ctitle">定義</span><strong>ロールバック = アプリとデータをセットで更新前の状態に戻す</strong>。アプリだけ戻すのではなく、マイグレーション前のバックアップDBもセットで復元する。これにより「新→旧のデータ互換（§06で非担保）」と矛盾せず、ロールバックを実現できる。</div>
+    <div class="callout accent"><span class="ctitle">絶対原則</span>多少ユーザーに復旧手順を任せる場合があっても、<strong>データの完全消失は絶対に防ぐ</strong>。§13の「マイグレーション前の自動バックアップ」がこれを支える決定的な仕組み。</div>
+  </section>
+
+  <!-- TEST -->
+  <section id="test">
+    <div class="sec-head"><span class="sec-num">08</span><h2>リリース前のテスト範囲</h2></div>
+    <p class="sec-desc">個人OSSの現実解は「変更箇所 + データ周り・コア機能は毎回」のハイブリッド。仕事の「変更箇所だけ」とは少し違う。</p>
+    <table>
+      <thead><tr><th>対象</th><th>方針</th></tr></thead>
+      <tbody>
+        <tr><td>変更した箇所</td><td>必ずテスト（仕事と同じ）</td></tr>
+        <tr><td><strong>データに関わる箇所</strong>（マイグレーション・保存・読込）</td><td><strong>変更有無に関わらず毎回確認</strong>。データ消失は致命的なため聖域扱い</td></tr>
+        <tr><td>コア機能（起動・コンボCRUD・主要画面）</td><td>リリース前に毎回スモークテスト（最低限動く確認）</td></tr>
+        <tr><td>それ以外</td><td>変更時のみ</td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ctitle">継続の鍵は自動化</span>「毎回の最低限確認」を手動でやると続かない。静的解析ツール（Semgrep/gosec/govulncheck等）と自動テストを<strong>CIで回して自動化</strong>するのが、ベストエフォート運用で続けるコツ。</div>
+  </section>
+
+  <!-- DETECT -->
+  <section id="detect">
+    <div class="sec-head"><span class="sec-num">09</span><h2>SF6アップデートの検知・対応ペース</h2></div>
+    <p class="sec-desc">SF6の更新をどう知り、どのペースで対応するか。</p>
+    <div class="callout accent"><span class="ctitle">検知</span>SF6の更新検知は<strong>自分の役目</strong>。SF6プレイヤーなので更新タイミングは自然に分かる。検知は容易。</div>
+    <div class="callout accent"><span class="ctitle">対応ペース＝ベストエフォート</strong></span>金銭が発生していないため<strong>対応ペースはベストエフォート</strong>。自分が何らかの理由で更新不能にならない限りは追従する。<strong>OSSなので、更新が途絶えても誰かが引き継いでくれればよい</strong>（MITライセンスと一貫。抱え込まない健全な手放し方）。</div>
+  </section>
+
+  <!-- DEPS -->
+  <section id="deps">
+    <div class="sec-head"><span class="sec-num">10</span><h2>依存ライブラリ更新の追従ペース</h2></div>
+    <p class="sec-desc">大原則: <strong>全部を最新に追わない</strong>。目標は「動き続ける + 脆弱性を放置しない」であって「最新であること」ではない。</p>
+    <table>
+      <thead><tr><th>更新の種類</th><th>ペース</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr><td><strong>セキュリティ修正</strong></td><td>即時〜数日</td><td>放置はリスク。最優先</td></tr>
+        <tr><td>パッチ（バグ修正・後方互換）</td><td>月1まとめて</td><td>低リスク。溜めて一括</td></tr>
+        <tr><td>マイナー（機能追加・後方互換）</td><td>数ヶ月 or 必要時</td><td>急がない</td></tr>
+        <tr><td>メジャー（破壊的変更）</td><td>年1 or 必要に迫られたとき</td><td>最も手間。慎重にまとめて</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>頻度</th><th>やること</th></tr></thead>
+      <tbody>
+        <tr><td>自動（常時）</td><td>Dependabotが脆弱性検知 → アラート/PR自動生成</td></tr>
+        <tr><td>週1（5分）</td><td>セキュリティアラートだけ確認・マージ</td></tr>
+        <tr><td>月1（30分〜1h）</td><td>溜まったパッチ/マイナーをまとめて確認・マージ、テスト確認</td></tr>
+        <tr><td>年1〜2（半日〜1日）</td><td>メジャーバージョンアップ対応</td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ctitle">Go と npm</span><strong>Go本体は約半年ごと更新だが、後方互換性が高く年1回程度の追従で十分</strong>（直近2バージョンがサポート対象）。実はnpm側の方が依存が多く手間。<strong>govulncheck</strong>は「実際に使う脆弱なコード」だけ検知し誤検知が少ない。Dependabotのグループ化・週次設定でPRの洪水を防ぐ。</div>
+  </section>
+
+  <!-- ENV -->
+  <section id="env">
+    <div class="sec-head"><span class="sec-num">11</span><h2>OS・ブラウザ・ランタイム環境変化</h2></div>
+    <p class="sec-desc">定期メンテではなく<strong>トリガー駆動</strong>。普段は放置でよい。能動的に先回りしない。</p>
+    <table>
+      <thead><tr><th>トリガー</th><th>例</th><th>緊急度</th></tr></thead>
+      <tbody>
+        <tr><td>ユーザーの「動かない」報告</td><td>新Windowsで起動しない等</td><td>高</td></tr>
+        <tr><td>新OSメジャー版リリース</td><td>Windows/macOSの新版</td><td>中（出たら確認）</td></tr>
+        <tr><td>ブラウザのメジャー変更</td><td>挙動が変わる大型更新</td><td>中</td></tr>
+        <tr><td>使用APIの廃止予告</td><td>Gamepad API等の仕様変更・非推奨</td><td>中（予告期間中に）</td></tr>
+        <tr><td>Goランタイムのサポート終了</td><td>使用バージョンがサポート外に</td><td>低〜中</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn"><span class="ctitle">Tacpendium特有の注意</span><strong>Gamepad API</strong>（仮想コントローラの核）と<strong>配布バイナリの実行制限</strong>（Gatekeeper/SmartScreen厳格化）は環境変化の影響を受けやすい。OS/ブラウザのメジャー更新時に軽く確認する価値あり。LANアクセスがOSのファイアウォール強化でブロックされる可能性も。</div>
+    <div class="callout accent"><span class="ctitle">手間削減の鍵</span>READMEに<strong>「動作確認済み環境」を明記</strong>し、サポート範囲を限定する。全環境テストの義務から解放され、ユーザーの期待値も調整できる。</div>
+  </section>
+
+  <!-- DIST -->
+  <section id="dist">
+    <div class="sec-head"><span class="sec-num">12</span><h2>配布戦略（アプリ本体更新）</h2></div>
+    <p class="sec-desc">完全自動アップデートは攻撃対象を増やし、安全に作るコストが個人OSSに見合わない。<strong>更新通知 + 公式ページ誘導</strong>を基本とする。</p>
+    <table>
+      <thead><tr><th>方式</th><th>内容</th><th>採否</th></tr></thead>
+      <tbody>
+        <tr><td>A. 完全手動</td><td>ユーザーが自分で確認・DL</td><td>先行リリースはこれで十分</td></tr>
+        <tr><td><strong>B. 更新通知のみ</strong></td><td>新版を通知し公式ページへ誘導。実コードは自動取得しない</td><td><strong>公開後の基本</strong></td></tr>
+        <tr><td>C. 通知+DL補助</td><td>通知からDLページを開く等。適用は手動</td><td>必要なら</td></tr>
+        <tr><td>D. 完全自動</td><td>自動DL・適用・再起動</td><td>基本やらない</td></tr>
+      </tbody>
+    </table>
+    <div class="callout danger"><span class="ctitle">「不正サイト誘導」への対策</span>更新方式の最大リスクは誘導先のすり替え。対策: <strong>誘導先URLをアプリにハードコード</strong>（サーバーから動的に受け取らない）／バージョン取得元を固定（GitHub Releases API）／HTTPS／DL後のSHA256検証を案内／「公式はここ」と明示。</div>
+    <div class="callout accent"><span class="ctitle">実装方針</span>更新は<strong>ポータブル版のファイル差し替え</strong>（新exeに置き換えるだけ）が単一バイナリのTacpendiumに最適。バージョン確認は<strong>GitHub Releases API</strong>（追加インフラ不要・無料）。確認は任意で<strong>無効化可能</strong>に（オフライン動作を尊重）。更新するのはオーナーのみ（ゲストは不要）。</div>
+  </section>
+
+  <!-- DATA -->
+  <section id="data">
+    <div class="sec-head"><span class="sec-num">13</span><h2>ユーザーデータの維持</h2></div>
+    <p class="sec-desc">アプリをどう更新しても、ユーザーが登録したデータ（コンボ・メモ等）を失わないことが<strong>最優先</strong>。</p>
+    <div class="callout accent"><span class="ctitle">大原則</span><strong>データをアプリ本体とは別の固定の場所</strong>（例: %APPDATA%\Tacpendium）に保管する。これだけで、本体を丸ごと差し替えてもデータは無傷。exeと同じ場所にDBを置かない。</div>
+    <table>
+      <thead><tr><th>仕組み</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td>DBマイグレーション</td><td>起動時にスキーマバージョンを確認し、必要な変換を順に適用。ユーザーは意識せず新機能が使える</td></tr>
+        <tr><td>マイグレーション前の自動バックアップ</td><td>スキーマ変更前にDBをコピー。失敗時はロールバック。直近数世代を保持</td></tr>
+        <tr><td>手動バックアップ</td><td>エクスポート機能を流用。「更新前にエクスポート推奨」と案内</td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ctitle">3点セット</span><strong>「データを別の場所に置く + マイグレーション + 事前バックアップ」</strong>が揃えば、アプリをどう更新してもデータは守られる。インポート/エクスポート機能がデータ更新とバックアップを兼ねる。</div>
+  </section>
+
+  <!-- VERSION -->
+  <section id="version">
+    <div class="sec-head"><span class="sec-num">14</span><h2>バージョン管理方針（このアプリは「今」を管理する）</h2></div>
+    <p class="sec-desc">バージョン管理の複雑さ（組み合わせ爆発・横断検索）を避けるため、<strong>アプリが管理するのは現行バージョンのみ</strong>と割り切る。</p>
+    <table>
+      <thead><tr><th>対象</th><th>更新の責任</th></tr></thead>
+      <tbody>
+        <tr><td><strong>キャラクターデータ（マスター）</strong></td><td>アプリが配布・更新する（公開版はインゲーム手入力 seed 由来）</td></tr>
+        <tr><td><strong>ユーザー登録データ（コンボ・メモ等）</strong></td><td>ユーザーがメンテ。キャラデータ変更時の見直しもユーザー</td></tr>
+        <tr><td><strong>過去バージョンの参照</strong></td><td>ユーザーがバックアップ + 参照SQLiteファイルの差し替えで対応（やや不親切を許容）</td></tr>
+      </tbody>
+    </table>
+    <div class="callout accent"><span class="ctitle">製品思想</span>「知的好奇心で過去バージョンのコンボを見るのは面白いが、<strong>このアプリで管理するのは"今"</strong>」。過去はユーザーの自助（バックアップ＆ファイル差し替え）に委ね、アプリのデータモデルをシンプルに保つ。</div>
+    <div class="ext-note"><strong>検討中 / 後で考える</strong>: ユーザーによるデータメンテをやりやすくする施策（キャラデータ更新時に影響を受けるユーザーデータをハイライト、バックアップ/復元のワンクリック化、軽量スナップショット等）。今の設計判断がこれらを阻害しないことだけ意識する。</div>
+  </section>
+
+  <!-- LEGAL -->
+  <section id="legal">
+    <div class="sec-head"><span class="sec-num">15</span><h2>キャラデータ配布の法務スタンス</h2></div>
+    <p class="sec-desc">キャラクターデータの配布は、CAPCOM著作物に関わるグレーゾーンである、と認識した上での判断。<strong>公開版と友人版でデータの出所を分ける</strong>方針に更新（決定記録: framedata-legal-decision を参照）。</p>
+    <div class="callout warn"><span class="ctitle">判断</span>キャラクターデータは<strong>アプリが配布する</strong>。グレーゾーンであることは認識しているが、個人非営利・小規模である以上、<strong>大きな問題にはならないと判断</strong>（削除要請ベースのリスク認識に基づく）。ただし<strong>公開版のデータ出所は「インゲーム観測の手入力 seed」</strong>とし、公式Webデータの直接利用・配布はしない。</div>
+    <div class="callout accent"><span class="ctitle">データの出所（公開版 / 友人版）</span><strong>友人版（プライベート）</strong>: 公式データ＋インポーターを使う。インポーターはプライベートに残し、配布・公開しない（出力は手入力版の数値クロスチェック用）。<strong>公開版</strong>: 開発者がインゲームで観測して入力した seed を同梱。<strong>中核原則は「事実は入れ、表現は持ち込まない」</strong>——数値（フレーム等）は入れるが、公式の文章・画像・アイコン・公式名称文字列・ページ配列は持ち込まない。技識別子は表記ベース（5HP 等）を志向。</div>
+    <div class="callout danger"><span class="ctitle">撤退ライン（あらかじめ決めておく）</span>CAPCOMから通達があれば<strong>ただちにデータ配信を停止</strong>し、<strong>ユーザーが自分でデータを入力する形式に切り替える</strong>。この切り替えを可能にするため、§02の「データと機能の分離」設計が保険として効く（データ配布を止めても、アプリ本体は無傷で動く構造）。</div>
+    <div class="ext-note"><strong>関連</strong>: 公開版データ出所の最終決定は別レポート（framedata-legal-decision）に集約。本スタンス（黙認領域での公開・MIT+注意事項・即時公開停止対応・データ配布停止→ユーザー入力方式への即時切替）と一貫させる。「他が放置されている」事実は盾にしない（実際の保護は撤退ライン）。</div>
+  </section>
+
+  <!-- PRINCIPLES -->
+  <section id="principles">
+    <div class="sec-head"><span class="sec-num">16</span><h2>全体を貫く原則</h2></div>
+    <div class="principle-box">
+      <div class="principle"><span class="pn">01</span><span class="pt"><strong>リスクだけ即応、他はまとめて・必要時に。</strong> <span>セキュリティは即時。それ以外は実害が出てから/定期的に。完璧な追従を目指すと個人開発は潰れる。</span></span></div>
+      <div class="principle"><span class="pn">02</span><span class="pt"><strong>データと機能を分離する。</strong> <span>多くのSF6変更をL1（データ更新）で吸収。データ配布停止時にユーザー入力へ切り替える保険にもなる。</span></span></div>
+      <div class="principle"><span class="pn">03</span><span class="pt"><strong>ユーザーデータは何があっても守る。</strong> <span>別の場所に保管 + マイグレーション + 事前バックアップの3点セット。更新の利便性より優先。</span></span></div>
+      <div class="principle"><span class="pn">04</span><span class="pt"><strong>情報は自動取得してよいが、実行コードは人間を経由。</strong> <span>バージョン番号の取得は自動でよい。DL・適用は手動。完全自動更新の脆弱性を避ける。</span></span></div>
+      <div class="principle"><span class="pn">05</span><span class="pt"><strong>「今」に集中し、過去はユーザーに委ねる。</strong> <span>バージョン管理の複雑さを避け、アプリをシンプルに保つ。スコープを守る。</span></span></div>
+      <div class="principle"><span class="pn">06</span><span class="pt"><strong>撤退ラインを先に決めておく。</strong> <span>データ配布はグレーと認識。通達あれば即停止しユーザー入力方式へ。慌てないよう設計で備える。</span></span></div>
+      <div class="principle"><span class="pn">07</span><span class="pt"><strong>ベストエフォート。抱え込まない。</strong> <span>金銭が発生していない以上、対応ペースはベストエフォート。OSSなので更新が途絶えても誰かが引き継げばよい。燃え尽きないことが最大の持続可能性。</span></span></div>
+    </div>
+  </section>
+
+  <footer>
+    Tacpendium Update Strategy (DRAFT) — 拡張前提・随時更新<br>
+    基本姿勢: 全部に追従するのではなく、リスクだけ即応し、他はまとめて・必要時に
+  </footer>
+
+</div>
+
+</body>
+</html>

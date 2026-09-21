@@ -1,0 +1,226 @@
+# REUSE.toml — Tacpendium のライセンス宣言（パス単位）
+#
+# ★本ファイルはパス単位の宣言に集約している（ボード D-702 (f)）。
+#   ファイル 1 本ずつに SPDX ヘッダは書かない。
+#
+# 三層（docs/human-notes/future-notes/combmgr-license-strategy-outline.md §0）:
+#   層 A アプリ本体        AGPL-3.0-or-later
+#   層 B ゲームデータ      CC-BY-SA-4.0
+#   層 C 開発運用文書・道具 MIT
+#
+# ★★★三層は「何の内容か」で切る軸である。これと直交する軸として「誰の著作物か(来歴)」を
+#   (6) に置いてある(2026-09-20・M40-01)。⇒ 第三者が著作権者であるものは、層の割当より
+#   先に来歴で宣言する。
+#
+# ★★宣言の並び順が意味を持つ。REUSE 仕様 3.3 §REUSE.toml の逐語:
+#   "If a Covered File is covered by multiple [[annotations]] tables in the same
+#    REUSE.toml file, then exclusively the last matching table in the file is used
+#    for that Covered File."
+#   ⇒ 上から順に「既定 → 層 C → 層 B → 層 A への差し戻し → 来歴の軸」で書く。並べ替えないこと。
+#   ★★「来歴の軸」(6) は 2026-09-20(M40-01)で足した最後の段である。⇒ 三層のどれよりも後ろに
+#     置く必要がある(第三者が著作権者であるものは、内容による層の割当を上書きするため)。
+#
+# ★グロブの規則（同仕様）: `*` は `/` を跨がない。`**` は跨ぐ。
+#   ⇒ `migrations/*_data_*.sql` は migrations/ 直下だけに当たる。
+#
+# ★LICENSES/ と LICENSE と .gitignore 済みのファイルは Covered File ではない
+#   （同仕様 §Covered and ignored Files）。`**` が当たっても無視される。
+#
+# 検査: bash scripts/check-migration-license.sh
+#
+# ★★`precedence = "override"` を全表に付けてある(2026-09-06 レビュー 中-1 の是正)。
+#   既定は `closest` であり、仕様の逐語は「This is an instruction to associate the Licensing
+#   Information **inside of the Covered Files** (or its adjacent `.license` file), if available.」
+#   ⇒ 既定のままだと**ファイル内の SPDX ヘッダが本宣言に勝つ**。
+#   本プロジェクトは D-702 (f) に従い「パス単位の宣言に集約し、ファイル 1 本ずつの SPDX ヘッダを
+#   書かない」方針であるから、宣言を権威にする `override` が方針と一致する。
+#   ★実測(2026-09-06): 追跡ファイル中でコロン形 `SPDX-License-Identifier:` を含むのは
+#     `docs/progress/M26-01-report.md` の 1 件のみで、それも本文中の説明であってヘッダではない。
+#     ⇒ 現時点で `override` が上書きしてしまう正当なヘッダは存在しない。
+#   ★あわせて、これで `scripts/check-migration-license.sh` の自前解決器
+#     (ファイルの中身を見ず、常に最後に一致した表を採る)が仕様と一致する。
+#   （宣言にも命名規約にも当てはまらないマイグレを検出する。D-705 (3)）
+
+version = 1
+
+# ---------------------------------------------------------------------------
+# (1) 既定 = 層 A（アプリ本体）
+# ---------------------------------------------------------------------------
+[[annotations]]
+path = "**"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 plexiblinp"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# ---------------------------------------------------------------------------
+# (2) 層 C = MIT（AI 運用ルール群 / スクリプト / 開発運用文書）
+#     ★迷ったら MIT へ倒す（D-702 (d)）——開発文書を AGPL にして守る利益が無い一方、
+#       外部 PR が 1 本入ると持ち出せなくなるため。
+# ---------------------------------------------------------------------------
+[[annotations]]
+path = [
+  "CLAUDE.md", "AGENTS.md",
+  ".claude/**", ".codex/**", ".agents/**",
+  "human-notes/**", "docs/human-notes/**",
+  "scripts/**",
+  "docs/handover/**", "docs/process/**",
+  "docs/instructions/templates/**",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 plexiblinp"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# (3) 層 B = CC BY-SA 4.0（SF6 の事実そのもの）
+#     ★新規マイグレは命名規約で決まる（D-705 (2)）——層 B に `_data_` を付ける。
+#       例 `NNNNNN_data_seed_moves_xxx.up.sql`
+#       ⇒ 次の seed 波が何本足しても、この宣言は触らなくてよい。
+# ---------------------------------------------------------------------------
+# ★★★【2026-09-20・M40-01 で解決】`docs/seed-data/**` は本表から外し、(6-T2) へ移した。
+#   旧注記の逐語＝「同ディレクトリの著作権表示は暫定である(2026-09-06 レビュー 中-6)。…
+#   第三者素材を含みうると自分で判定した範囲である。そこへ自分の著作権表示と CC BY-SA を
+#   宣言するのは整合しない。★公開物には出ないため実害は無いが、M26-03(A3)で再判定すること」。
+#   ★再判定の結果(M26-03 完了報告 §4.1 / §4.3・2026-09-11)＝3 件(＋境界 1 件)に第三者素材が
+#     現存することを確認した。⇒ 「暫定」を外す条件は *宣言を実態へ合わせること* であって、
+#     注記を消すことではない。★層 A へ落とす案は悪化する(層 A も plexiblinp の表示である)。
+[[annotations]]
+path = [
+  "character_data/**",
+  "migrations/*_data_*.sql",
+  # ★★【2026-09-19・M33-03・開発者裁定】seedgen の凍結 golden。
+  #   ⇒ character_data/*.csv(層 B)からの生成物であり、内容は migrations/*_data_*.sql と同種
+  #     (技 code・フレーム値・日本語技名)。★旧コミット済み SQL と本体が差分 0/34 で一致する
+  #     ことを実測した。
+  #   ★★なぜ足す必要があったか＝M33-02 が旧 111 本を 9 群へ潰したため、この 17 stem に
+  #     対応する migrations/ のファイルが無くなり、golden の比較先を testdata/ へ移した。
+  #     ⇒ 移した瞬間に `migrations/*_data_*.sql` のグロブから外れ、既定の層 A(AGPL)へ
+  #       *静かに* 解決していた。★どの検査も赤くならない
+  #       (check-migration-license.sh は migrations/ だけを走査し、
+  #        check-public-snapshot.sh は ALLOW/DENY の網羅だけを見る)。
+  #   ★★★これは D-777 の一般形そのものである——「グロブで解決する宣言は、ファイルを
+  #     動かした瞬間に黙って外れる。⇒ そして外れた先が既定なので、検査は緑のままである」。
+  #   ⇒ 是正として check-migration-license.sh の走査範囲を本ディレクトリへ広げた(M33-03 段 4)。
+  "internal/seedgen/testdata/**",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 plexiblinp and the Tacpendium contributors"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+# ---------------------------------------------------------------------------
+# (4)【2026-09-19・M33-02 で撤去】層 B = 既存マイグレ 72 本の連番列挙（旧・凍結表）
+#     ★★★M33 が旧系列 115 本を 9 群へ潰したため、この表が指すファイルは 1 本も現存しない。
+#       ⇒ 残すと有害である。連番グロブは (3) の命名規約より後ろに在るため *命名規約を上書きする*
+#         （REUSE 3.3: 同一ファイル内では最後に一致した表だけが使われる）。
+#       ★実測（M33-02・撤去前）＝新系列の `000009_seed_initial_users_tags.*`（users / tags＝層 A）が
+#         `migrations/000009_*.sql` に当たって CC-BY-SA-4.0 へ *静かに* 解決していた。
+#         しかも check-migration-license.sh の凍結表も 000009 を層 B としていたため
+#         「凍結表と食い違う」も出ず、違反 0 件として通っていた。
+#       ★★一度 CC-BY-SA で配ったものを AGPL へ戻すのは、第三者が利用した後は取り消せない。
+#     ⇒ 撤去し、(3) の命名規約だけが migrations/ を支配する形へ戻す。
+#       これは同ディレクトリのコメント「次の seed 波が何本足しても、この宣言は触らなくてよい」
+#       が本来想定していた姿である。
+#     ★層の割当そのものは 1 つも変えていない（層 B ＝ `_data_` を持つもの、で不変）。
+#     出所（歴史記録）: docs/progress/20260905-migration-license-assignment.md §1 / §2
+#           ＋ 000081〜000103 は M26-02 の実査（開発者承認 2026-09-06）
+#     撤去の承認: 開発者裁定 2026-09-19（M33-02）
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# (5) 層 A への差し戻し（★(3) の "character_data/**" から 1 件だけ抜く）
+#     seed-progress.md は seed 投入の手順書であってゲームデータではない。
+# ---------------------------------------------------------------------------
+[[annotations]]
+path = "character_data/seed-progress.md"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 plexiblinp"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# ---------------------------------------------------------------------------
+# (6) 来歴の軸 = 第三者が著作権者であるもの(★2026-09-20・M40-01 で新設)
+#
+#   ★★★三層(A/B/C)は「何の内容か」で切る軸であり、「誰の著作物か」では切っていない。
+#     ⇒ 実測(2026-09-20)＝上の (1)(2)(3)(5) は SPDX-FileCopyrightText がすべて
+#       "2026 plexiblinp" 系であり、第三者が著作権者であるブロックが 1 つも無かった。
+#     ★したがって vendored な第三者素材は *どの層へ落ちても著作権者の宣言が偽になる*——
+#       層 A なら AGPL / plexiblinp、層 B なら CC-BY-SA / plexiblinp、層 C の MIT も
+#       *本 repo の* MIT であって *第三者の* MIT ではない。
+#     ★層 C の著作権者は本ファイルの (2) が "2026 plexiblinp" と宣言している。
+#       ⇒ LICENSES/MIT.txt は著作権表示を含まないテンプレートであり(2026-09-20・M40-01 で
+#         そう戻した)、「誰の MIT か」は *宣言の側* でしか決まらない。
+#       ★だから層 C は第三者素材の受け皿にならない——受け皿にするには、層 C の著作権者宣言を
+#         第三者のものへ変える必要があり、それは層の意味を壊す。
+#
+#   ★★本節は層の定義にも、層へのパスの振り分けにも触れない。三層と *直交* する軸である。
+#     T1 = 第三者の許諾の下で同梱・再配布するもの → 上流のライセンスと著作権者を宣言する
+#     T2 = 第三者素材を含むが配布しないもの       → LicenseRef- で「配らない範囲」を宣言する
+#
+#   ★★★本節は (1) の既定より後ろに在る必要がある(REUSE 3.3＝最後に一致した表が勝つ)。
+#     ⇒ 上へ動かさないこと。動かすと既定の層 A へ静かに戻る。
+#
+#   ★★検査: bash scripts/check-third-party-attribution.sh
+#     D-777 の一般形(グロブで解決する宣言は、ファイルを動かした瞬間に黙って外れる。
+#     ⇒ 外れた先が既定なので検査は緑のままである)を塞ぐため、本節のグロブが 1 件も
+#     当たらなくなったら赤くなるようにしてある。
+# ---------------------------------------------------------------------------
+
+# (6-T1) shadcn/ui 由来の vendored source(21 件 ＋ web/src/lib/utils.ts)
+#   ★取得経路＝M7 で shadcn/ui CLI を用いて導入した(根拠＝web/components.json の
+#     "$schema": "https://ui.shadcn.com/schema.json")。
+#   ★ライセンス条件は開発者の外部照会による(2026-09-20)——
+#     docs/progress/20260920-shadcn-license-external-inquiry-report.md。
+#     ⇒ 保持するのは "Copyright (c) 2023 shadcn" と MIT の許諾・免責条項であり、
+#       各 .tsx のヘッダである必要は無い。★人が読む帰属は NOTICE §6 に在る。
+#   ★4 件は本体側で改変してある(dialog / alert-dialog / sheet が ModalPresenceMarker を
+#     import、sonner がアイコンと theme を差し替え)。⇒ 派生物であるため両者を並記する。
+#
+#   ★★★【2026-09-20 開発者裁定】改変 4 件も同じ表に入れ、ライセンスも MIT とする。
+#     ⇒ これは outbound の判断である——本体側の改変分も MIT で提供する宣言になる。
+#     ★裁定の前に代案 2 つを示してある＝(i) 改変 4 件だけ別表で "MIT AND AGPL-3.0-or-later"
+#       (ii) 改変 4 件は層 A に残し SPDX-FileCopyrightText にだけ shadcn を並記。
+#       ⇒ どちらも採らなかった。理由は下記。
+#     ★★手放す実体が小さい＝dialog / alert-dialog / sheet は *呼び出し側の 2 行ずつ*
+#       (import 1 行 ＋ <ModalPresenceMarker /> 1 個)、sonner はアイコン設定である。
+#       ★★★ModalPresenceMarker の *実装本体* は web/src/lib/modal-presence.ts に在り、
+#         本表のグロブに当たらないため層 A(AGPL)のまま残る。
+#         ⇒ MIT で出るのは呼び出し側だけであり、ロジックは手放していない。
+#     ★外部照会の推奨方針とも一致する("shadcn/ui 由来コード: MIT / Copyright (c) 2023 shadcn")。
+#     ★★★一度 MIT で配ったものは、後から AGPL へ戻しても既に受け取った人には効かない。
+#       ⇒ 本表を編集するときは、それが取り消せない判断であることを踏まえること。
+#       (同じ原則の先例＝下の (4) の撤去コメント「一度 CC-BY-SA で配ったものを AGPL へ
+#        戻すのは、第三者が利用した後は取り消せない」)
+#     出所: 完了報告 §5b / レビュー 高-4 / 設計伝達レポート §4-1
+[[annotations]]
+path = [
+  "web/src/components/ui/**",
+  "web/src/lib/utils.ts",
+]
+precedence = "override"
+SPDX-FileCopyrightText = ["2023 shadcn", "2026 plexiblinp"]
+SPDX-License-Identifier = "MIT"
+
+# (6-T2) 第三者素材を含み、配布しない範囲
+#   ★(3) の層 B から docs/seed-data/** を抜いてここへ移した(M26-03 の推奨＝案 B)。
+#   ★scripts/public-snapshot-manifest.txt の DENY 行と本宣言が *同じことを言う* 形にしてある。
+#     ⇒ 一方だけを外しても、もう一方が残って食い違いが見える。
+#   ★ライセンス本文は LICENSES/LicenseRef-Tacpendium-NotForDistribution.txt に在る。
+#     ★根拠(REUSE Specification 3.3・§License Files の逐語)＝
+#       "A Project MUST include a License File for every license under which Covered Files
+#        are licensed." / "If a license does not exist in the SPDX License List, its SPDX
+#        License Identifier MUST be `LicenseRef-[idstring]`" / FAQ #custom-license＝
+#       "place your license in the file `LICENSES/LicenseRef-MyLicense.txt`"。
+#       出典: https://github.com/fsfe/reuse-website/blob/master/site/content/en/spec-3.3.md
+#             https://github.com/fsfe/reuse-website/blob/master/site/content/en/faq.md
+#             (2026-09-20 参照。★reuse.software 本体は本環境の egress proxy で塞がれていたため、
+#              同ページを生成している source markdown を一次情報として引いた)
+#     ★欠けても気づけないため scripts/check-third-party-attribution.sh で機械的に見る。
+#   ★SPDX-FileCopyrightText の値について(2026-09-20 追記＝レビュー 低-3)。
+#     2 つ並べてあるのは、同ディレクトリが *混在* しているからである——
+#     手で書いた整理・手順の部分は plexiblinp、公式の生値・元データ抜粋の部分は各権利者。
+#     ★ファイル単位で切り分けられるほど内容が分かれていないため、範囲全体を混在として宣言する。
+#     ★第三者の側を実名で書けないのは、抜粋元の権利者を個別に特定していないためである。
+#       ⇒ 特定していないことは隠さず、総称で書く。「plexiblinp だけ」と書くよりは真である。
+[[annotations]]
+path = "docs/seed-data/**"
+precedence = "override"
+SPDX-FileCopyrightText = ["2026 plexiblinp", "各素材の権利者 / respective third-party rights holders"]
+SPDX-License-Identifier = "LicenseRef-Tacpendium-NotForDistribution"

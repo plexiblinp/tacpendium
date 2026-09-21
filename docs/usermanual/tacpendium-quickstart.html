@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tacpendium クイックスタート</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  /* ★色・部品は操作説明書(tacpendium-readme.html)と同じものを使う。
+       別の見た目にすると「同じアプリの資料」に見えなくなる。 */
+  :root{
+    --bg:#fafaf8;--surface:#ffffff;--border:#e4e2dc;--border-strong:#d0cdc4;
+    --text:#2a2925;--text-dim:#6b6862;--text-faint:#9a968d;
+    --accent:#3d6b5e;--accent-soft:#eef3f1;--human:#b5763a;--human-soft:#f7efe5;
+    --warn:#b5613a;--warn-soft:#faf3f0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Zen Kaku Gothic New',sans-serif;line-height:1.85;font-size:15px;counter-reset:st;}
+  .wrap{max-width:680px;margin:0 auto;padding:0 24px;}
+
+  header{padding:40px 0 22px;border-bottom:1px solid var(--border);}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+  h1{font-size:1.6rem;font-weight:700;line-height:1.35;margin-bottom:12px;letter-spacing:-0.01em;}
+  .lead{color:var(--text-dim);font-size:1.0rem;}
+  .lead strong{color:var(--text);font-weight:500;}
+
+  section.step{padding:20px 0;border-bottom:1px solid var(--border);}
+  section.step h2{font-size:1.06rem;font-weight:700;margin-bottom:6px;letter-spacing:-0.01em;display:flex;align-items:baseline;gap:11px;}
+  /* ★番号は CSS カウンタで振る。節を 1 つ足すたびに手で振り直さないため。 */
+  section.step h2::before{counter-increment:st;content:counter(st,decimal-leading-zero);font-family:'JetBrains Mono',monospace;font-size:0.76rem;color:var(--accent);min-width:1.4em;}
+  .body{color:var(--text-dim);font-size:0.96rem;}
+  .body p{margin:6px 0;}
+  .body p .t{color:var(--text);font-weight:500;}
+
+  .note{background:var(--accent-soft);border-radius:6px;padding:9px 13px;font-size:0.86rem;color:var(--text);margin-top:10px;}
+  .note b{font-weight:700;}
+  .goto{font-size:0.86rem;color:var(--text-faint);margin-top:8px;}
+  .goto a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--border-strong);}
+  .goto a:hover{border-bottom-color:var(--accent);}
+
+  code.path{background:var(--surface);border:1px solid var(--border-strong);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;font-size:0.82em;color:var(--text);white-space:nowrap;}
+
+  figure{margin:12px 0;}
+  figure img{max-width:100%;height:auto;display:block;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);}
+  figcaption{margin-top:5px;font-size:0.78rem;color:var(--text-faint);}
+  /* ★未記入であることを、読めば分かる形で出す。図を足すときは撮影が済むまで .todo を付け、撮り終えたら外す(M38-03 時点で 0 件)。 */
+  figure.todo{border:1px dashed var(--human);border-radius:6px;padding:11px;background:var(--human-soft);}
+  figure.todo img{border-style:dashed;}
+
+  footer{padding:24px 0 48px;color:var(--text-dim);font-size:0.9rem;}
+  footer .fine{color:var(--text-faint);font-size:0.78rem;font-family:'JetBrains Mono',monospace;margin-top:14px;}
+
+  @media (max-width:520px){ body{font-size:14px;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Tacpendium · クイックスタート</div>
+    <h1>まず、コンボを 1 本 記録してみる</h1>
+    <p class="lead"><strong>短く読めます。</strong>「何から始めるか」だけの道案内です。手が止まったら各節の下のリンクから<strong>操作説明書</strong>へ。気づいたこと・不満は何でも言ってください（怒りません）。</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section class="step">
+  <h2>入れる → 起動する</h2>
+  <div class="body">
+    <p>実行ファイルを<span class="t">書き込みできるフォルダに置いて</span>ダブルクリックします。ブラウザが自動で開きます。</p>
+    <p>Windows では<span class="t">通知領域にアイコンが常駐</span>します。<span class="t">終わるときはそれを右クリックして「終了」</span>です（タブを閉じても止まりません）。接続やトラブルは<span class="t">1 つ上のフォルダ</span>の <code class="path">README.txt</code> へ。</p>
+  </div>
+</section>
+
+<section class="step">
+  <h2>最初に聞かれることに答える</h2>
+  <div class="body">
+    <p>いちばん最初だけ、<span class="t">言語・よく使うキャラクター・技の名前の出しかた</span>などを順に聞かれます。<span class="t">決めきれない項目は飛ばしてかまいません</span>——あとから設定画面で全部変えられます。キャラクターや技のデータは<span class="t">最初から入っており</span>、取り込み作業は要りません。</p>
+    <p class="goto">詰まったら → 操作説明書 <a href="tacpendium-readme.html#ch01">第 1 章 初回起動ウィザード</a></p>
+  </div>
+</section>
+
+<section class="step">
+  <h2>最初のコンボを 1 本 登録する</h2>
+  <div class="body">
+    <p>コンボ一覧の右上の<span class="t">「新規登録」</span>を押します。上の帯で選んでいるキャラクターが、そのまま登録先です。</p>
+    <p>レシピは技を選んで並べるだけで、<span class="t">1 つめに置いた技が始動技</span>になります。<span class="t">ダメージと有利フレームさえ入れれば、ほかは埋まっていなくても保存できます</span>——うろ覚えのコンボも、まだ試していないアイデアもそのまま置いておけます。ここまで来れば、あとは繰り返しです。</p>
+    <figure>
+      <img src="images/qs-first-combo-1.png" alt="コンボ登録・編集で最初の 1 本を入れているところ">
+      <figcaption>最初の 1 本を入れているところ</figcaption>
+    </figure>
+    <p class="goto">詰まったら → 操作説明書 <a href="tacpendium-readme.html#ch08">第 8 章 コンボ登録・編集</a></p>
+  </div>
+</section>
+
+<section class="step">
+  <h2>見つける／比べる</h2>
+  <div class="body">
+    <p>記録が増えたら、コンボ一覧の<span class="t">絞り込み</span>で目当ての 1 本まで絞ります。どれを使うか迷ったときは、<span class="t">「比較/エクスポート対象選択」を入れて何本か選び、「比較」</span>へ。記録してある項目が縦に揃って並びます。</p>
+    <p class="goto">詰まったら → 操作説明書 <a href="tacpendium-readme.html#ch05">第 5 章 コンボ一覧</a> ／ <a href="tacpendium-readme.html#ch10">第 10 章 コンボ比較</a></p>
+  </div>
+</section>
+
+<section class="step">
+  <h2>困ったら → 本編の該当章へ</h2>
+  <div class="body">
+    <p>操作説明書は<span class="t">画面ごとに 1 章</span>です。「この画面のこの欄は何？」に答えるための本なので、頭から読む必要はありません。</p>
+    <p class="goto">→ <a href="tacpendium-readme.html#toc">操作説明書の目次</a></p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p class="fine">Tacpendium — クイックスタート · 非公式の個人ツール</p>
+  </div>
+</footer>
+
+</div>
+
+</body>
+</html>

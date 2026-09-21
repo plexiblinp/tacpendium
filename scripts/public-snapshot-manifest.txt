@@ -1,0 +1,105 @@
+# public-snapshot-manifest.txt — 公開スナップショットの許可リスト(正本)
+#
+# ★★これは許可リスト(allowlist)である。除外リスト(denylist)ではない。
+#   理由(D-637 (1) / pre-push-guard.sh の逐語): 「列挙方式は必ず取りこぼす。許可リスト方式なら
+#   集合が閉じる。過剰ブロックは可視で直せるが、取りこぼしは silent である」。
+#   ⇒ ALLOW にも DENY にも当たらないファイルは「未判定」として**検査が赤になる**。
+#     新しいトップレベル・新種のディレクトリは、既定で公開されず、かつ黙って通らない。
+#
+# 形式: <ALLOW|DENY><TAB><グロブ><TAB><理由>
+#   ・`#` で始まる行と空行は無視する。
+#   ・グロブの規則は REUSE 仕様 3.3 と同じ: `*` は `/` を跨がない / `**` は跨ぐ。
+#   ・**DENY は ALLOW より強い**(許可ディレクトリの中から 1 件だけ抜くために使う)。
+#   ・**DENY はグロブが 0 件に当たっても赤にしない**。
+#     ⇒ 「存在しても出さない」形で書ける(D-656)。開発者が対象を消したら自然に不要になる。
+#
+# 母数: `git ls-files`(追跡ファイル)。⇒ .gitignore 済みのものは初めから母数に入らない。
+#   ★これは「二重の防壁のうち外側」でしかない。内側は本ファイルの DENY である。
+#
+# 検査: bash scripts/check-public-snapshot.sh
+# 生成: bash scripts/make-public-snapshot.sh --out <dir>
+
+# ---------------------------------------------------------------------------
+# DENY(★ALLOW より強い。先に読む)
+# ---------------------------------------------------------------------------
+DENY	.devcontainer/**	anthropics/claude-code 由来が全権利留保のため公開保留(checklist A8 / P-47)。★当面は除外
+DENY	docs/seed-data/**	同ディレクトリの README が「OSS 公開版リポジトリには含めない方針」と自己宣言している(公式の生フレーム値・元データ抜粋を含む)。開発者確定 2026-09-06。★M26-03(A3) で再判定済み(2026-09-11)=3 件(＋境界 1 件)に第三者素材が現存することを確認。⇒ M40-01 で REUSE.toml の宣言を LicenseRef-Tacpendium-NotForDistribution へ改め、宣言と本行が同じことを言う形にした
+DENY	docs/progress/20260906-squash-research/**	スカッシュ関連作業の一時調査資料。作業完了後は開発者がフォルダ全体を削除し、公開用リポジトリには送らない(同フォルダの README・開発者確定 2026-09-08)。★存在しても出さない
+DENY	docs/human-notes/future-notes/combmgr-features.txt	陳腐化しており開発者が削除予定(D-656)。★存在しても出さない形で書いてある。消えたら本行は自然に不要になる
+DENY	docs/progress/evidence/m26-04-scanoss/scan-review-chronology-initial.csv	非公開リポの初出 commit SHA(一意 21 件)と author date(2026-04-30〜09-05)を持ち、公開リポにその SHA は存在しないため第三者が検証できない。M26-04 追補報告 §7.1「非公開履歴を常時掲載しない」に合わせる。開発者確定 2026-09-20(M40-01)。★同ディレクトリの他 3 ファイルは非公開 SHA 0 件のため公開する
+DENY	**/.env	機密(checklist A3 の「.env / secrets 系」)。★追跡していないので通常 0 件。予防として置く。★深さ無制限にしてある(理由は本節末)
+DENY	**/.env.*	同上。★`.env.example` にも当たる。置くことになったらここを見直すこと(.gitignore は `!.env.example` で追跡を意図している)
+DENY	**/secrets/**	同上
+DENY	**/work_html/**	配布禁止 HTML の保管場所(M14-RESEARCH-01 §1)。★.gitignore 済みで追跡していないため通常 0 件。予防として置く
+DENY	**/tmp/**	検証用 CSV・試作 HTML の置き場(A3)。★.gitignore 済みで追跡していないため通常 0 件。予防として置く
+DENY	**/*.pem	鍵・証明書。★予防
+DENY	**/*.pfx	鍵・証明書。★予防
+DENY	**/*.key	秘密鍵。★予防
+DENY	**/id_rsa	秘密鍵。★予防
+DENY	**/id_rsa.*	秘密鍵。★予防
+
+# ★★予防 DENY は必ず `**/` で書くこと(2026-09-06 レビュー 高-1 の是正)。
+#   グロブ規則は `*` がパス区切りを跨がないため、`.env` と書くと**リポジトリ直下にしか当たらない**。
+#   一方 `.gitignore` の同じ規則は深さ無制限である。⇒ 非対称のまま置くと、
+#   `web/.env`(Vite の既定位置)や `docs/tmp/**` が `web/**` / `docs/**` の ALLOW を素通りする。
+#   ★「内側の防壁」を名乗るなら、外側(.gitignore)と同じ深さで書かなければ意味がない。
+
+# ---------------------------------------------------------------------------
+# ALLOW — ライセンス・公開の告知(層 A)
+# ---------------------------------------------------------------------------
+ALLOW	LICENSE	AGPL 全文(GitHub のライセンス検出用)
+ALLOW	LICENSES/**	REUSE 準拠のライセンス本文
+ALLOW	REUSE.toml	パス単位のライセンス宣言
+ALLOW	NOTICE	非公式表示・第三者ライセンス・撤退ポリシー
+ALLOW	DATA-LICENSE.md	データ層の説明と FAQ
+ALLOW	CONTRIBUTING.md	DCO・inbound=outbound・素材由来の注意
+ALLOW	SECURITY.md	報告窓口・LAN 前提の警告
+ALLOW	SUPPORT.md	無保証・SLA なしの明示
+
+# ---------------------------------------------------------------------------
+# ALLOW — アプリ本体(層 A)
+# ---------------------------------------------------------------------------
+ALLOW	cmd/**	Go エントリポイントと seedgen
+ALLOW	internal/**	Go の実装
+ALLOW	web/**	フロントエンド(node_modules / dist / test-results は .gitignore 済み)
+ALLOW	migrations/**	マイグレーション SQL(層は REUSE.toml が決める)
+ALLOW	embed_migrations.go	embed.FS ホルダ
+ALLOW	embed_web_release.go	embed.FS ホルダ
+ALLOW	embed_web_stub.go	embed.FS ホルダ
+ALLOW	go.mod	依存の正本
+ALLOW	go.sum	依存の正本
+ALLOW	Makefile	ビルド・テストの入口
+ALLOW	config.toml.example	設定の雛形(config.toml 本体は .gitignore 済み)
+ALLOW	README.md	開発者向け README
+ALLOW	README.txt	★配布版 README(リリース zip に同梱。LAN の FW/AV トラブルシューティングの本体)
+ALLOW	.github/**	CI ワークフロー(公開リポジトリからビルドするため公開が要る＝骨子 §10.6)
+ALLOW	.editorconfig	エディタ設定
+ALLOW	.gitattributes	git 属性
+ALLOW	.gitignore	除外規則(公開物の再現性のため)
+
+# ---------------------------------------------------------------------------
+# ALLOW — ゲームデータ(層 B)
+# ---------------------------------------------------------------------------
+ALLOW	character_data/**	★データの正本(手入力 CSV 31 本 ＋ 測定記録)。DATA-LICENSE.md §4
+
+# ---------------------------------------------------------------------------
+# ALLOW — 開発運用の文書・道具(層 C)
+#   ★D-637 (3) で「CLAUDE.md / .claude/ / AGENTS.md / .codex/ も公開してよい」と確定した。
+#     設計卓の除外推奨は撤回済みである。
+# ---------------------------------------------------------------------------
+ALLOW	CLAUDE.md	製造担当 AI 向けのプロジェクト指針
+ALLOW	AGENTS.md	Codex 向けの入口
+ALLOW	.claude/**	カスタムコマンド・フック・設定(settings.local.json は .gitignore 済み)
+ALLOW	.codex/**	Codex 派生物(auth / history / sessions は .gitignore 済み)
+ALLOW	.agents/**	Codex 側の skill 定義
+ALLOW	human-notes/**	Codex 運用ルール(ルート直下)
+ALLOW	scripts/**	検査・生成スクリプト
+
+# ---------------------------------------------------------------------------
+# ALLOW — ドキュメント
+#   ★「docs はアーカイブ含め全部公開する」(開発者判断＝D-637 / M26-overview §M26-02)。
+#     ⇒ ディレクトリ単位で許可し、抜くものだけを上の DENY に書く。
+#     ★開発者の区別は「試行錯誤の過程は恥ずかしいが、現在の成果物への指摘は歓迎」であり、
+#       隠す動機は過去の履歴に限られる。スナップショット公開なら履歴はそもそも出ない。
+# ---------------------------------------------------------------------------
+ALLOW	docs/**	設計書・指示書・進捗・引継ぎ・変更通知・監査・人手メモ(★DENY に該当するものを除く)

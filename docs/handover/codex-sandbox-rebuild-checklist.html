@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex Sandbox 再ビルド後チェックリスト</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --text: #17212b;
+      --muted: #586575;
+      --line: #d8dee6;
+      --accent: #1269d3;
+      --ok: #16794b;
+      --warn: #9a5a00;
+      --code: #101820;
+      --code-text: #e7edf3;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #11161d;
+        --card: #19212b;
+        --text: #eef3f8;
+        --muted: #aab6c4;
+        --line: #344150;
+        --accent: #69a9ff;
+        --ok: #58cf92;
+        --warn: #ffc168;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+    main { width: min(960px, calc(100% - 32px)); margin: 32px auto 64px; }
+    header, section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+    h1, h2 { line-height: 1.25; }
+    h1 { margin: 0 0 8px; font-size: clamp(1.6rem, 4vw, 2.3rem); }
+    h2 { margin: 0 0 14px; font-size: 1.25rem; }
+    p { margin: 8px 0; }
+    .lead, .note { color: var(--muted); }
+    .status {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 5px 10px;
+      border: 1px solid var(--warn);
+      border-radius: 999px;
+      color: var(--warn);
+      font-weight: 700;
+    }
+    ol, ul { padding-left: 1.5rem; }
+    li { margin: 8px 0; }
+    label { display: flex; gap: 10px; align-items: flex-start; }
+    input[type="checkbox"] { margin-top: 0.38rem; width: 1.05rem; height: 1.05rem; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    pre {
+      overflow-x: auto;
+      padding: 16px;
+      border-radius: 8px;
+      background: var(--code);
+      color: var(--code-text);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid var(--line); padding: 10px; text-align: left; vertical-align: top; }
+    th { background: color-mix(in srgb, var(--card), var(--accent) 8%); }
+    .success { color: var(--ok); font-weight: 700; }
+    .warning { color: var(--warn); font-weight: 700; }
+    button {
+      border: 0;
+      border-radius: 7px;
+      padding: 9px 14px;
+      color: #fff;
+      background: var(--accent);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    textarea {
+      width: 100%;
+      min-height: 760px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--code);
+      color: var(--code-text);
+      font: 0.9rem/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      resize: vertical;
+    }
+    @media print {
+      body { background: #fff; color: #000; }
+      main { width: 100%; margin: 0; }
+      header, section { break-inside: avoid; border-color: #bbb; }
+      button { display: none; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Codex Sandbox 再ビルド後チェックリスト</h1>
+    <p class="lead">CombMgr Dev Containerで、Codexのworkspace sandboxと承認境界が正常になったことを確認する。</p>
+    <span class="status">現在: 再ビルド済み・検証手順を更新</span>
+  </header>
+
+  <section>
+    <h2>1. 再ビルド前</h2>
+    <ul>
+      <li><label><input type="checkbox">Git差分を確認し、変更対象が想定どおりである。</label></li>
+      <li><label><input type="checkbox"><code>/home/node/.codex</code>と<code>/home/node/.claude</code>がnamed volumeであることを確認した。</label></li>
+      <li><label><input type="checkbox">Dev Containerのvolumeを削除せず、通常の「Rebuild Container」を実行する。</label></li>
+    </ul>
+    <p class="warning">このHTMLを作成したCodexセッションでは再ビルドを実行していません。</p>
+  </section>
+
+  <section>
+    <h2>2. 再ビルド直後の手動確認</h2>
+    <p class="warning">この節はCodexへのプロンプトではなく、VS Codeの統合端末から直接実行する。Codexセッション内から<code>codex sandbox</code>を再実行しない。</p>
+    <ol>
+      <li>VS Codeで <strong>Dev Containers: Rebuild Container</strong> を実行する。</li>
+      <li>再接続後、リポジトリルートで次を実行する。</li>
+    </ol>
+    <pre><code>bash .devcontainer/verify-env.sh
+
+stat -c '%U:%G:%a %n' /usr/bin/bwrap
+
+codex sandbox \
+  -P :workspace \
+  --include-managed-config \
+  -C "$(git rev-parse --show-toplevel)" \
+  /bin/pwd</code></pre>
+    <ul>
+      <li><label><input type="checkbox"><code>verify-env.sh</code>が全件成功した。</label></li>
+      <li><label><input type="checkbox"><code>/usr/bin/bwrap</code>が<code>root:root:4755</code>だった。</label></li>
+      <li><label><input type="checkbox">sandbox自己テストがリポジトリパスを出力し、<code>bwrap</code>エラーが出なかった。</label></li>
+      <li><label><input type="checkbox">CodexとClaude Codeの認証状態が維持されていた。</label></li>
+      <li><label><input type="checkbox">ファイアウォール初期化・定期refreshが動作していた。</label></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. 期待する権限境界</h2>
+    <table>
+      <thead><tr><th>操作</th><th>期待結果</th><th>確認</th></tr></thead>
+      <tbody>
+        <tr><td><code>pwd</code>、<code>rg</code>、<code>sed</code>、<code>git status</code></td><td>承認なしで成功</td><td><input type="checkbox" aria-label="通常の読み取り"></td></tr>
+        <tr><td>workspace内の通常ファイル編集</td><td>承認なしで成功</td><td><input type="checkbox" aria-label="workspace書き込み"></td></tr>
+        <tr><td><code>.git</code>、<code>.codex</code>、<code>.agents</code>への書き込み</td><td>拒否または承認要求</td><td><input type="checkbox" aria-label="保護パス"></td></tr>
+        <tr><td>workspace外への書き込み</td><td>拒否または承認要求</td><td><input type="checkbox" aria-label="workspace外"></td></tr>
+        <tr><td>shellからの外部ネットワーク接続</td><td>拒否または承認要求</td><td><input type="checkbox" aria-label="ネットワーク"></td></tr>
+        <tr><td>禁止Git操作</td><td><code>.codex/rules</code>により禁止</td><td><input type="checkbox" aria-label="禁止Git"></td></tr>
+        <tr><td>PostToolUse / Stop hooks</td><td>追加承認なしで完了</td><td><input type="checkbox" aria-label="hooks"></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>4. Codexへ渡す検証プロンプト</h2>
+    <p class="note">第2節の端末側検証が成功した後、新しいCodexセッションを開いて下記を貼り付ける。このプロンプトではnested sandboxを起動しない。</p>
+    <button type="button" id="copy-prompt">プロンプトをコピー</button>
+    <p id="copy-status" class="success" role="status" aria-live="polite"></p>
+    <textarea id="verification-prompt" readonly>CombMgr Dev ContainerのCodex sandbox再構築後検証を実施してください。
+
+目的:
+- workspace内の通常操作が承認なしで動作することを確認する。
+- workspace外、保護パス、ネットワーク、禁止Git操作の境界が維持されていることを確認する。
+
+制約:
+- 報告のみとし、追跡対象ファイルは変更しないでください。
+- sandbox_permissions=require_escalated を使わないでください。
+- 許可ダイアログが出た場合は実行せず、対象コマンドと理由を記録してください。
+- gitの書き込み操作は実行しないでください。
+- 保護境界は test -w などの非破壊チェックで確認し、実際に書き込まないでください。
+- bash .devcontainer/verify-env.sh と codex sandbox は実行しないでください。これらはCodexセッション外のVS Code端末で確認済みです。
+- Codexセッション内から別のCodex sandboxを起動するnested sandboxテストは行わないでください。
+
+手順:
+1. AGENTS.mdとCLAUDE.mdを読み、現在のworktree内だけを対象にしてください。
+2. pwd、rg --files、git status --shortを実行し、承認要求の有無を記録してください。
+3. 現在のCodexセッションで、リポジトリルートは書込可能であり、.git・.codex・.agentsは書込不可であることを test -w だけで確認してください。
+4. 現在のCodexセッションのshell外部ネットワークが無効であることを、タイムアウト5秒以内のHTTPアクセスで確認してください。失敗が期待値です。Web検索ツールの可否とは区別してください。
+5. 通常の読み取りだけでターンを終了し、Stop hooksが追加承認を要求しないことを確認してください。
+
+報告形式:
+| 項目 | コマンド/確認方法 | 結果 | 承認要求 | 判定 |
+|---|---|---|---|---|
+
+最後に以下を明記してください。
+- nested sandboxを実行していないこと
+- 通常操作の承認要求数
+- 想定どおりだった境界
+- 想定外だった境界
+- 再ビルド後検証の総合判定: PASS / FAIL
+
+設定変更や自動修正は行わないでください。</textarea>
+  </section>
+
+  <section>
+    <h2>5. 完了判定</h2>
+    <ul>
+      <li><label><input type="checkbox">VS Code端末からのsandbox自己テストで<code>bwrap</code>エラーが出ない。</label></li>
+      <li><label><input type="checkbox">通常の実装・テスト操作で承認要求が出ない。</label></li>
+      <li><label><input type="checkbox">保護パスとネットワークの制限が維持されている。</label></li>
+      <li><label><input type="checkbox">Codex hooksが追加の承認要求を発生させない。</label></li>
+    </ul>
+    <p class="success">全項目を満たせば、sandbox是正は完了です。</p>
+  </section>
+</main>
+<script>
+  const button = document.getElementById("copy-prompt");
+  const prompt = document.getElementById("verification-prompt");
+  const status = document.getElementById("copy-status");
+  button.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(prompt.value);
+      status.textContent = "コピーしました。";

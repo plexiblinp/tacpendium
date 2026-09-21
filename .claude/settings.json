@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "_comment": [
+    "本ファイルは Claude Code のプロジェクト固有設定です。",
+    "Git にコミットしてチーム共有します。",
+    "個人固有の設定(エディタ・ローカルパス等)は settings.local.json に分離してください(settings.local.json は本ファイルの個人レイヤで、整理対象外)。",
+    "本ファイルの方針は CLAUDE.md(ヘッダおよび §10 禁止事項)に基づきます。",
+    "TEMPLATE NOTE で始まるコメントは別プロジェクト流用時の書き換え対象です。",
+    "【allow リスト】TEMPLATE NOTE: allow はプロジェクト共通で使える内容を中心に構成し、本プロジェクト固有(go test 等の Go 系)も含む。他プロジェクト流用時は不要なものを削除。方針は案A 緩め(読取系 + ビルド/テスト/インストールも許可)。",
+    "【deny リスト】TEMPLATE NOTE: deny は他プロジェクトでもそのまま流用可能。Git 書込操作(merge/rebase/reset/tag 等)、致命的削除、外部スクリプト即実行、機密ファイル読取、デバイス操作を全面禁止。",
+    "【push 例外と MCP deny(2026-07-20・リモート運用 Step 3)】push は全面 deny を解除し、allow の 'Bash(git push origin claude/*)' で claude/ 名前空間のみ機械許可(クラウド実行=Claude Code on the web の作業領域。それ以外への push は allow/deny 非該当=都度確認)。正史 main の真の担保はサーバ側の branch protection で、本 deny は defense-in-depth。あわせて 'mcp__*' を一括 deny: MCP(例 GitHub MCP)は Bash と別ツール面の API 実行のため Bash の deny が効かず、push_files/create_or_update_file 等で main へ直接書けてしまう(autopilot-combomgr LESSONS L7 の移植)。同理由で gh pr merge / gh api も deny(gh CLI も別 API 経路)。本プロジェクトのワークフローは MCP 不要。将来特定の MCP を使う場合は一括 deny をやめ危険サーバの名指し deny へ切替えること。詳細は docs/process/remote-ops.md §6。"
+  ],
+
+  "_hooks_comment": [
+    "【hooks】品質ゲートをフック機構へ移譲する設定(2026-06-11 追加)。",
+    "PostToolUse(Write|Edit|MultiEdit): 編集ファイルの高速チェック。.go=gofmt -l + go vet、.ts/.tsx=tsc --noEmit。指摘は additionalContext で通知し、編集はブロックしない。",
+    "Stop(応答完了時): 作業ツリーの差分に応じて make test-go / test-web を実行(差分ゲート)。失敗は systemMessage で警告し、応答はブロックしない。",
+    "Stop 第2ブロック + Notification: notify-bell.sh による端末ベル通知(応答完了時・承認待ち等の Notification 発生時に鳴らす)。非ブロック・タイムアウト5秒・ファイル変更なし(2026-07-20 記載追加。フック自体は以前から登録済み)。",
+    "PreToolUse(Bash): pre-push-guard.sh が git push を実行前検査し、「git push origin claude/<branch>」の単一形以外(main・refspec 形 HEAD:xxx・フラグ・複合コマンド)を exit 2 で機械ブロック(2026-07-20 追加)。allow/deny のプレフィックス一致では refspec 形が漏れること、クラウド(Claude Code on the web)では ask が実質機能せず任意ブランチ push が通ることの実測(V-2)への対策。クラウドにもコミット経由で配布・発火する。",
+    "PreToolUse(Bash): design-desk-guard.sh が設計卓の武装中(tmp/.design-desk-armed が存在するとき)だけ発火し、実装ソースへの回り込みを exit 2 でブロックする(2026-08-11 追加)。マーカーが無ければ即 exit 0 で、製造・レビュー・改善セッションには一切影響しない。背景: 設計卓を Claude Code へ移すと旧「全ソース不可視」の物理的担保が外れる。ところが本 allow リストは Bash(cat:*) Bash(sed:*) Bash(head:*) Bash(grep:*) Bash(rg:*) Bash(find:*) をパス制限なしで許可しているため、Read ツールだけを塞いでも sed -n '1,200p' internal/... が承認プロンプトすら出さずに通る(=チャネル別ガードはチャネルを跨がれる。MCP を一括 deny した理由と同じ型)。そこで scripts/design-desk-arm.sh が sparse-checkout で実装ソースを作業ツリーから物理排除し、テキストツール群をまとめて空振りさせる。残る漏れ経路は git のオブジェクト読み出しだけで、本フックがそれを許可リスト方式(安全な verb のみ通す)で閉じる。列挙方式では show/log -p/diff <rev>/grep/blame/cat-file/archive/format-patch/bundle/read-tree/checkout-index を取りこぼすため。正本 docs/progress/20260811-design-desk-surface-study.md §3.6。自己検査 = bash .claude/hooks/design-desk-guard.sh --self-test(29 ケース)。",
+    "SessionStart(startup|resume): session-start.sh が、クリーンなクローン直後に欠けている 3 件(markdown-it-py / govulncheck / web/node_modules)を冪等に揃える(2026-08-19 追加=IMPROVE-01)。背景: クリーンな環境では検査とテストが人手の前準備なしに回らず、M22 期だけで 4 サブ連続、markdown-it-py 単体では M22-01 から数えて 6 回目の再発だった(D-433 / D-435)。★直すのは環境であって検査ではない——scripts/ 配下の検査スクリプトは 1 行も緩めていない。devContainer は Dockerfile で markdown-it-py と govulncheck を持つがクラウド実行環境には効かないため、3 件すべてを両環境で揃えられる経路として hook を選んだ(git 経由で配布・発火する。pre-push-guard.sh と同じ型)。★node_modules については Makefile の前提ターゲット ensure-web-deps も併用する——hook はセッション起動時にしか走らないため、セッション中に消した場合や Claude Code を介さない素の端末から make を打つ場合は Makefile 側だけが効く。★冪等・非致命・静音: 既に入っていれば何もせず(2 回目は 0.08 秒)、あらゆる失敗を警告に留めて必ず exit 0 し(環境整備が転けてセッションが起動しないのが最悪)、出力はすべて stderr のため何もしなければ無音。★設計卓の武装中は web/ が sparse-checkout で不在のため pnpm ステップは丸ごと no-op になる。★復旧手順は docs/progress/improve-01-completion-report.md。下の SessionStart ブロックを削除すれば発火しなくなる。",
+    "重要: フックはパーミッション層をバイパスして実行されるため deny リストはフック内コマンドに効かない。安全性は各スクリプト本体(ソース改変・git 書込を行わないこと)で担保する。CLAUDE.md §10 の趣旨に整合。★2026-08-19 更新: 旧文は「読み取り系の検査 + テスト実行のみ。ネットワーク無し」と書いていたが、SessionStart の session-start.sh が pip / go install / pnpm install でネットワークへ出るため事実に合わなくなった。現在の担保は「ソース改変なし・git 書込なし・取得先は公式のパッケージレジストリのみ・sudo なし・パイプ実行なし」である。",
+    "TEMPLATE NOTE: 他プロジェクト流用時はスクリプト内のコマンド(gofmt/go vet/tsc/make ターゲット)を当該プロジェクトの実コマンドへ差し替えること。"
+  ],
+
+    "hooks": {
+      "SessionStart": [
+        {
+          "matcher": "startup|resume",
+          "hooks": [
+            { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"", "timeout": 660 }
+          ]
+        }
+      ],
+      "PreToolUse": [
+        {
+          "matcher": "Bash",
+          "hooks": [
+            { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-push-guard.sh\"", "timeout": 10 },
+            { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/design-desk-guard.sh\"", "timeout": 10 }
+          ]
+        }
+      ],
+      "PostToolUse": [
+        {
+          "matcher": "Write|Edit|MultiEdit",
+          "hooks": [
+            { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit-check.sh\"", "timeout": 90 }
+          ]
+        }
+      ],
+      "Stop": [
+        {
+          "hooks": [
+            { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-test.sh\"", "timeout": 300 }
+          ]
+        },
+        {
+          "hooks": [
+            { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/notify-bell.sh\"", "timeout": 5 }
+          ]
+        }
+      ],
+      "Notification": [
+        {
+          "hooks": [
+            { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/notify-bell.sh\"", "timeout": 5 }
+          ]
+        }
+      ]
+    },
+
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(pwd)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(file:*)",
+      "Bash(stat:*)",
+      "Bash(tree:*)",
+      "Bash(echo:*)",
+      "Bash(printf:*)",
+      "Bash(diff:*)",
+      "Bash(which:*)",
+      "Bash(whoami)",
+      "Bash(date)",
+      "Bash(env)",
+      "Bash(awk:*)",
+      "Bash(sed:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(cut:*)",
+      "Bash(tr:*)",
+      "Bash(xargs:*)",
+      "Bash(jq:*)",
+      "Bash(ps:*)",
+      "Bash(tee:*)",
+      "Bash(column:*)",
+
+      "Bash(go build:*)",
+      "Bash(go run:*)",
+      "Bash(go test:*)",
+      "Bash(go mod:*)",
+      "Bash(go vet:*)",
+      "Bash(go fmt:*)",
+      "Bash(go doc:*)",
+      "Bash(go list:*)",
+      "Bash(gofmt:*)",
+      "Bash(goimports:*)",
+      "Bash(golangci-lint:*)",
+      "Bash(go version)",
+      "Bash(go env:*)",
+
+      "Bash(npm install:*)",
+      "Bash(npm ci:*)",
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npm list:*)",
+      "Bash(npm view:*)",
+      "Bash(npx:*)",
+      "Bash(yarn:*)",
+      "Bash(pnpm:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm run:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm test)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm build)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(pnpm --version)",
+      "Bash(pnpm -v)",
+
+      "Bash(make:*)",
+
+      "Bash(git status)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git branch)",
+      "Bash(git branch:*)",
+      "Bash(git remote:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push origin claude/*)",
+
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep"
+    ],
+
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf ~/*)",
+      "Bash(rm -rf .)",
+      "Bash(rm -rf ./*)",
+      "Bash(rm -rf $HOME)",
+      "Bash(rm -rf $HOME/*)",
+
+      "mcp__*",
+      "Bash(gh pr merge:*)",
+      "Bash(gh api:*)",
+
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(git reset:*)",
+      "Bash(git reset)",
+      "Bash(git rm:*)",
+      "Bash(git rm)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git tag:*)",
+      "Bash(git revert:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git stash:*)",
+      "Bash(git clean:*)",
+      "Bash(git restore:*)",
+      "Bash(git clone:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(git submodule:*)",
+      "Bash(git config:*)",
+
+      "Bash(sudo:*)",
+      "Bash(sudo)",
+
+      "Bash(chmod 777:*)",
+      "Bash(chmod -R 777:*)",
+      "Bash(chmod -R 777 *)",
+
+      "Bash(dd if=/dev/*)",
+      "Bash(dd of=/dev/*)",
+      "Bash(mkfs.*)",
+      "Bash(mkfs:*)",
+      "Bash(fdisk:*)",
+      "Bash(parted:*)",
+
+      "Bash(curl * | bash)",
+      "Bash(curl * | sh)",
+      "Bash(wget * | bash)",
+      "Bash(wget * | sh)",
+      "Bash(curl *|bash)",
+      "Bash(curl *|sh)",
+      "Bash(wget *|bash)",
+      "Bash(wget *|sh)",
+
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(./secrets/**)",
+      "Read(secrets/**)",
+      "Read(~/.ssh/**)",
+      "Read(/root/.ssh/**)",
+      "Read(/home/*/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.gnupg/**)",
+
+      "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Edit(./secrets/**)",
+      "Edit(secrets/**)",
+      "Edit(~/.ssh/**)",
+      "Edit(~/.aws/**)",
+      "Edit(~/.gnupg/**)",
+
+      "Write(./.env)",
+      "Write(./.env.*)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Write(./secrets/**)",
+      "Write(secrets/**)",
+
+      "Bash(rm *.db)",
+      "Bash(rm -f *.db)",
+      "Bash(rm *.db-*)",
+      "Bash(rm -f *.db-*)"
+    ]
+  }
+}

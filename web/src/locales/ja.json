@@ -1,0 +1,1219 @@
+{
+  "app": {
+    "title": "Tacpendium"
+  },
+  "health": {
+    "ok": "サーバー接続OK: バージョン {{version}}",
+    "error": "サーバー接続失敗: {{message}}",
+    "loading": "接続確認中..."
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました: {{message}}",
+    "back": "戻る",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "detail": "詳細",
+    "new": "新規登録",
+    "copy": "コピー",
+    "confirm": "OK",
+    "yes": "はい",
+    "no": "いいえ",
+    "unknown": "不明",
+    "notImplementedYet": "まだ実装されていません",
+    "characterSearchPlaceholder": "キャラクターを検索",
+    "characterNotFound": "キャラクターが見つかりません"
+  },
+  "auth": {
+    "show": "表示",
+    "hide": "隠す",
+    "login": {
+      "title": "パスワードを入力してください",
+      "description": "このアプリを動かしている人が決めたパスワードです。",
+      "expiredTitle": "もう一度パスワードの入力が必要です",
+      "expiredDescription": "アプリが起動し直されたか、パスワードが変更されたときに、この画面が出ます。",
+      "passwordLabel": "パスワード",
+      "submit": "入る",
+      "submitting": "確認しています...",
+      "failed": "パスワードが違います。",
+      "forgotLink": "パスワードが分からないとき"
+    },
+    "forgot": {
+      "intro": "パスワードは、アプリの中からは元に戻せません。",
+      "step1": "このアプリを動かしているパソコンで、次のファイルを開いてください。",
+      "fileName": "config.toml",
+      "fileLocation": "アプリを起動するときに使っているファイル（Tacpendium 本体）と同じフォルダにあります。",
+      "fileLocationHint": "見つからないときは、起動に使っているアイコンを右クリックして「ファイルの場所を開く」を選ぶと、そのフォルダが開きます。",
+      "fileOpenWith": "メモ帳などのテキストエディタで開けます。",
+      "quitFirst": "書き換える前に、いちどアプリを終了してください。動かしたまま書き換えると、アプリ側の保存で元に戻ることがあります。",
+      "step2": "その中の",
+      "step3": "と書かれている行を",
+      "step4": "に書き換えます。",
+      "step5": "つづけて、同じファイルの中にある",
+      "step6": "の行を消してください。この行が残っていると、新しいパスワードを決めるときに、忘れてしまった古いパスワードを聞かれてしまいます。",
+      "step7": "保存してアプリを起動し直すと、設定画面から新しいパスワードを決められます。",
+      "note": "この操作は、アプリを動かしているパソコンを使える人だけができます。",
+      "lanNote": "パスワードを使わない設定に戻しても、ほかの機器から使う設定はそのまま使えます。"
+    },
+    "setPassword": {
+      "title": "パスワードを決める",
+      "description": "ほかの機器からこのアプリを開くときに、このパスワードを入力してもらいます。",
+      "passwordLabel": "パスワード",
+      "shownNote": "入力した文字はそのまま表示されます。外出先でノートパソコンを使っているときや、配信をしているときは「隠す」を押してください。",
+      "hintOtherService": "ほかのサービスで使っているパスワードは使わないでください。",
+      "hintLater": "あとから設定画面で変えられます。いまは決めずに進むこともできます。",
+      "errorCharset": "日本語や全角の文字は使えません。",
+      "errorTooLong": "{{max}} 文字までにしてください。",
+      "errorTooShort": "{{min}} 文字以上で決めてください。",
+      "rule": "半角の英数字と記号で決めてください。",
+      "submit": "決める",
+      "later": "あとにする",
+      "failed": "パスワードを保存できませんでした。",
+      "done": "パスワードを決めました。"
+    },
+    "changePassword": {
+      "currentLabel": "いまのパスワード",
+      "newLabel": "新しいパスワード",
+      "warning": "変えると、いまこのアプリを開いている機器はすべて、もう一度パスワードの入力が必要になります。この画面も含みます。",
+      "submit": "変える",
+      "cancel": "やめる",
+      "wrongCurrent": "いまのパスワードが違います。",
+      "doneTitle": "パスワードを変えました。もう一度入ってください。",
+      "doneAction": "ログイン画面へ"
+    }
+  },
+  "user": {
+    "select": {
+      "title": "だれとして使いますか",
+      "description": "選んだ名前で、タグやプリセットが分かれます。あとから選び直せます。"
+    },
+    "current": "いま使っている人",
+    "reselect": "使う人を選び直す",
+    "headerAria": "いま使っている人: {{name}}（押すと使う人を選び直せます）",
+    "add": {
+      "nameLabel": "名前",
+      "submit": "追加する",
+      "cancel": "やめる",
+      "duplicate": "同じ名前の人がすでにいます。",
+      "failed": "追加できませんでした。",
+      "done": "追加しました。"
+    },
+    "rename": {
+      "nameLabel": "名前",
+      "submit": "変える",
+      "cancel": "やめる",
+      "duplicate": "その名前はすでに使われています。",
+      "empty": "名前を入れてください。",
+      "failed": "名前を変えられませんでした。",
+      "done": "名前を変えました。"
+    },
+    "otherOwner": {
+      "preset": "これは {{name}} さんが作ったプリセットです。見ることはできますが、変えたり消したりはできません。自分でプリセットを作ると、自由に変えられます。",
+      "presetShort": "ほかの人が作ったプリセット"
+    }
+  },
+  "onboarding": {
+    "bannerTitle": "はじめてご利用の方へ",
+    "bannerBody": "「新規コンボ登録」からコンボを登録できます。上のボタンから各機能にアクセスできます。",
+    "dismiss": "閉じる"
+  },
+  "dataMigration": {
+    "title": "データの保存場所が変わりました",
+    "failedTitle": "データの移行を中止しました",
+    "skippedTitle": "移行前のデータが残っています",
+    "strandedTitle": "以前のデータが取り残されています",
+    "retiredTo": "移行前のデータは {{path}} にそのまま残しています。中身を確かめてから削除してください。",
+    "retireFailed": "移行前のデータ {{path}} は退避できませんでした。手元に残っていますので、そのままで問題ありません。",
+    "dismiss": "閉じる"
+  },
+  "gameUpdate": {
+    "bannerTitle": "ゲームの更新後に確認していないコンボがあります",
+    "bannerBody": "{{count}} 件のコンボが、更新で変わった技を使っています(全キャラ合計)。中身を確かめて「問題なし」を記録できます。",
+    "bannerAction": "影響コンボを見る",
+    "bannerPostpone": "次の更新まで表示しない",
+    "listButton": "更新未確認のコンボ({{count}} 件・全キャラ)",
+    "listButtonError": "更新未確認の件数を取得できませんでした",
+    "listButtonLoading": "更新未確認のコンボを確認中…",
+    "noticeError": "ゲーム更新の告知を取得できませんでした。時間をおいて画面を更新してください。",
+    "noticeRetry": "再試行",
+    "pageTitle": "ゲーム更新の影響コンボ",
+    "pageLead": "更新で変わった技を使っているコンボです(全キャラ)。中身を確かめて、直すか「問題なし」を記録してください。",
+    "pageEmpty": "更新未確認のコンボはありません。",
+    "pageError": "影響コンボを取得できませんでした。時間をおいて画面を更新してください。",
+    "pageLoading": "読み込み中…",
+    "columnAffectedMoves": "変わった技",
+    "columnBaselineVersion": "前提バージョン",
+    "columnAcknowledge": "問題なし",
+    "acknowledge": "問題なし",
+    "acknowledgeHint": "このコンボはゲームの更新後も問題ないと記録します",
+    "acknowledged": "✓ 問題なしにしました",
+    "acknowledgeError": "「問題なし」を記録できませんでした",
+    "baselineUnknown": "不明",
+    "detailLabel": "前提バージョン",
+    "detailUnconfirmed": "更新未確認",
+    "detailTrashNote": "ゴミ箱の項目は確認できません。復元すると確認できます。",
+    "currentVersion": "現在のバージョン: {{version}}",
+    "backToList": "コンボ一覧に戻る",
+    "pageTruncated": "影響コンボは全部で {{total}} 件ありますが、この画面には {{shown}} 件までを表示しています。「問題なし」を記録すると残りが出てきます。"
+  },
+  "comboList": {
+    "title": "コンボ一覧",
+    "characterRyu": "リュウ",
+    "characterScope": {
+      "label": "対象キャラ",
+      "note": "一覧の絞り込みと、新規登録の対象を兼ねます"
+    },
+    "registeredCount": "登録コンボ: {{count}}件",
+    "filter": {
+      "draft": "登録状態",
+      "draftAll": "すべて",
+      "draftOnly": "仮登録のみ",
+      "officialOnly": "本登録のみ",
+      "sortBy": "ソート",
+      "order": "順序",
+      "ascending": "昇順",
+      "descending": "降順",
+      "position": "始動位置",
+      "hitType": "ヒット種別",
+      "hitTypeSearchPlaceholder": "ヒット種別を検索",
+      "hitTypeNotFound": "該当するヒット種別がありません",
+      "starterMove": "始動技",
+      "starterMoveSearchPlaceholder": "技を検索",
+      "starterMoveNotFound": "該当する技がありません",
+      "opponentStance": "相手の状態",
+      "setupResult": "セットプレイの成立条件",
+      "setupTechType": "セットプレイの受け身種別",
+      "setupInCorner": "セットプレイの画面端",
+      "tagFilter": "タグ",
+      "tagSearchPlaceholder": "タグを検索",
+      "tagNotFound": "タグが見つかりません",
+      "tagClearSelection": "選択を解除（{{count}} 件）",
+      "panelLegend": "フィルタ・ソート",
+      "panelHide": "隠す",
+      "panelShow": "表示",
+      "summaryNone": "絞り込みなし",
+      "sortAxis": "並び順",
+      "tagSelectedValue": "{{count}} 件",
+      "all": "全て",
+      "columnVisibility": "表示列",
+      "resetColumns": "リセット",
+      "starterMeaty": "持続当て（始動技）"
+    },
+    "sort": {
+      "default": "始動状況順",
+      "updated_at": "更新日時",
+      "damage": "ダメージ",
+      "starter_move_id": "始動技別"
+    },
+    "column": {
+      "hitType": "ヒット種別",
+      "position": "始動位置",
+      "opponentStance": "相手の状態",
+      "damage": "ダメージ",
+      "recipe": "ルート",
+      "tags": "タグ",
+      "draftState": "登録状態",
+      "memo": "備考",
+      "setupCount": "セットプレイ数",
+      "actions": "操作"
+    },
+    "draftBadge": "仮登録",
+    "officialBadge": "本登録",
+    "setupPlaceholder": "紐付くセットプレイはありません",
+    "empty": "コンボが登録されていません。「新規登録」から追加してください。",
+    "emptyCta": "コンボを登録する",
+    "emptyFiltered": "フィルタ条件にマッチするコンボがありません",
+    "clearFilters": "フィルタを解除",
+    "deleteConfirm": "このコンボを削除しますか?(論理削除されます)",
+    "sortLabel": {
+      "updated_at": {
+        "asc": "昔",
+        "desc": "最近"
+      },
+      "damage": {
+        "asc": "小さい順",
+        "desc": "大きい順"
+      },
+      "starter_move_id": {
+        "asc": "始動技 ID 小",
+        "desc": "始動技 ID 大"
+      }
+    }
+  },
+  "comboDetail": {
+    "title": "コンボ詳細",
+    "idLabel": "コンボID",
+    "characterLabel": "キャラクター",
+    "situation": {
+      "heading": "状況",
+      "position": "始動位置",
+      "opponentStance": "相手の状態",
+      "hitType": "ヒット種別",
+      "opponentSize": "相手の大きさ",
+      "starterMeaty": "持続当て（始動技）"
+    },
+    "customStates": {
+      "heading": "キャラ固有状態",
+      "on": "あり"
+    },
+    "metadata": {
+      "heading": "メタデータ",
+      "damage": "ダメージ",
+      "driveGauge": "コンボ開始時のドライブゲージ残量",
+      "saGauge": "コンボ開始時のSAゲージ残量",
+      "knockdownAdvantage": "有利フレーム",
+      "driveDamage": "ドライブダメージ",
+      "saGaugeConsumed": "SAゲージ消費",
+      "driveGaugeConsumed": "ドライブゲージ消費",
+      "carryDistanceMass": "運び量",
+      "memo": "メモ",
+      "noMemo": "(メモなし)",
+      "media": "メディア",
+      "link": "リンク",
+      "videoPath": "動画パス",
+      "imagePath": "画像パス",
+      "createdAt": "作成日時",
+      "updatedAt": "更新日時"
+    },
+    "positionMassUnit": "マス",
+    "driveDamageDirection": {
+      "cut": "削り",
+      "recover": "回復"
+    },
+    "oki": {
+      "heading": "起き攻め情報",
+      "verifiedNone": "調べましたが、成立する起き攻めはありません",
+      "notVerified": "起き攻めはまだ調べていません"
+    },
+    "recipe": {
+      "heading": "レシピ",
+      "presetLabel": "プリセット",
+      "loading": "レシピを読み込み中...",
+      "fallbackHint": "他プリセットはエイリアス未投入のため、フォールバック表示になります"
+    },
+    "setups": {
+      "heading": "紐づくセットプレイ",
+      "placeholder": "紐付くセットプレイはありません",
+      "candidatesHeading": "転用可能なセットプレイ候補（{{count}} 件）",
+      "candidatesEmpty": "候補はありません"
+    },
+    "notFound": "指定されたコンボが見つかりません",
+    "deleteConfirm": "このコンボを削除しますか?(論理削除されます)"
+  },
+  "conflict": {
+    "versionConflict": {
+      "titleCombo": "ほかの人がこのコンボを変更しました",
+      "titleSetup": "ほかの人がこのセットプレイを変更しました",
+      "bodyCombo": "あなたが開いたあとに、ほかの人がこのコンボを変更しています。そのまま保存すると、その変更を消してしまうため、いったん止めました。",
+      "bodySetup": "あなたが開いたあとに、ほかの人がこのセットプレイを変更しています。そのまま保存すると、その変更を消してしまうため、いったん止めました。"
+    },
+    "notFound": {
+      "titleCombo": "このコンボは、いまこの形では見つかりませんでした",
+      "titleSetup": "このセットプレイは、いまこの形では見つかりませんでした",
+      "bodyCombo": "ほかの人がこのコンボを作り直したか、削除した可能性があります。保存先がなくなっているため、いったん止めました。",
+      "bodySetup": "ほかの人がこのセットプレイを作り直したか、削除した可能性があります。保存先がなくなっているため、いったん止めました。"
+    },
+    "inputKept": "入力した内容はこのまま残っています。",
+    "viewTheirs": "ほかの人の内容を見る",
+    "reload": "読み込み直す",
+    "close": "閉じる",
+    "saveAsNew": "この内容で新しく登録する",
+    "goToList": "コンボ一覧へ",
+    "reloadConfirm": {
+      "title": "読み込み直しますか",
+      "body": "ほかの人の内容を読み込みます。いま入力している内容は失われます。",
+      "confirm": "読み込み直す",
+      "cancel": "やめる"
+    },
+    "saveAsNewConfirm": {
+      "title": "新しいコンボとして登録しますか",
+      "body": "いま入力している内容を、新しいコンボとして登録します。ほかの人が加えた変更は、そのまま残ります。",
+      "confirm": "新しく登録する",
+      "cancel": "やめる"
+    },
+    "goToListConfirm": {
+      "title": "コンボ一覧へ移動しますか",
+      "body": "いま入力している内容は失われます。",
+      "confirm": "移動する",
+      "cancel": "やめる"
+    },
+    "duplicateSetup": "同じ手順のセットプレイが、このコンボにすでに登録されています。手順を変えるか、すでにあるセットプレイをお使いください。"
+  },
+  "comboEditor": {
+    "titleNew": "コンボ新規登録",
+    "titleEdit": "コンボ編集",
+    "titleCopy": "コンボ新規登録（コピー元: #{{id}}）",
+    "loading": "読み込み中...",
+    "loadError": "コンボの読み込みに失敗しました: {{message}}",
+    "promoteToFinal": "本登録に昇格",
+    "promoteConfirm": "このコンボを本登録に昇格しますか？本登録時のバリデーションが実行されます。",
+    "promoteSuccess": "本登録に昇格しました。",
+    "promoteError": "昇格に失敗しました。",
+    "duplicateRealtimeLink": "既存コンボの詳細を見る",
+    "characterField": "このコンボのキャラ",
+    "duplicateRealtimeHeading": "この内容は既存コンボ（#{{id}}「{{name}}」）と同一です。何かを変更してから保存してください。",
+    "duplicateNoMemo": "メモなし",
+    "duplicateMatchedOn": "一致している判定項目: キャラクター：{{character}} / 始動技：{{starter}} / 始動位置：{{position}} / 相手の状態：{{stance}} / ヒット種別：{{hitType}} / 相手の大きさ：{{size}} / レシピ",
+    "duplicateDiff": {
+      "heading": "判定に使わない項目の違い（既存 → 今の入力）",
+      "none": "判定に使わない項目にも違いはありません。",
+      "loading": "既存コンボを読み込んでいます…",
+      "blank": "（未入力）",
+      "memo": "メモ",
+      "damage": "ダメージ",
+      "driveDamage": "ドライブダメージ",
+      "saGaugeConsumed": "SAゲージ消費",
+      "driveGaugeConsumed": "ドライブゲージ消費",
+      "knockdownAdvantage": "ダウン有利",
+      "tags": "タグの数",
+      "loadError": "既存コンボを取得できませんでした。違いはこの画面では確かめられません。"
+    }
+  },
+  "myCombo": {
+    "title": "マイコンボ",
+    "subtitle": "タグで管理する自分のコンボセット",
+    "unknownCharacter": "不明",
+    "noComboYet": "マイコンボに登録されたコンボがまだありません",
+    "comboCount": "{{count}}件",
+    "nav": "マイコンボ",
+    "statusColumn": "ステータス",
+    "emptyStatus": "この状態のコンボはありません"
+  },
+  "compare": {
+    "title": "コンボ比較",
+    "addCombo": "コンボを追加",
+    "removeCombo": "比較から外す",
+    "empty": "比較対象が選択されていません",
+    "maxReached": "比較対象は最大 {{max}} 件までです",
+    "maxExceeded": "比較対象は最大 {{max}} 件までです。上限を超える分は除外しました",
+    "fetchError": "コンボデータの取得に失敗しました",
+    "fetchErrorPartial": "取得失敗",
+    "alreadySelected": "選択済み",
+    "backToList": "コンボ一覧に戻る",
+    "comboHeader": "コンボ #{{id}}",
+    "row": {
+      "starterSituation": "始動状況",
+      "route": "ルート",
+      "damage": "ダメージ",
+      "situation": "状況",
+      "customStates": "キャラ固有状態",
+      "knockdownAdvantage": "有利フレーム",
+      "driveAvailableAtStart": "コンボ開始時のドライブゲージ残量",
+      "saAvailableAtStart": "コンボ開始時のSAゲージ残量",
+      "saGaugeConsumed": "SAゲージ消費",
+      "driveGaugeConsumed": "ドライブゲージ消費",
+      "setups": "セットプレイ",
+      "tags": "タグ",
+      "memo": "備考",
+      "link": "リンク",
+      "videoPath": "動画パス",
+      "imagePath": "画像パス"
+    },
+    "maxItems": "最大比較上限に達しています（最大 {{max}} 件）",
+    "openDetail": "詳細を開く"
+  },
+  "controller": {
+    "direction": {
+      "7": {
+        "label": "後ジャンプ",
+        "aria": "上後ろ"
+      },
+      "8": {
+        "label": "ジャンプ",
+        "aria": "上"
+      },
+      "9": {
+        "label": "前ジャンプ",
+        "aria": "上前"
+      },
+      "4": {
+        "label": "後ろ",
+        "aria": "後ろ"
+      },
+      "5": {
+        "label": "立ち",
+        "aria": "ニュートラル"
+      },
+      "6": {
+        "label": "前",
+        "aria": "前"
+      },
+      "1": {
+        "label": "下後ろ",
+        "aria": "下後ろ"
+      },
+      "2": {
+        "label": "しゃがみ",
+        "aria": "下"
+      },
+      "3": {
+        "label": "下前",
+        "aria": "下前"
+      }
+    },
+    "attack": {
+      "lp": {
+        "subLabel": "弱P",
+        "aria": "弱パンチ"
+      },
+      "mp": {
+        "subLabel": "中P",
+        "aria": "中パンチ"
+      },
+      "hp": {
+        "subLabel": "強P",
+        "aria": "強パンチ"
+      },
+      "lk": {
+        "subLabel": "弱K",
+        "aria": "弱キック"
+      },
+      "mk": {
+        "subLabel": "中K",
+        "aria": "中キック"
+      },
+      "hk": {
+        "subLabel": "強K",
+        "aria": "強キック"
+      }
+    },
+    "rush": {
+      "toggleAria": "ラッシュ版トグル",
+      "label": "ラッシュ版",
+      "airborneNo": "空中不可",
+      "groundNormalOnly": "地上通常技のみ",
+      "specialToggleAria": "特殊技ラッシュ版トグル",
+      "specialHint": "ON で特殊技のラッシュ版"
+    },
+    "system": {
+      "heading": "共通技",
+      "impact": {
+        "label": "インパクト",
+        "aria": "ドライブインパクト"
+      },
+      "parry": {
+        "label": "パリィ",
+        "aria": "ドライブパリィ"
+      },
+      "throwForward": {
+        "label": "前投げ",
+        "aria": "前投げ"
+      },
+      "throwBack": {
+        "label": "後ろ投げ",
+        "aria": "後ろ投げ"
+      },
+      "dashForward": {
+        "label": "前方ステップ",
+        "aria": "前方ステップ"
+      },
+      "dashBack": {
+        "label": "後方ステップ",
+        "aria": "後方ステップ"
+      },
+      "rush": {
+        "label": "ラッシュ",
+        "aria": "ラッシュ"
+      },
+      "delete": {
+        "label": "削除",
+        "aria": "ステップ削除"
+      }
+    },
+    "panel": {
+      "heading": "クイック入力(ボタン)",
+      "tabNormal": "通常技",
+      "tabUnique": "特殊技",
+      "tabSpecial": "必殺技",
+      "uniqueEmpty": "特殊技がありません",
+      "saEmpty": "SA がありません",
+      "tabTargetCombo": "ターゲットコンボ",
+      "targetComboEmpty": "ターゲットコンボがありません",
+      "tabCharacterState": "キャラ固有状態",
+      "characterStateEmpty": "キャラ固有状態に紐づく技はありません",
+      "omitSurfacedLabel": "タブに分類済みの技を省く",
+      "omitSurfacedCount": "（{{count}} 件）",
+      "tabCommon": "共通技",
+      "commonEmpty": "共通技がありません",
+      "tabUnclassified": "未分類",
+      "unclassifiedEmpty": "未分類の技はありません"
+    },
+    "special": {
+      "none": "強度なし通常版",
+      "light": "弱",
+      "medium": "中",
+      "heavy": "強",
+      "odLm": "OD(弱中)",
+      "odMh": "OD(中強)",
+      "odLh": "OD(弱強)",
+      "odVariantsLegend": "OD 強度組合せ",
+      "empty": "必殺技がありません",
+      "variantPlain": "通常",
+      "variantHolding": "ホールド",
+      "variantMaxHolding": "最大ホールド",
+      "variantPerfect": "ジャスト",
+      "strengthLabel": "強度",
+      "variantLabel": "種類",
+      "odLmShort": "弱中",
+      "odMhShort": "中強",
+      "odLhShort": "弱強"
+    },
+    "direct": {
+      "rushLabel": "{{name}}(ラッシュ)",
+      "rushAria": "{{name}} ラッシュ版"
+    }
+  },
+  "selectMode": {
+    "enter": "比較/エクスポート対象選択",
+    "exit": "選択解除",
+    "countPlain": "{{current}} 件選択中",
+    "compare": "比較"
+  },
+  "export": {
+    "buttonSelected": "{{count}} 件をエクスポート",
+    "buttonAll": "全 {{count}} 件をエクスポート",
+    "maxReached": "エクスポート対象は最大 {{max}} 件までです",
+    "truncation": {
+      "body": "対象 {{total}} 件のうち {{included}} 件までしか出力できません。残りの {{dropped}} 件は出力に含まれません。",
+      "proceed": "このまま出力する"
+    },
+    "dialog": {
+      "title": "エクスポート",
+      "targetSelected": "選択した {{count}} 件を対象にエクスポートします",
+      "targetAll": "現在のフィルタ結果 全 {{count}} 件を対象にエクスポートします",
+      "fileNameLabel": "ファイル名",
+      "fileNameHint": "自動で入ります。そのまま出しても名前が重なりません。変えたいときは書き換えてください(拡張子は形式ごとに付きます)。",
+      "formatLabel": "出力形式",
+      "formatCsv": "CSV",
+      "formatPdf": "PDF",
+      "formatPng": "PNG",
+      "formatClipboard": "クリップボード",
+      "clipboardExclusiveHint": "クリップボードは単独選択時のみ選択できます",
+      "itemsLabel": "出力項目",
+      "run": "エクスポート実行",
+      "running": "出力中…",
+      "cancel": "キャンセル",
+      "noFormatSelected": "出力形式を1つ以上選択してください",
+      "pngLimitHint": "PNG は対象が多い（およそ 22 件超）と生成に失敗する場合があります。多い場合は PDF（自動でページ分割）を推奨します。"
+    },
+    "toast": {
+      "empty": "出力対象のコンボがありません。",
+      "success": "エクスポートが完了しました（{{formats}}）。",
+      "partialFailure": "一部の形式でエクスポートに失敗しました（{{formats}}）。",
+      "allFailed": "エクスポートに失敗しました。",
+      "imageWarnCount": "対象が {{count}} 件と多いため、PNG は画像が大きくなりすぎて失敗する場合があります。PDF（自動でページ分割）での出力を推奨します。",
+      "truncated": "上限のため {{dropped}} 件が出力に含まれませんでした（{{total}} 件中 {{included}} 件）。",
+      "reimportBlocked": "この出力は取込の上限を超えています。取込では読み込めません。"
+    }
+  },
+  "help": {
+    "positionMass": "トレーニングモードで、自分が画面端にいる状態を 0、相手が画面端にいる状態を 160（100%）とします。",
+    "modifier": "各ステップに付けられる補足設定です。フラグやメモなどを編集できます。",
+    "recipeModifier": "各ステップの「編集」ボタンから、そのステップの補足設定（フラグやメモなど）を編集できます。",
+    "opponentSize": "この区分で表現できない場合は、タグかメモを使ってください。",
+    "driveDamage": "相手のドライブゲージの増減です。負が削り、正が回復。コンボ中に相手のゲージが回復する場合があるため正の値を許容しています（1 本未満の増減は小数で表します）。"
+  },
+  "settings": {
+    "title": "設定",
+    "nav": "設定",
+    "basic": {
+      "heading": "基本設定",
+      "language": "言語",
+      "languageJa": "日本語",
+      "languageEn": "English",
+      "defaultCharacter": "デフォルト表示キャラクター",
+      "defaultPreset": "デフォルトプリセット",
+      "save": "保存",
+      "saved": "設定を保存しました",
+      "restartRequired": "アプリの再起動が必要です"
+    },
+    "user": {
+      "heading": "ユーザー管理",
+      "addUser": "ユーザー追加",
+      "changePassword": "パスワード変更",
+      "passwordEnabled": "パスワード保護",
+      "passwordNotSet": "設定されていません",
+      "setPassword": "パスワードを決める",
+      "passwordRecoveryHint": "パスワードが分からなくなったときの直し方",
+      "logout": "ログアウト",
+      "logoutHeading": "この機器からログアウトする",
+      "logoutNote": "もう一度開くときに、パスワードの入力が必要になります。",
+      "rename": "名前を変える"
+    },
+    "network": {
+      "heading": "ネットワーク",
+      "mode": "接続モード",
+      "modeLocal": "ローカル",
+      "modeLan": "LAN",
+      "ipAddress": "接続先 IP アドレス",
+      "port": "ポート番号",
+      "lanUrl": "LAN 接続 URL",
+      "showQr": "QR コード表示",
+      "noLanIp": "LAN IP を取得できませんでした",
+      "shareMode": "LAN 共有モード",
+      "enableConfirmTitle": "ほかの機器から使えるようにします",
+      "enableConfirmAction": "ON にする",
+      "enableConfirmBodyNoPassword": "この設定を ON にすると、同じ Wi-Fi につないだ機器（スマートフォン・タブレット・別のパソコン）から、このアプリを開けるようになります。\n\n開いた人は、コンボの追加・変更・削除ができます。\n\nいまはパスワードが設定されていません。同じ Wi-Fi につながっていれば、誰でも開けます。\n\n外出先のスマートフォンなど、別の回線からは開けません。",
+      "enableConfirmBodyWithPassword": "同じ Wi-Fi につないだ機器から、このアプリを開けるようになります。開くときに、決めておいたパスワードの入力が必要です。\n\n外出先のスマートフォンなど、別の回線からは開けません。",
+      "enableConfirmSetPassword": "パスワードを決める（おすすめ）",
+      "enableConfirmSkipPassword": "決めずに ON にする",
+      "enableConfirmCancel": "やめる",
+      "consentTitle": "パスワードなしで ON にします",
+      "consentBody": "同じ Wi-Fi につながっている機器からは、誰でもこのアプリを開き、コンボを変更・削除できます。",
+      "consentCheck": "上の内容を確認しました",
+      "consentAction": "ON にする",
+      "consentBack": "戻る",
+      "externalNote": "Wi-Fi の機械（ルーター）の設定を変えて、外の回線からこのパソコンへ入れるようにしている場合は、この限りではありません。心当たりがなければ、その設定はされていません。"
+    },
+    "data": {
+      "heading": "データ管理",
+      "dbPath": "データベースファイルパス",
+      "backup": "バックアップ",
+      "restore": "リストア",
+      "cacheRebuild": "キャッシュ再構築",
+      "notImplemented": "今後実装予定",
+      "cacheRebuildHint": "レシピの表示文字列のキャッシュを、現在のプリセット定義から作り直します。表記を直した後に表示が古いままのときに使います。",
+      "cacheRebuilding": "再構築中…",
+      "cacheRebuildDone": "レシピキャッシュを再構築しました（プリセット {{presetCount}} 件）",
+      "cacheRebuildError": "レシピキャッシュの再構築に失敗しました",
+      "cacheRebuildPartial": "一部だけ再構築しました（{{presetCount}} / {{total}} 件）。「{{name}}」で失敗しました",
+      "cacheRebuildNoPresets": "プリセットを読み込めていないため再構築できません"
+    },
+    "presetLink": {
+      "heading": "プリセット管理",
+      "goToPresets": "プリセット管理へ"
+    },
+    "details": {
+      "heading": "詳細情報",
+      "logFile": "ログファイルパス",
+      "version": "バージョン",
+      "onboardingShow": "初回ガイドを見る"
+    },
+    "validationError": "入力内容に問題があります"
+  },
+  "wizard": {
+    "title": "初期設定",
+    "step": "ステップ {{current}} / {{total}}",
+    "next": "次へ",
+    "prev": "戻る",
+    "skip": "スキップ",
+    "step1": {
+      "title": "ようこそ",
+      "description": "Tacpendium の初期設定を行います。いくつかの質問に答えて、アプリを使い始めましょう。"
+    },
+    "step2": {
+      "title": "言語選択",
+      "description": "表示言語を選択してください。"
+    },
+    "step3": {
+      "title": "デフォルトキャラクター",
+      "description": "コンボ一覧で最初に表示されるキャラクターを選択してください。",
+      "skipHint": "あとで設定画面から変更できます。"
+    },
+    "step4": {
+      "title": "デフォルトプリセット",
+      "description": "レシピ表示に使うデフォルトのプリセットを選択してください。",
+      "skipHint": "あとで設定画面から変更できます。"
+    },
+    "step5": {
+      "title": "ネットワーク設定",
+      "description": "同じネットワーク上の他のデバイスからアクセスできるようにしますか？",
+      "lanEnable": "LAN モードを有効にする",
+      "lanDisable": "ローカルのみ (このPC だけで使う)",
+      "lanHint": "LAN モードでは同一ネットワーク上の他のデバイス(スマートフォン等)からアクセスできます。",
+      "lanWarningBody": "同じ Wi-Fi につないだ機器（スマートフォン・タブレット・別のパソコン）から、このアプリを開けるようになります。\n\n開いた人は、コンボの追加・変更・削除ができます。\n\n外出先のスマートフォンなど、別の回線からは開けません。"
+    },
+    "step6": {
+      "title": "LAN 接続情報",
+      "description": "以下の URL または QR コードを使って他のデバイスからアクセスできます。",
+      "showQr": "QR コード表示"
+    },
+    "password": {
+      "consentTitle": "パスワードを決めずに進みます",
+      "consentAction": "同意して次へ"
+    },
+    "step7": {
+      "title": "設定完了",
+      "description": "初期設定が完了しました。コンボの登録を始めましょう！",
+      "finish": "はじめる"
+    }
+  },
+  "home": {
+    "subtitle": "SF6 コンボマネージャー",
+    "combos": "コンボ一覧",
+    "myCombos": "マイコンボ",
+    "newCombo": "新規コンボ登録",
+    "compare": "コンボ比較",
+    "presets": "プリセット管理",
+    "settings": "設定",
+    "recentCombos": "最近更新したコンボ",
+    "recentCombosEmpty": "最近更新したコンボはありません",
+    "recentCombosError": "コンボの取得に失敗しました"
+  },
+  "footer": {
+    "nav": "ナビゲーション",
+    "combos": "コンボ",
+    "myCombos": "マイコンボ",
+    "newCombo": "新規",
+    "settings": "設定"
+  },
+  "qrModal": {
+    "title": "QR コード",
+    "description": "このQRコードをスキャンしてアクセスしてください。",
+    "close": "閉じる"
+  },
+  "comboImport": {
+    "val": {
+      "VAL-I01": "文字数が上限を超えています({{row}}行目)",
+      "VAL-I03": "行数が上限を超えています",
+      "VAL-I04": "CSV の列構成が不正です",
+      "VAL-I05": "入力値が不正です({{row}}行目)",
+      "VAL-I06": "未知のキャラクターコードです({{row}}行目)",
+      "VAL-I07": "未知の技コードです({{row}}行目・技は未設定で取り込みます)",
+      "VAL-ENUM": "{{col}}に未知の値があります({{row}}行目)",
+      "VAL-C04": "ドライブゲージ開始値が範囲外です({{row}}行目)",
+      "VAL-C05": "SAゲージ開始値が範囲外です({{row}}行目)",
+      "VAL-C09": "レシピが空です。少なくとも 1 ステップ必要です({{row}}行目)",
+      "VAL-C10": "有利フレームが範囲外です({{row}}行目)",
+      "VAL-C11": "起き攻めのドライブラッシュ設定が不整合です({{row}}行目)",
+      "VAL-C13": "ドライブダメージが範囲外です({{row}}行目)",
+      "VAL-C15": "{{col}}は本登録では必須です({{row}}行目)",
+      "VAL-T02": "タグ名が空です({{row}}行目・このタグは取り込みません)",
+      "VAL-S06": "セットプレイ名が空です({{row}}行目)"
+    },
+    "col": {
+      "character_code": "キャラクター",
+      "opponent_size": "相手の大きさ",
+      "position": "位置",
+      "opponent_stance": "相手の状態",
+      "hit_type": "ヒット種別",
+      "move_code": "技",
+      "parent_combo_local_id": "親コンボ",
+      "recipe": "レシピ",
+      "tags": "タグ",
+      "situation": "状況",
+      "drive_available_at_start": "ドライブゲージ開始値",
+      "sa_available_at_start": "SAゲージ開始値",
+      "drive_damage": "ドライブダメージ",
+      "knockdown_advantage": "有利フレーム",
+      "damage": "ダメージ",
+      "drive_gauge_consumed": "ドライブゲージ消費",
+      "sa_gauge_consumed": "SAゲージ消費",
+      "name": "名称"
+    }
+  },
+  "setplay": {
+    "heading": "セットプレイ自動提案",
+    "description": "有利フレームから成立する起き攻めの候補です。間合い等は実機で確認してください。",
+    "noKnockdown": "有利フレーム未入力のため提案できません",
+    "empty": "提案が見つかりませんでした",
+    "loading": "提案を計算中...",
+    "error": "提案の取得に失敗しました",
+    "nMinLabel": "最小持続",
+    "nMaxLabel": "最大持続",
+    "nMaxBelowMinHint": "最大持続が最小持続より小さいため、このままでは提案は 0 件になります",
+    "sortLabel": "並び順",
+    "sortByN": "持続が深い順",
+    "sortByTarget": "重ねる技順",
+    "hitOnActive": "持続{{n}}F目ヒット",
+    "truncated": "候補が多すぎるため一部のみ計算しています。条件を絞ってください",
+    "notSearched": "条件を指定して「提案を出す」を押してください",
+    "generate": "提案を出す",
+    "targetTypeLegend": "当てたい技の種別",
+    "includeZeroDamage": "ダメージ0の技も含める",
+    "pickTargetToggle": "特定の技から探す",
+    "clearSelectedMove": "選択技をクリア",
+    "modeLabel": "モード",
+    "modeMeaty": "重ねる",
+    "modeGap": "汚連携",
+    "gapRangeLabel": "隙間フレーム(G)",
+    "gapMinLabel": "隙間フレーム 最小",
+    "gapMaxLabel": "隙間フレーム 最大",
+    "gapBeforeWakeup": "起き上がりの{{g}}F前に空振り(重ねない)",
+    "negativeKnockdown": "有利フレームがマイナスのためセットプレイはありません",
+    "countLabel": "全{{total}}件中{{shown}}件を表示",
+    "showMore": "さらに表示",
+    "targetType": {
+      "normal": "通常技",
+      "unique": "特殊技",
+      "special_projectile": "必殺技(弾)",
+      "special": "必殺技",
+      "throw": "投げ",
+      "normal_rush": "通常技(ラッシュ)",
+      "unique_rush": "特殊技(ラッシュ)"
+    },
+    "picker": {
+      "category": "区分",
+      "allCategories": "すべて",
+      "placeholder": "技を選択",
+      "clear": "解除"
+    },
+    "adopt": "採用",
+    "adopted": "採用済み",
+    "reject": "不採用",
+    "adoptNameFormat": "{{move}} 持続{{n}}F目重ね",
+    "adoptNameLabel": "セットプレイ名",
+    "adoptSave": "保存",
+    "adoptCancel": "キャンセル",
+    "adoptDuplicate": "このレシピは既にこのコンボに登録済みです",
+    "adoptError": "保存に失敗しました",
+    "limitations": {
+      "_marker": "M19-LIMITATION-NOTICE: この制約文面を変更したら BE の target 列挙規則(fastest_unreachable・startup_basis・親参照)・filler 規則(target_combo かつ is_derived の除外／単独入力不可の除外)・合成 filler 単位・KA NULL/負 KA の扱い・gap モード・打ち切り(internal/service/setplay/service.go)を同時に確認・更新すること。逆も同様。",
+      "title": "提案の制約について",
+      "info": "提案の制約を表示",
+      "frameOnly": "提案はフレーム計算のみで導出しており、間合い・相手キャラの体格・ヒット時の状況は判定していません。必ず実機で確認してください。",
+      "notExhaustive": "提案が出なくても、成立するセットプレイが無いとは限りません。",
+      "outOfScope": "現時点で提案の対象外: 有利フレーム未入力のコンボ／有利フレームがマイナスのコンボ／持続(active)未入力の技／単独で最速入力しても地上の相手に当たらない技／種別フィルタでOFFにしている種別(必殺技(非弾)・投げ・通常技(ラッシュ)・特殊技(ラッシュ))／ダメージ0の技(既定)。前段のヒット・ガードが必要な多段技の2段目以降と、単独では出せない派生技(親から出す前提の技)は、つなぎに単独では使いません。親からの通し値を持つ派生技は、親を前に置いた表記で提案します(前に置いた親はフレームに計上しません)。",
+      "frameCaveatsTitle": "フレームデータ由来の注意（ゲーム内フレームメーターに出せる情報ベースのため）",
+      "multiHit": "当たり判定が複数ある技（例: リュウのかかと落とし）は、途中の当たり判定が発生していない区間も持続に含めて数えています。そのため「持続Nフレーム目」が実際には当たり判定の無い区間に当たる場合があります。",
+      "lingeringProjectile": "画面にしばらく残る弾（例: 波動拳）は硬直を持続として扱っています。実際に弾が画面から消えるフレームは表していません。",
+      "lingeringSetup": "画面にしばらく残る設置系の技（例: ラシードのアラビアンサイクロン）は硬直を持続として扱っています。実際に設置技が消えるフレームは表していません。",
+      "stateFiller": "つなぎ（filler）に、状態を前提とする技（電刃錬気中の技など）が混じることがあります。",
+      "weakChain": "弱攻撃を連続で出す提案は、連打キャンセル（前の弱攻撃の硬直を取り消して次を出す）を前提にフレームを計算しています。ただし同じ弱攻撃が並ぶ提案には、連打キャンセルを使わずに計算したものが混じることがあり、その場合は実機よりフレーム収支が大きく出ます。",
+      "negativeKnockdown": "有利フレームがマイナスのコンボでは提案できません。",
+      "gapDependsOpponent": "「汚連携」提案は相手の行動を前提とするため、成立するかどうかは相手次第です。",
+      "topOnly": "候補が多い場合は上位のみを表示しています（「さらに表示」で追加できます）。",
+      "close": "閉じる"
+    },
+    "confirmedConditionsLegend": "確認できた条件（任意）",
+    "confirmedConditionsHint": "実機で成立を確認できた条件だけチェックしてください。チェックしなくても採用できます。不成立の記録は登録後にコンボ詳細から行えます。"
+  },
+  "setupResult": {
+    "heading": "成立条件",
+    "editHeading": "成立条件を記録",
+    "axisLabel": "画面端",
+    "editStart": "成立条件を編集",
+    "editDone": "編集を終える",
+    "noteAriaLabel": "このセルのメモ",
+    "noteSave": "メモを保存",
+    "noteMark": "メモあり",
+    "saveError": "成立条件の保存に失敗しました",
+    "state": {
+      "ok": "成立",
+      "ng": "不成立",
+      "unverified": "未検証"
+    },
+    "corner": {
+      "inCorner": "相手が画面端",
+      "midScreen": "画面中央"
+    },
+    "selectedCell": "選択中: {{cell}}",
+    "selectCellLabel": "{{tech}} / {{corner}} を選択（現在は{{state}}）",
+    "stateGroupLabel": "選択中のセルの状態",
+    "noteLabelSimple": "メモ",
+    "noteUnsavedHint": "未検証のセルのメモは保存されません。成立／不成立にすると保存できます。"
+  },
+  "situation": {
+    "position": {
+      "corner_self": "自分画面端",
+      "corner_self_near": "自分画面端寄り",
+      "mid_self": "自分中央寄り",
+      "mid_screen": "画面中央",
+      "mid_opponent": "相手中央寄り",
+      "corner_opponent_near": "相手画面端寄り",
+      "corner_opponent": "相手画面端"
+    },
+    "hitType": {
+      "normal": "通常",
+      "counter": "カウンター",
+      "punish_counter": "パニッシュカウンター",
+      "just_parry_punish_counter": "パニッシュカウンター(ジャストパリィ反撃)",
+      "drive_impact_wall_splat_hit": "インパクト壁やられ(ヒット)",
+      "drive_impact_wall_splat_block": "インパクト壁やられ(ガード)",
+      "drive_impact_punish_counter": "パニッシュカウンター(インパクト)",
+      "stun": "スタン"
+    },
+    "hitTypeShort": {
+      "normal": "通常",
+      "counter": "CH",
+      "punish_counter": "PC",
+      "just_parry_punish_counter": "PC(JP)",
+      "drive_impact_wall_splat_hit": "DI壁(H)",
+      "drive_impact_wall_splat_block": "DI壁(G)",
+      "drive_impact_punish_counter": "PC(DI)",
+      "stun": "スタン"
+    },
+    "opponentStance": {
+      "standing": "立ち",
+      "crouching": "しゃがみ",
+      "airborne": "空中",
+      "any": "不問"
+    },
+    "opponentSize": {
+      "standard": "標準",
+      "large": "大",
+      "large1": "大1(ザンギエフ等)",
+      "large2": "大2(マリーザ等)"
+    },
+    "starterMeaty": {
+      "yes": "はい",
+      "no": "いいえ"
+    }
+  },
+  "fieldRequirement": {
+    "required": "必須",
+    "optional": "任意",
+    "legend": "この節では、印の無い欄は任意です。"
+  },
+  "oki": {
+    "verified": {
+      "label": "起き攻めを調べた",
+      "stateVerified": "検証済み",
+      "stateUnverified": "未検証"
+    },
+    "attackType": {
+      "throw_meaty": "投げ重ね",
+      "shimmy": "シミー",
+      "strike_meaty": "打撃重ね"
+    },
+    "techType": {
+      "neutral_tech": "その場受け身",
+      "back_tech": "後ろ受け身"
+    },
+    "usesDr": "ドライブラッシュ",
+    "noGauge": "ノーゲージ",
+    "separator": "・"
+  },
+  "tag": {
+    "management": {
+      "title": "タグ管理",
+      "create": "+ 新規作成",
+      "loading": "読み込み中...",
+      "loadError": "タグ一覧の取得に失敗しました。",
+      "searchPlaceholder": "タグ名で検索",
+      "count": "{{shown}} 件 / 全 {{total}} 件",
+      "updated": "タグを更新しました",
+      "created": "タグを作成しました"
+    },
+    "table": {
+      "name": "名前",
+      "category": "カテゴリ",
+      "color": "色",
+      "usageCount": "使用数",
+      "none": "―",
+      "edit": "編集",
+      "delete": "削除",
+      "editAria": "{{name}}を編集",
+      "deleteAria": "{{name}}を削除",
+      "empty": "タグがありません。「+ 新規作成」から追加してください。",
+      "emptyFiltered": "「{{query}}」に一致するタグはありません。検索条件を変えてください。",
+      "clearSearch": "検索を解除"
+    },
+    "form": {
+      "editTitle": "タグを編集",
+      "createTitle": "タグを新規作成",
+      "description": "タグの名前やカテゴリ、色を設定します",
+      "name": "タグ名",
+      "category": "カテゴリ",
+      "categoryPlaceholder": "例: custom、難易度 など",
+      "color": "色",
+      "colorHexHint": "HEX で直接指定(パレット外の色を使う場合)",
+      "cancel": "キャンセル",
+      "saving": "保存中...",
+      "save": "保存",
+      "create": "作成",
+      "nameRequired": "タグ名は必須です",
+      "colorFormat": "色は #RRGGBB 形式で指定してください",
+      "duplicateName": "同名のタグが既に存在します",
+      "genericError": "エラーが発生しました",
+      "unexpectedError": "予期しないエラーが発生しました"
+    },
+    "delete": {
+      "titleInUse": "警告: 使用中のタグです",
+      "title": "タグを削除",
+      "inUse": "タグ 「{{name}}」 は {{usageCount}} 件 のコンボで使用中です。",
+      "inUseConsequence": "削除すると、これらのコンボからタグが外れます。続行しますか?",
+      "confirm": "タグ 「{{name}}」 を削除しますか?",
+      "cancel": "キャンセル",
+      "deleting": "削除中...",
+      "delete": "削除"
+    },
+    "selector": {
+      "placeholder": "タグを選択、または、新規登録",
+      "searchPlaceholder": "タグを検索、または新規登録",
+      "notFound": "タグが見つかりません",
+      "creating": "「{{name}}」を作成中...",
+      "createNew": "「{{name}}」を新規作成"
+    },
+    "badge": {
+      "overflow": "省略されたタグ{{hiddenCount}}件: {{names}}",
+      "separator": "、"
+    },
+    "color": {
+      "red": "赤",
+      "orange": "橙",
+      "yellow": "黄",
+      "green": "緑",
+      "blue": "青",
+      "indigo": "藍",
+      "purple": "紫",
+      "pink": "桃",
+      "brown": "茶",
+      "gray": "灰"
+    }
+  },
+  "trash": {
+    "characterLabel": "キャラクター",
+    "characterNote": "コンボとセットプレイの両方を、選んだキャラクターで絞り込みます。",
+    "setup": {
+      "heading": "セットプレイ",
+      "empty": "ゴミ箱にセットプレイはありません",
+      "loadError": "セットプレイの読み込みに失敗しました",
+      "unnamed": "(名称未設定)",
+      "columnName": "名前",
+      "columnDeletedAt": "削除日時",
+      "columnActions": "操作",
+      "restore": "復元",
+      "permanentDelete": "完全削除",
+      "restoreError": "復元に失敗しました",
+      "permanentDeleteError": "完全削除に失敗しました",
+      "inUse": "このセットプレイは使用中のコンボに紐づいているため、完全に削除できません",
+      "notInTrash": "このセットプレイはゴミ箱にありません",
+      "confirmTitle": "完全削除の確認",
+      "confirmBody": "このセットプレイを完全削除します。この操作は取り消せません。続行しますか?",
+      "confirmCancel": "キャンセル",
+      "columnSelectAll": "セットプレイを全選択",
+      "columnSelect": "セットプレイ {{id}} を選択",
+      "unlinkHeading": "次のコンボがこのセットプレイを使っています。紐付けを外すと完全削除できます",
+      "unlinkAction": "紐付けを外す",
+      "unlinkNote": "紐付けを外すだけです。コンボそのものは削除されません",
+      "unlinkDoneRetryHint": "紐付けを外しました。完全削除するには、もう一度「完全削除」を押してください",
+      "unlinkError": "紐付けの解除に失敗しました"
+    },
+    "preSaveDuplicate": {
+      "title": "ゴミ箱に同じものがあります",
+      "bodyCombo": "同じ内容のコンボが {{count}} 件ゴミ箱にあります。ゴミ箱から戻すか、新しく作るかを選んでください。",
+      "bodySetup": "同じレシピのセットプレイが {{count}} 件このコンボのゴミ箱にあります。ゴミ箱から戻すか、新しく作るかを選んでください。",
+      "selectPrompt": "戻すものを選んでください",
+      "restore": "ゴミ箱から復元する",
+      "restoreCaution": "復元すると、いま入力した内容は保存されません。",
+      "createNew": "新しく作る",
+      "createNewCaution": "ゴミ箱の行はそのまま残ります。",
+      "cancel": "戻って編集を続ける",
+      "restoreFailed": "復元できませんでした。入力した内容はこのまま残っています。"
+    },
+    "warning": {
+      "linkedSetupsDeleted": "紐付いているセットプレイ {{count}} 件がゴミ箱にあります。復元してもコンボ詳細には表示されません",
+      "allParentCombosDeleted": "紐付いている親コンボ {{count}} 件がすべてゴミ箱にあります。復元しても画面には表示されません",
+      "moveNotFound": "レシピに、このキャラクターに存在しない技が含まれています",
+      "unknown": "確認が必要な点があります({{code}})",
+      "restoredWithWarnings": "復元しました。{{warnings}}",
+      "bulkRestored": "{{count}} 件を復元しました",
+      "bulkRestoredWithWarnings": "{{count}} 件を復元しました。うち {{warned}} 件に注意があります",
+      "duplicateInTrash": "同じ内容のコンボ {{count}} 件がゴミ箱にもあります。重複していないか確認してください",
+      "duplicateSetupInTrash": "同じレシピのセットプレイ {{count}} 件がこのコンボのゴミ箱にもあります。重複していないか確認してください",
+      "duplicateAliveCombo": "同じ内容のコンボ {{count}} 件が既に登録されています。復元したので重複して並んでいます",
+      "duplicateAliveSetup": "同じレシピのセットプレイ {{count}} 件が既にこのコンボに紐付いています。復元したので重複して並んでいます",
+      "savedWithWarnings": "保存しました。{{warnings}}",
+      "restored": "復元しました",
+      "warningSeparator": " / ",
+      "warningTerminator": "。",
+      "bulkDetailHeading": "注意が付いた {{count}} 件",
+      "bulkDetailLine": "{{label}}: {{warnings}}",
+      "bulkDetailRefs": "（対象: {{refs}}）",
+      "unnamedCombo": "コンボ {{id}}",
+      "unnamedSetup": "セットプレイ {{id}}",
+      "dismissResult": "結果を閉じる"
+    },
+    "combo": {
+      "columnSelectAll": "全選択",
+      "columnSelect": "コンボ {{id}} を選択",
+      "columnStarter": "始動状況",
+      "columnDamage": "ダメージ",
+      "columnTags": "タグ",
+      "columnDeletedAt": "削除日時",
+      "columnActions": "操作",
+      "empty": "ゴミ箱は空です",
+      "loadError": "読み込みに失敗しました",
+      "restore": "復元",
+      "permanentDelete": "完全削除",
+      "restoreError": "復元に失敗しました: {{message}}",
+      "permanentDeleteError": "完全削除に失敗しました: {{message}}",
+      "confirmTitle": "完全削除の確認",
+      "confirmBodySingle": "このコンボを完全削除します。この操作は取り消せません。続行しますか?",
+      "confirmBodyBulk": "選択した {{count}} 件のコンボを完全削除します。この操作は取り消せません。続行しますか?",
+      "confirmCancel": "キャンセル",
+      "confirmAction": "完全削除する"
+    },
+    "heading": "ゴミ箱",
+    "loading": "読み込み中...",
+    "common": {
+      "unknownError": "不明なエラー"
+    },
+    "bulk": {
+      "selectedCount": "{{count}} 件選択中",
+      "restoreSelected": "選択を復元",
+      "permanentDeleteSelected": "選択を完全削除",
+      "processing": "処理中...",
+      "failed": "{{count}} 件失敗: {{labels}}",
+      "failedSeparator": " / ",
+      "failedHeading": "{{count}} 件失敗",
+      "blockingCombos": "掴んでいるコンボ: {{labels}}"
+    },
+    "detail": {
+      "backToTrash": "ゴミ箱へ戻る",
+      "readOnlyNotice": "ゴミ箱にあるコンボです。編集はできません。編集するには先に復元してください",
+      "loadError": "コンボの読み込みに失敗しました",
+      "notInTrashNotice": "このコンボはゴミ箱にありません。",
+      "openNormalDetail": "コンボ詳細を開く"
+    }
+  },
+  "setup": {
+    "delete": {
+      "action": "ゴミ箱へ移動",
+      "confirmTitle": "セットプレイをゴミ箱へ移動",
+      "confirmBody": "「{{name}}」をゴミ箱へ移動します。紐付いている {{count}} 件のコンボすべてから見えなくなります。ゴミ箱から戻せます",
+      "confirmCancel": "キャンセル",
+      "confirmAction": "ゴミ箱へ移動",
+      "done": "セットプレイをゴミ箱へ移動しました",
+      "openTrash": "ゴミ箱を開く",
+      "failed": "セットプレイの削除に失敗しました: {{message}}",
+      "confirmBodyUnknownCount": "「{{name}}」をゴミ箱へ移動します。紐付いているすべてのコンボから見えなくなります。ゴミ箱から戻せます",
+      "unlinkAlsoLabel": "このコンボとの紐付けも一緒に外す",
+      "unlinkAlsoWarning": "外すと、復元しても紐付けは戻りません（復元後に手動で付け直せます）"
+    },
+    "unnamed": "セットプレイ {{id}}",
+    "editor": {
+      "loading": "読み込み中...",
+      "loadError": "セットプレイの読み込みに失敗しました。",
+      "editTitle": "セットプレイ編集",
+      "createTitle": "セットプレイ登録",
+      "createFromCopyTitle": "セットプレイ登録（コピー元: #{{id}}）",
+      "copy": "コピー",
+      "backCancel": "← キャンセル",
+      "cancel": "キャンセル",
+      "saving": "保存中...",
+      "save": "保存",
+      "saveFailed": "保存できませんでした。",
+      "networkError": "通信エラーが発生しました。"
+    },
+    "candidate": {
+      "fallbackName": "セットプレイ #{{id}}",
+      "stepCount": "{{stepCount}} ステップ",
+      "linkToThisCombo": "このコンボにも紐付ける"
+    },
+    "item": {
+      "stepCount": "{{stepCount}} ステップ",
+      "recipeHeading": "レシピ",
+      "unlink": "紐付け解除",
+      "unlinkConfirmTitle": "確認",
+      "unlinkConfirmBody": "このセットプレイの紐付けを解除しますか？",
+      "unlinkConfirmCancel": "キャンセル",
+      "unlinkConfirmAction": "解除"
+    }
+  },
+  "comboCommon": {
+    "memoFirstLine": "メモの1行目",
+    "recipeView": {
+      "label": "レシピを縦に表示",
+      "hint": "レシピを 1 行にまとめる表示と、ステップごとに改行した縦表示で切り替えます。設定は一覧・マイコンボ・詳細・比較・比較の追加ダイアログで共有されます"
+    },
+    "starterMoveFallback": "始動技#{{id}}",
+    "starterMoveUnknown": "始動技?",
+    "characterFallback": "キャラ#{{id}}",
+    "recipeEmpty": "（レシピなし）",
+    "recipeStepsEmpty": "まだステップがありません。技を選んで追加してください。",
+    "moveFallback": "技#{{id}}"
+  }
+}

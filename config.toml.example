@@ -1,0 +1,42 @@
+# Tacpendium 設定ファイル(サンプル)
+# 本ファイルを config.toml にコピーして使用する。
+# config.toml が存在しない場合はすべてデフォルト値で動作する。
+
+[server]
+# "local" または "lan"
+# local: 127.0.0.1 のみ bind、CORS は localhost/127.0.0.1 のみ許可
+# lan:   0.0.0.0 で bind、CORS は localhost/127.0.0.1 + 検出した代表 LAN IP を許可
+mode = "local"
+port = 47318
+
+[database]
+# 空ならOS標準のアプリデータディレクトリを使用する
+# Windows: %APPDATA%/tacpendium/tacpendium.db
+# macOS:   ~/Library/Application Support/tacpendium/tacpendium.db
+# Linux:   ~/.local/share/tacpendium/tacpendium.db
+path = ""
+
+[logging]
+# "debug" / "info" / "warn" / "error"
+# 環境変数 TACPENDIUM_LOG_LEVEL が設定されていればそちらが優先される
+level = "info"
+file = "logs/tacpendium.log"
+max_size_mb = 10
+max_backups = 5
+max_age_days = 30
+
+[security]
+# 簡易パスワードによる入場ゲート。全ユーザー共通の 1 本(DES-002 §8)。
+# 既定は false。一人で使う間は何も要求されない。
+password_enabled = false
+# password_hash はアプリが書き込む欄。平文は保存されない。
+# パスワードの設定・変更はアプリから行う(変更時は現在のパスワードが要る)。
+# ★パスワードを忘れた場合の復旧は本ファイルの編集のみ。アプリからは復旧できない。
+#   手順は 2 行とも直すこと——アプリを終了してから
+#     (1) password_enabled = false に戻す
+#     (2) password_hash の行を消す(または空文字にする)
+#   を行い、起動し直す。
+#   ★(2) を落とすと復旧できない。hash が残っている間は設定画面が「変える」を出し、
+#     忘れた当のパスワードを要求するためである(internal/service/auth の SetPassword は
+#     password_enabled を見ず、hash が空でないかだけを見る)。
+# password_hash = ""
