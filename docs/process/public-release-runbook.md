@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 |------|------|
 | 文書ID | PUBLIC-RELEASE-RUNBOOK |
-| バージョン | **1.1.0**（2026-09-21・初回公開を private staging 方式へ改訂） |
+| バージョン | **1.2.0**（2026-09-21・private staging の実施結果とPR無効化を反映） |
 | 位置づけ | **公開リポジトリ `tacpendium` への公開と、リリースを打つ手順の正本** |
 | 承認 | **★開発者承認済み**（2026-09-20・`D-917`。**⇒ `CLAUDE.md` §10.Y の「型に無い恒久ファイル」の承認**） |
 | 実行者 | **★★開発者**。**⇒ Claude ができるのは手順の更新と、走らせる前の確認までである** |
@@ -94,14 +94,16 @@
 | # | やること | 済 |
 |---|---|---|
 | **B-1** | **`tacpendium` を private で作成する。⇒ 内容確認前の snapshot を公開状態に置かない** | ☑（2026-09-21。public で作成後、初回同期前に private へ変更） |
-| **B-2** | **公開側の Issues / Discussions / Projects / Wiki を無効化する。⇒ 公開側は配布専用であり、開発・文書管理の第二正本を作らない** | ☑（2026-09-21） |
-| **B-3** | **公開スナップショットを生成して private の `tacpendium` へ一方向同期し、`main` を作る**（`bash scripts/check-public-snapshot.sh` で ALLOW / DENY の網羅を確かめてから） | ☐ |
-| **B-4** | **`main` の保護を設定する。⇒ 初回同期前は対象ブランチが存在しないため、B-3 の後に行う** | ☐ |
+| **B-2** | **公開側の Issues / Discussions / Projects / Wiki / Pull requests を無効化する。⇒ 公開側は配布専用であり、開発・文書管理の第二正本を作らない** | ☑（2026-09-21） |
+| **B-3** | **公開スナップショットを生成して private の `tacpendium` へ一方向同期し、`main` を作る**（`bash scripts/check-public-snapshot.sh` で ALLOW / DENY の網羅を確かめてから） | ☑（2026-09-21・公開側初回commit `4ab389f`） |
+| **B-4** | **`main` の保護を設定する。⇒ 初回同期前は対象ブランチが存在しないため、B-3 の後に行う** | **設定済み・未強制**（2026-09-21。`protect-main`、対象＝default branch、削除・force push禁止、linear history必須。private中はプラン制約で強制されないためB-6で確認） |
 | **B-5** | **private のまま snapshot の内容と設定を確認し、確認後に public へ変更する** | ☐ |
 | **★★B-6** | **public 化直後に `main` の保護・ruleset を再確認し、無効なら再有効化する。⇒ 可視性変更で push ruleset が無効化されうるため** | ☐ |
 | **★★B-7** | **private vulnerability reporting と Dependabot alerts を有効化する。⇒ public リポジトリでも既定は off の opt-in である**（`followup` の `private-vuln-reporting-not-enabled`） | ☐ |
 
 **★★★B-7 は「public 化した手番で有効化し、忘れると気づけない」型である。⇒ 忘れても何も赤くならない。★だから本書に在る。**
+
+**★★private staging のCI実走（2026-09-21）**：初回pushの `PR checks` 3ジョブ（go vet + go build／go test／web test）と、手動起動した `Nightly` 2ジョブ（cross-build／E2E）はすべて緑。Pull requestsを無効化しても、`PR checks` は `main` pushと手動起動で使い続ける。
 
 **★★★公開側を直接編集しない。** 初回も 2 回目以降も、`combomgr` の確定 ref と許可リストから snapshot を生成し、一方向同期する。private staging は公開前の検査場所であって、第二の開発リポジトリではない。
 
@@ -180,4 +182,4 @@
 
 ---
 
-*以上、公開リリース手順書 **v1.1.0**。* **★★★初回は §2 を 1 つも飛ばさないこと。⇒ とくに §2.C は「一度も通していない経路で本番を打たない」ためだけに在る。**
+*以上、公開リリース手順書 **v1.2.0**。* **★★★初回は §2 を 1 つも飛ばさないこと。⇒ とくに §2.C は「一度も通していない経路で本番を打たない」ためだけに在る。**
