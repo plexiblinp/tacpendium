@@ -1,5 +1,14 @@
 # change-report CHANGE-085（M19-01 セットプレイ自動提案・実装反映報告）
 
+> **★★★【2026-09-21 errata＝`D-924`】本書の 2 箇所が失効している。⇒ 本文は歴史記録として書き換えない**（`D-274` (3)）**。**
+>
+> **★★★失効したのは `L58` と `L109` の 2 行である**〔逐語＝「`combo-list-expanded-ids-v1` は `browser-storage.ts` を経由せず `useSessionStorage` を直接使用しており実装ガイドラインと非整合。**是正は followup 扱い**とし、新規実装では踏襲しない旨を明記した」〕**。**
+>
+> **★★★`M40-02`**（2026-09-20・受理＝`D-924`）**が是正した。⇒ `useSessionStorage.ts` は `createSessionStorageHelper` 経由になり、raw の `sessionStorage.getItem` / `setItem` を呼ばない。★あわせて `scripts/check-browser-storage-keys.sh` の `DIRECT_ALLOW` から同フックのエントリを外した。**
+>
+> **★★したがって「非整合が残っている」「新規実装では踏襲しない」と読まないこと。⇒ 現行の as-built は `web/CLAUDE.md` §1 脚注が持つ。**
+
+
 | 項目 | 内容 |
 |------|------|
 | 対象 CHANGE | **085**（＋ **addendum 2 件**を反映範囲に含む） |
